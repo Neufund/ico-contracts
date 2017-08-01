@@ -41,3 +41,6 @@ jspm_packages
 
 # Cryptographic keys
 *.pem
+
+# Remove jetbrains
+.idea
