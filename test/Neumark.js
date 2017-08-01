@@ -23,11 +23,12 @@ contract('Neumark', (accounts) => {
   });
 
   it('should allow controller to generate tokens', async () => {
-    const instance = await Neumark.deployed();
-    assert(await instance.generateTokens(accounts[0], 10000, { from: accounts[0] }));
-    assert.equal(await instance.totalSupply.call(), 10000, "10000 wasn't the total");
+    const neumark = await Neumark.deployed();
+    const controller = await NeumarkController.deployed();
+    assert(await controller.generateTokens(accounts[0], 10000, { from: accounts[0] }));
+    assert.equal(await neumark.totalSupply.call(), 10000, "10000 wasn't the total");
     assert.equal(
-      await instance.balanceOf.call(accounts[0]),
+      await neumark.balanceOf.call(accounts[0]),
       10000,
       "10000 wasn't in the first account"
     );
