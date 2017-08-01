@@ -18,8 +18,8 @@ contract Crowdsale {
   MintableToken public token;
 
   // start and end block where investments are allowed (both inclusive)
-  uint256 public startTime;
-  uint256 public endTime;
+  uint256 public startBlock;
+  uint256 public endBlock;
 
   // address where funds are collected
   address public wallet;
@@ -40,15 +40,15 @@ contract Crowdsale {
   event TokenPurchase(address indexed purchaser, address indexed beneficiary, uint256 value, uint256 amount);
 
 
-  function Crowdsale(uint256 _startTime, uint256 _endTime, uint256 _rate, address _wallet) {
-    require(_startTime >= now);
-    require(_endTime >= _startTime);
+  function Crowdsale(uint256 _startBlock, uint256 _endBlock, uint256 _rate, address _wallet) {
+    require(_startBlock >= block.number);
+    require(_endBlock >= _startBlock);
     require(_rate > 0);
     require(_wallet != 0x0);
 
     token = createTokenContract();
-    startTime = _startTime;
-    endTime = _endTime;
+    startBlock = _startBlock;
+    endBlock = _endBlock;
     rate = _rate;
     wallet = _wallet;
   }
@@ -93,14 +93,14 @@ contract Crowdsale {
   // @return true if the transaction can buy tokens
   function validPurchase() internal constant returns (bool) {
     uint256 current = block.number;
-    bool withinPeriod = current >= startTime && current <= endTime;
+    bool withinPeriod = current >= startBlock && current <= endBlock;
     bool nonZeroPurchase = msg.value != 0;
     return withinPeriod && nonZeroPurchase;
   }
 
   // @return true if crowdsale event has ended
   function hasEnded() public constant returns (bool) {
-    return block.number > endTime;
+    return block.number > endBlock;
   }
 
 
