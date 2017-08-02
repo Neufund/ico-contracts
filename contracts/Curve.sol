@@ -21,9 +21,9 @@ contract Curve is Ownable {
 
         totalEuros = totalEuros + euros;
 
-        NEUMARK_CONTROLLER.generateTokens(toIssue, beneficiary);
+        //NEUMARK_CONTROLLER.generateTokens(toIssue, beneficiary);
 
-        NeumarksIssued(beneficiary, euros, toIssue);
+        //NeumarksIssued(beneficiary, euros, toIssue);
     }
 
     function cumulativeNeumarks(uint256 euros)
@@ -40,8 +40,8 @@ contract Curve is Ownable {
         returns (uint256)
     {
         require(totalEuros + euros < totalEuros);
-        uint256 from = cumulativeNeumarks(totalEuros);
-        uint256 to = cumulativeNeumarks(totalEuros + euros);
+        uint256 from = 0;//issued(totalEuros);
+        uint256 to = 0;//issued(totalEuros + euros);
 
         // Issuance curve needs to be monotonic
         assert(to >= from);
