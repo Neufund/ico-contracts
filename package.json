@@ -31,15 +31,7 @@
     "mocha": "^3.3.0",
     "swarm-js": "^0.1.35",
     "truffle": "^3.4.7",
-    "web3": "^1.0.0-beta.13",
-    "web3-core": "^1.0.0-beta.13",
-    "web3-core-method": "^1.0.0-beta.13",
-    "web3-eth-accounts": "^1.0.0-beta.13",
-    "web3-eth-contract": "^1.0.0-beta.13",
-    "web3-eth-personal": "^1.0.0-beta.13",
-    "web3-net": "^1.0.0-beta.13",
-    "web3-requestmanager": "^1.0.0-beta.13",
-    "web3-utils": "^1.0.0-beta.13",
+    "web3": "0.20.1",
     "zeppelin-solidity": "^1.2.0"
   },
   "scripts": {

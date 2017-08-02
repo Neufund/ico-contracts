@@ -40,8 +40,8 @@ contract Curve is Ownable {
         returns (uint256)
     {
         require(totalEuros + euros < totalEuros);
-        uint256 from = issued(totalEuros);
-        uint256 to = issued(totalEuros + euros);
+        uint256 from = cumulativeNeumarks(totalEuros);
+        uint256 to = cumulativeNeumarks(totalEuros + euros);
 
         // Issuance curve needs to be monotonic
         assert(to >= from);

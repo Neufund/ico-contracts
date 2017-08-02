@@ -23,20 +23,21 @@ contract Crowdsale{
   // amount of raised money in wei
   uint256 public weiRaised;
 
-  function Crowdsale(uint256 _startTime, uint _endTime, uint _maxCap, uint _minCap, NeumarkController Neumark, ) {
-    require(_startTime >= block.timestamp);
+  function Crowdsale(EtherToken ethToken, NeumarkController Neumark, LockedAccount locked ) //uint256 _startTime, uint _endTime, uint _maxCap, uint _minCap,
+  {
+    /*require(_startTime >= block.timestamp);
     require(_endTime >= _startTime);
     require(_minCap >= 0);
     require(_maxCap >= _minCap);
 
-    startTime = _startTime;
-    endTime = _endTime;
-    maxCap = _maxCap;
-    minCap  = _minCap;
+    uint startTime = _startTime;
+    uint endTime = _endTime;
+    uint maxCap = _maxCap;
+    uint minCap  = _minCap;
 
   }
   function commit(address beneficiary) payable {
-      require(beneficiary != 0x0);
+/*      require(beneficiary != 0x0);
       require(validPurchase());
 
       uint256 weiAmount = msg.value;
@@ -48,7 +49,7 @@ contract Crowdsale{
       weiRaised = weiRaised.add(weiAmount);
 
 
-      forwardFunds();
+      forwardFunds(); */
   }
 
   function validPurchase() internal constant returns (bool) {
