@@ -85,8 +85,17 @@ contract Curve is Ownable {
     {
         // TODO: Explain.
         // TODO: Proof error bounds / correctness.
+        // TODO: Proof or check for overflow.
 
-        // about 1700 gas
+        // Gas consumption (for x):
+        // 0    11652
+        // 1    11749
+        // 10   11749
+        // 100  11749
+        // 10³  11749
+        // 10⁶  11749
+        // 10⁹  11750
+
         uint256 C = 1500000000;
         uint256 S = 2**32;
         uint256 N = 343322036817947715929;
@@ -100,15 +109,21 @@ contract Curve is Ownable {
         uint256 n = C * S;
         uint256 d = 1;
         uint256 s = 0;
+        uint256 bits = 0;
         for(uint256 i = 0; i < 34;) {
-            // Loop: 8 multiply, 2 div, 7 add/sub ≈ 71 gas
-            // TODO: check for overflow
+            // Rescale fraction
             (n, d) = rescale(n, d);
+
+            // Positive term
             n *= (x - i) * N;
             i += 1;
             d *= i * D;
             s += n / d;
+
+            // Rescale fraction
             (n, d) = rescale(n, d);
+
+            // Negative term
             n *= (x - i) * N;
             i += 1;
             d *= i * D;
@@ -122,11 +137,25 @@ contract Curve is Ownable {
         constant
         returns (uint256, uint256)
     {
-        uint256 t = 2**128;
-        uint256 s = 2**32;
-        while(n > t || d > t) {
-            n /= s;
-            d /= s;
+        uint256 bits = n | d;
+        if(bits > 2**128) {
+            if(bits > 2**192) {
+                if(bits > 2**224) {
+                    n /= 2**128;
+                    d /= 2**128;
+                } else {
+                    n /= 2**96;
+                    d /= 2**96;
+                }
+            } else {
+                if(bits > 2**160) {
+                    n /= 2**64;
+                    d /= 2**64;
+                } else {
+                    n /= 2**32;
+                    d /= 2**32;
+                }
+            }
         }
         return (n, d);
     }
