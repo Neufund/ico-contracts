@@ -28,7 +28,7 @@ contract NeumarkController is Ownable, TokenController {
         onlyOwner()
         returns (bool)
     {
-        return TOKEN.generateTokens(_owner, _amount);
+        return TOKEN.destroyTokens(_owner, _amount);
     }
 
     function enableTransfers(bool _transfersEnabled)
