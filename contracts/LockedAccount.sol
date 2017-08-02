@@ -10,7 +10,7 @@ contract TimeSource {
     function mockTime(uint256 t) public {
         // no mocking on mainnet
         if (block.number > 3316029)
-            throw;
+            revert();
         mockNow = t;
     }
 }
@@ -25,7 +25,7 @@ contract Ownable {
 
     modifier onlyOwner() {
         if (msg.sender != owner)
-        throw;
+        revert();
         _;
     }
 
@@ -35,55 +35,13 @@ contract Ownable {
     }
 }
 
-contract ERC20Basic {
-  uint256 public totalSupply;
-  function balanceOf(address who) constant returns (uint256);
-  function transfer(address to, uint256 value) returns (bool);
-  event Transfer(address indexed from, address indexed to, uint256 value);
-}
-
-contract MutableToken is ERC20Basic {
-  function deposit(address to, uint256 amount) returns (bool);
-  function withdraw(uint256 amount);
-}
-
-library Math {
-  // scale of the emulated fixed point operations
-  uint constant public FP_SCALE = 10000;
-
-  // todo: should be a library
-  function divRound(uint v, uint d) internal constant returns(uint) {
-    // round up if % is half or more
-    return (v + (d/2)) / d;
-  }
-
-  function absDiff(uint v1, uint v2) public constant returns(uint) {
-    return v1 > v2 ? v1 - v2 : v2 - v1;
-  }
-
-  function safeMul(uint a, uint b) public constant returns (uint) {
-    uint c = a * b;
-    if (a == 0 || c / a == b)
-      return c;
-    else
-      throw;
-  }
-
-  function safeAdd(uint a, uint b) internal constant returns (uint) {
-    uint c = a + b;
-    if (!(c>=a && c>=b))
-      throw;
-    return c;
-  }
-}
-
 contract NeumarkSurrogate is ERC20Basic {
     // will burn tokens of 'who' that were pre-approved to be burned for the 'sender'
-    function burn(address who, uint256 amount);
-    function addRevenue(ERC20Basic fromToken, uint256 amount);
+    function burn(address who, uint256 amount) returns (bool);
+    function addRevenue(ERC20Basic fromToken, uint256 amount) returns (bool);
 }
 
-contract LockedAccountMigration {
+/* contract LockedAccountMigration {
   modifier onlyOldLockedAccount() {
     require(msg.sender == getOldLockedAccount());
     _;
@@ -91,32 +49,42 @@ contract LockedAccountMigration {
 
   // only old locked account can call migrate function
   function getOldLockedAccount() public constant returns (address);
-
-  // migrate employee to new ESOP contract, throws if not possible
-  // in simplest case new ESOP contract should derive from this contract and implement abstract methods
-  // employees list is available for inspection by employee address
-  // poolOptions and extraOption is amount of options transferred out of old ESOP contract
   function migrate(address investor, uint balance, uint neumarkCost, uint32 longstopDate) onlyOldLockedAccount public;
-}
+} */
 
 contract LockedAccount is Ownable, TimeSource {
+    //events
+    event FundsLocked(address indexed investor, uint256 amount, uint256 neumarks);
+    event FundsUnlocked(address indexed investor, uint256 amount);
+
+    // event raised when return code from a function is not OK, when OK is returned one of events above is raised
+    event ReturnCode(ReturnCodes rc);
+
+    //enums
+    // use retrun codes until revert opcode is implemented
+    enum ReturnCodes { OK, CannotBurnNeumarks, NoFunds }
+    enum LockState { AcceptingLocks, AcceptingUnlocks, ReleaseAll }
+
     // total amount of tokens locked
     uint public totalLocked;
     // total number of locked investors
     uint public totalInvestors;
     // a token controlled by LockedAccount, read ERC20 + extensions to read what token is it (ETH/EUR etc.)
     MutableToken public ownedToken;
-    // if true funds can be unlocked unconditionally and locking is not possible
-    bool public isUnlocked;
+    // current state of the locking contract
+    LockState public lockState;
     // longstop period in seconds
-    uint public constant LONGSTOP_PERIOD;
+    uint public LONGSTOP_PERIOD;
     // penalty with Math.FP_SCALE()
-    uint public constant PENALTY_PRC;
+    uint public PENALTY_PRC;
     // govering ICO contract that may lock money or unlock all account if fails
-    address public governingICO;
+    address public controller;
+    // scale of the emulated fixed point operations
+    // todo: use some nice lib for percentages etc.
+    uint constant public FP_SCALE = 10000;
 
     NeumarkSurrogate private neumarkToken;
-    LockedAccountMigration private migration;
+    // LockedAccountMigration private migration;
     mapping(address => Account) accounts;
 
     struct Account {
@@ -125,21 +93,19 @@ contract LockedAccount is Ownable, TimeSource {
         uint256 longstopDate;
     }
 
-    //events
-    event FundsLocked(address indexed investor, uint256 amount, uint256 neumarks);
-    event FundsUnlocked(address indexed investor, uint256 amount);
-
-    //enums
-    enum ReturnCodes { OK, InvalidEmployeeState, TooLate, InvalidParameters, TooEarly  }
-
     //modifiers
-    modifier onlyICO {
-        requires(msg.sender == governingICO);
+    modifier onlycontroller {
+        require(msg.sender == controller);
         _;
     }
 
-    modifier notUnlocked {
-        requires(!isUnlocked);
+    modifier onlyState(LockState state) {
+        require(lockState == state);
+        _;
+    }
+
+    modifier onlyStates(LockState state1, LockState state2) {
+        require(lockState == state1 || lockState == state2);
         _;
     }
 
@@ -147,16 +113,16 @@ contract LockedAccount is Ownable, TimeSource {
     // locks 'amount' for 'investor' address
     // callable only from ICO contract that gets currency directly (ETH/EUR)
     function lock(address investor, uint256 amount, uint256 neumarks)
-        onlyICO
-        acceptsLocks
+        onlycontroller
+        onlyState(LockState.AcceptingLocks)
         public
         returns (ReturnCodes)
     {
-        requires(amount > 0);
-        requires(ownedToken.deposit(address(this), amount));
-        Account a = accounts[investor];
+        require(amount > 0);
+        require(ownedToken.deposit(address(this), amount));
+        Account storage a = accounts[investor];
         a.balance = _addBalance(a.balance, amount);
-        a.neumarks += neumarks;
+        a.neumarksDue += neumarks;
         if (a.longstopDate == 0) {
             // this is new account - longstopDate always > 0
             totalInvestors += 1;
@@ -171,31 +137,31 @@ contract LockedAccount is Ownable, TimeSource {
     // expects number of neumarks that is due to be available to be burned on msg.sender balance - see comments
     // if used before longstop date, calculates penalty and distributes it as revenue
     function unlock()
-        acceptsUnlocks
+        onlyStates(LockState.AcceptingUnlocks, LockState.ReleaseAll)
         public
         returns (ReturnCodes)
     {
-        Account a = accounts[msg.sender];
+        Account storage a = accounts[msg.sender];
         // if there is anything to unlock
         if (a.balance > 0) {
-            // in allReleased just give money back by transfering to msg.sender
-            if (!allReleased) {
+            // in ReleaseAll just give money back by transfering to msg.sender
+            if (lockState == LockState.AcceptingUnlocks) {
                 // burn neumarks corresponding to unspent funds
                 // address(this) has right to burn Neumarks OR it was pre approved by msg.sender: @remco?
-                if(!neumarkToken.burn(msg.sender, a.neumarks))
+                if(!neumarkToken.burn(msg.sender, a.neumarksDue))
                     return _logerror(ReturnCodes.CannotBurnNeumarks);
                 // take the penalty if before longstopdate
                 if (currentTime() < a.longstopDate) {
-                    uint256 penalty = Math.divRound(Math.safeMul(a.balance, PENALTY_PRC), Math.FP_SCALE());
+                    uint256 penalty = Math.divRound(Math.mul(a.balance, PENALTY_PRC), FP_SCALE);
                     // transfer penalty to neumark contract
-                    requires(ownedToken.transfer(address(neumarkToken), penalty));
+                    require(ownedToken.transfer(address(neumarkToken), penalty));
                     // distribute revenue via Neumark contract
-                    requires(neumarkToken.addRevenue(ownedToken, penalty));
+                    require(neumarkToken.addRevenue(ownedToken, penalty));
                     a.balance = _subBalance(a.balance, penalty);
                 }
             }
             // transfer amount back to investor - now it can withdraw
-            requires(ownedToken.transfer(msg.sender, a.balance));
+            require(ownedToken.transfer(msg.sender, a.balance));
         }
         // remove balance, investor and
         FundsUnlocked(msg.sender, a.balance);
@@ -210,20 +176,20 @@ contract LockedAccount is Ownable, TimeSource {
         public
         returns (uint256, uint256, uint256)
     {
-        Account a = accounts[investor];
-        return (a.balance, a.neumarks, a.longstopDate);
+        Account storage a = accounts[investor];
+        return (a.balance, a.neumarksDue, a.longstopDate);
     }
 
     // todo: move to test that derive from LockedAccount
     // invests in equity token ICO
     function invest(address ico, uint256 amount)
-        acceptsUnlocks
+        onlyState(LockState.AcceptingUnlocks)
         public
         returns (ReturnCodes)
     {
-        requires(amount > 0);
-        requires(ico != address(0));
-        Account a = accounts[msg.sender];
+        require(amount > 0);
+        require(ico != address(0));
+        Account storage a = accounts[msg.sender];
         if (amount > a.balance)
             return _logerror(ReturnCodes.NoFunds);
         //if (canInvest(ico) {
@@ -231,7 +197,7 @@ contract LockedAccount is Ownable, TimeSource {
         //    ico.invest(amount);
         //}
         // decrease neumarks due pro rata - high precision may overflow @todo testing
-        uint256 freedNeumarks = Math.divRound(Math.safeMul(amount, a.neumarksDue), a.balance);
+        uint256 freedNeumarks = Math.divRound(Math.mul(amount, a.neumarksDue), a.balance);
         a.balance -= amount;
         // possible precision problems
         if (a.balance == 0 || a.neumarksDue < freedNeumarks)
@@ -242,31 +208,45 @@ contract LockedAccount is Ownable, TimeSource {
         return ReturnCodes.OK;
     }
 
+    // allows to anyone to release all funds without burning Neumarks
+    function controllerFailed()
+        onlyState(LockState.AcceptingLocks)
+        onlycontroller
+        public
+    {
+        lockState = LockState.ReleaseAll;
+    }
+
+    function controllerSucceeded()
+        onlyState(LockState.AcceptingLocks)
+        onlycontroller
+        public
+    {
+        lockState = LockState.AcceptingUnlocks;
+    }
+
     // todo: not implemented
-    function migrate()
+    /* function migrate()
         public
     {
         requires(address(migration) != 0);
         // migrates
-    }
+    }*/
 
-    // allows to anyone to release all funds without burning Neumarks
-    function unlockAll()
-        onlyOwner
+    // _ownedToken - token contract with resource locked by LockedAccount, where LockedAccount is allowed to make deposits
+    // _neumarkToken - neumark token contract where LockedAccount is allowed to burn tokens and add revenue
+    // _controller - typically ICO contract: can lock, release all locks, enable escape hatch
+    function LockedAccount(MutableToken _ownedToken, NeumarkSurrogate _neumarkToken,
+        address _controller, uint _penaltyPrc, uint _longstopPeriod)
     {
-        requires(!allReleased);
+        ownedToken = _ownedToken;
+        neumarkToken = _neumarkToken;
+        controller = _controller;
+        LONGSTOP_PERIOD = _longstopPeriod;
+        PENALTY_PRC = _penaltyPrc;
     }
 
-    // todo: not implemented
-    function init(ERC20 pOwnedToken, NeumarkSurrogate pNeumarkToken,
-        uint32 pPenaltyPermille, uint32 longstopPeriod)
-        onlyOwner
-        onlyUnitialized
-    {
-
-    }
-
-    function changeNeumarkToken(NeumarkSurrogate newNeumarkToken)
+    /* function changeNeumarkToken(NeumarkSurrogate newNeumarkToken)
         onlyOwner
         onlyInitialized
     {
@@ -277,17 +257,17 @@ contract LockedAccount is Ownable, TimeSource {
         onlyOwner
         onlyInitialized
     {
-        // enables investors to migrate
-    }
+
+    } */
 
     function _addBalance(uint balance, uint amount) private returns (uint) {
-        totalLocked = Math.safeAdd(totalLocked, amount);
-        return Math.safeAdd(balance, amount);
+        totalLocked = Math.add(totalLocked, amount);
+        return Math.add(balance, amount);
     }
 
     function _subBalance(uint balance, uint amount) private returns (uint) {
-        totalLocked = Math.safeSub(totalLocked, amount);
-        return Math.safeSub(balance, amount);
+        totalLocked = Math.sub(totalLocked, amount);
+        return Math.sub(balance, amount);
     }
 
     function _logerror(ReturnCodes c) private returns (ReturnCodes) {
