@@ -63,7 +63,8 @@ contract EtherToken is BasicToken, MutableToken {
     {
         // must have as much ether as declared
         require(msg.value == amount);
-        balances[msg.sender] = balances[msg.sender].add(msg.value);
+        balances[to] = balances[to].add(amount);
+        totalSupply = totalSupply.add(amount);
         Deposit(to, amount);
         return true;
     }
@@ -74,8 +75,9 @@ contract EtherToken is BasicToken, MutableToken {
         balances_msg_sender_at_least(amount)
         public
     {
-        balances[msg.sender] = balances[msg.sender].sub(amount);
         assert(msg.sender.send(amount));
+        balances[msg.sender] = balances[msg.sender].sub(amount);
+        totalSupply = totalSupply.sub(amount);
         Withdrawal(msg.sender, amount);
     }
 }
