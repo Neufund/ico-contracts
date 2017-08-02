@@ -1,7 +1,5 @@
 require('babel-register');
 
-// import ether from './helpers/ether';
-
 const NeumarkFactory = artifacts.require('./NeumarkFactory.sol');
 const NeumarkController = artifacts.require('./NeumarkController.sol');
 const Neumark = artifacts.require('./Neumark.sol');
@@ -9,7 +7,6 @@ const LockedAccount = artifacts.require('LockedAccount');
 const SafeMath = artifacts.require('SafeMath');
 const EtherToken = artifacts.require('EtherToken');
 const Crowdsale = artifacts.require('Crowdsale');
-
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const months = 30 * 24 * 60 * 60;
@@ -35,7 +32,7 @@ module.exports = deployer =>
     await deployer.deploy(LockedAccount, etherToken.address, neumark.address, 18 * months, Math.round(0.1 * FP_SCALE));
     const lock = await LockedAccount.deployed();
     console.log('Deploying crowdsale');
-    await deployer.deploy(Crowdsale, etherToken.address, neumark.address, lock.address);
+    await deployer.deploy(Crowdsale, etherToken.address, NeumarkController.address, lock.address);
     const crowdsale = await Crowdsale.deployed();
     await lock.setController(crowdsale.address);
   //  await sleep(10000); // Verify that Truffle actually waits for the promise to complete.
