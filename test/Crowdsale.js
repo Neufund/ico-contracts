@@ -19,15 +19,23 @@ contract('Crowdsale', ([_, investor, wallet, purchaser]) => {
   const expectedTokenAmount = rate.mul(value);
 
   beforeEach(async function () {
-    this.startBlock = web3.eth.blockNumber + 10;
-    this.endBlock = web3.eth.blockNumber + 20;
+    this.startBlock = new Date(Date.now()).getTime() / 1000
+;
+    this.endBlock = new Date(Date.now()).getTime() / 1000;
 
     this.crowdsale = await Crowdsale.new(this.startBlock, this.endBlock, rate, wallet);
 
-    this.token = MintableToken.at(await this.crowdsale.token());
+    this.token = MintableToken.at(await this.crowdsale.token.call());
   });
 
   it('should be token owner', async function () {
+    const test = await this.crowdsale.test.call();
+    console.log(test);
+    const date = new Date(test * 1000);
+    console.log(date.toLocaleTimeString());
+    console.log(date.toLocaleDateString());
+    const timestamp = new Date(date).getTime() / 1000;
+    console.log(timestamp);
     const owner = await this.token.owner();
     owner.should.equal(this.crowdsale.address);
   });
