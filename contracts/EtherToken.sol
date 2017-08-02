@@ -1,11 +1,11 @@
 pragma solidity ^0.4.11;
 
-import 'zeppelin-solidity/contracts/token/ERC20Basic.sol';
-import 'zeppelin-solidity/contracts/token/BasicToken.sol';
+import 'zeppelin-solidity/contracts/token/ERC20.sol';
+import 'zeppelin-solidity/contracts/token/StandardToken.sol';
 import 'zeppelin-solidity/contracts/math/SafeMath.sol';
 
 
-contract MutableToken is ERC20Basic {
+contract MutableToken is ERC20 {
     // todo: do smth about payable which is force to be part of interface by compiler!
     function deposit(address to, uint256 amount) payable returns (bool);
     function withdraw(uint256 amount);
@@ -33,7 +33,7 @@ library Math {
 /// @author Melonport AG <team@melonport.com>
 /// @notice Make Ether into a ERC20 compliant token
 /// @notice Compliant to https://github.com/nexusdev/dappsys/blob/04451acf23f017beecb1a4cad4702deadc929811/contracts/token/base.sol
-contract EtherToken is BasicToken, MutableToken {
+contract EtherToken is StandardToken, MutableToken {
     using SafeMath for uint256;
 
     // FIELDS

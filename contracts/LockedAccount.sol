@@ -50,14 +50,14 @@ contract LockedAccount is Ownable, TimeSource {
     //enums
     // use retrun codes until revert opcode is implemented
     enum ReturnCodes { OK, CannotBurnNeumarks, NoFunds }
-    enum LockState { AcceptingLocks, AcceptingUnlocks, ReleaseAll }
+    enum LockState {Uncontrolled, AcceptingLocks, AcceptingUnlocks, ReleaseAll }
 
     // total amount of tokens locked
-    uint public totalLocked;
+    uint public totalLockedAmount;
     // total number of locked investors
     uint public totalInvestors;
     // a token controlled by LockedAccount, read ERC20 + extensions to read what token is it (ETH/EUR etc.)
-    MutableToken public ownedToken;
+    ERC20 public ownedToken;
     // current state of the locking contract
     LockState public lockState;
     // longstop period in seconds
@@ -106,7 +106,10 @@ contract LockedAccount is Ownable, TimeSource {
         returns (ReturnCodes)
     {
         require(amount > 0);
-        require(ownedToken.deposit(address(this), amount));
+        // check if controller made allowance
+        require(ownedToken.allowance(msg.sender, address(this)) >= amount);
+        // transfer to self yourself
+        require(ownedToken.transferFrom(msg.sender, address(this), amount));
         Account storage a = accounts[investor];
         a.balance = _addBalance(a.balance, amount);
         a.neumarksDue += neumarks;
@@ -222,15 +225,24 @@ contract LockedAccount is Ownable, TimeSource {
         // migrates
     }*/
 
+    function setController(address _controller)
+        onlyOwner
+        onlyState(LockState.Uncontrolled)
+        public
+    {
+        require(controller == address(0));
+        controller = _controller;
+        lockState = LockState.AcceptingLocks;
+    }
+
     // _ownedToken - token contract with resource locked by LockedAccount, where LockedAccount is allowed to make deposits
     // _neumarkToken - neumark token contract where LockedAccount is allowed to burn tokens and add revenue
     // _controller - typically ICO contract: can lock, release all locks, enable escape hatch
-    function LockedAccount(MutableToken _ownedToken, NeumarkSurrogate _neumarkToken,
-        address _controller, uint _penaltyPrc, uint _longstopPeriod)
+    function LockedAccount(ERC20 _ownedToken, NeumarkSurrogate _neumarkToken,
+        uint _longstopPeriod, uint _penaltyPrc)
     {
         ownedToken = _ownedToken;
         neumarkToken = _neumarkToken;
-        controller = _controller;
         LONGSTOP_PERIOD = _longstopPeriod;
         PENALTY_PRC = _penaltyPrc;
     }
@@ -250,12 +262,12 @@ contract LockedAccount is Ownable, TimeSource {
     } */
 
     function _addBalance(uint balance, uint amount) private returns (uint) {
-        totalLocked = totalLocked.add(amount);
+        totalLockedAmount = totalLockedAmount.add(amount);
         return balance.add(amount);
     }
 
     function _subBalance(uint balance, uint amount) private returns (uint) {
-        totalLocked = totalLocked.sub(amount);
+        totalLockedAmount = totalLockedAmount.sub(amount);
         return balance.sub(amount);
     }
 
