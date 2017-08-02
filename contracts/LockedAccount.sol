@@ -1,4 +1,9 @@
-pragma solidity ^0.4.10;
+pragma solidity ^0.4.11;
+
+import 'zeppelin-solidity/contracts/token/ERC20Basic.sol';
+import 'zeppelin-solidity/contracts/math/SafeMath.sol';
+import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
+import './EtherToken.sol';
 
 contract TimeSource {
     uint256 private mockNow;
@@ -15,25 +20,6 @@ contract TimeSource {
     }
 }
 
-contract Ownable {
-    // replace with proper zeppelin smart contract
-    address public owner;
-
-    function Ownable() {
-        owner = msg.sender;
-    }
-
-    modifier onlyOwner() {
-        if (msg.sender != owner)
-        revert();
-        _;
-    }
-
-    function transferOwnership(address newOwner) onlyOwner {
-        if (newOwner != address(0))
-        owner = newOwner;
-    }
-}
 
 contract NeumarkSurrogate is ERC20Basic {
     // will burn tokens of 'who' that were pre-approved to be burned for the 'sender'
@@ -53,6 +39,7 @@ contract NeumarkSurrogate is ERC20Basic {
 } */
 
 contract LockedAccount is Ownable, TimeSource {
+    using SafeMath for uint256;
     //events
     event FundsLocked(address indexed investor, uint256 amount, uint256 neumarks);
     event FundsUnlocked(address indexed investor, uint256 amount);
@@ -152,7 +139,8 @@ contract LockedAccount is Ownable, TimeSource {
                     return _logerror(ReturnCodes.CannotBurnNeumarks);
                 // take the penalty if before longstopdate
                 if (currentTime() < a.longstopDate) {
-                    uint256 penalty = Math.divRound(Math.mul(a.balance, PENALTY_PRC), FP_SCALE);
+                    // todo: should use divRound
+                    uint256 penalty = a.balance.mul(PENALTY_PRC).div(FP_SCALE); // Math.divRound(Math.mul(a.balance, PENALTY_PRC), FP_SCALE);
                     // transfer penalty to neumark contract
                     require(ownedToken.transfer(address(neumarkToken), penalty));
                     // distribute revenue via Neumark contract
@@ -197,7 +185,8 @@ contract LockedAccount is Ownable, TimeSource {
         //    ico.invest(amount);
         //}
         // decrease neumarks due pro rata - high precision may overflow @todo testing
-        uint256 freedNeumarks = Math.divRound(Math.mul(amount, a.neumarksDue), a.balance);
+        // todo: should use divRound
+        uint256 freedNeumarks = amount.mul(a.neumarksDue).div(a.balance); // Math.divRound(Math.mul(amount, a.neumarksDue), a.balance);
         a.balance -= amount;
         // possible precision problems
         if (a.balance == 0 || a.neumarksDue < freedNeumarks)
@@ -261,13 +250,13 @@ contract LockedAccount is Ownable, TimeSource {
     } */
 
     function _addBalance(uint balance, uint amount) private returns (uint) {
-        totalLocked = Math.add(totalLocked, amount);
-        return Math.add(balance, amount);
+        totalLocked = totalLocked.add(amount);
+        return balance.add(amount);
     }
 
     function _subBalance(uint balance, uint amount) private returns (uint) {
-        totalLocked = Math.sub(totalLocked, amount);
-        return Math.sub(balance, amount);
+        totalLocked = totalLocked.sub(amount);
+        return balance.sub(amount);
     }
 
     function _logerror(ReturnCodes c) private returns (ReturnCodes) {
