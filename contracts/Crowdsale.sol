@@ -10,21 +10,20 @@ import './LockedAccount.sol';
 contract Crowdsale{
   using SafeMath for uint256;
 
-  // start and end block where investments are allowed (both inclusive)
-  uint public startBlock;
-  uint public endBlock;
+  uint256 public constant startDate = 1501681287;
+  uint256 public constant endDate = 1501681287 + 30 days;
+  uint256 public constant maxCap = 10000 ether;
+  uint256 public constant minCap = 1 ether;
 
-  // address where funds are collected
-  address public wallet;
+  LockedAccount public lockedAccount;
+  MutableToken public ownedToken;
+  Neumark public neumarkToken;
 
-  // how many token units a buyer gets per wei
-  uint256 public rate;
-
-  // amount of raised money in wei
-  uint256 public weiRaised;
-
-  function Crowdsale(EtherToken ethToken, NeumarkController Neumark, LockedAccount locked ) //uint256 _startTime, uint _endTime, uint _maxCap, uint _minCap,
+  function Crowdsale(EtherToken _ethToken, NeumarkController _neumarkController, LockedAccount _locked ) //uint256 _startTime, uint _endTime, uint _maxCap, uint _minCap,
   {
+    lockedAccount = _locked;
+    neumarkToken = _neumarkController.TOKEN();
+    ownedToken = _ethToken;
     /*require(_startTime >= block.timestamp);
     require(_endTime >= _startTime);
     require(_minCap >= 0);
