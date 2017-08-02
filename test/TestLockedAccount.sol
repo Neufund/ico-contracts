@@ -8,6 +8,7 @@ import "../contracts/LockedAccount.sol";
 contract TestIcoContract {
 
     LockedAccount private lock;
+    MutableToken private ownedToken;
 
     function succ() {
         lock.controllerSucceeded();
@@ -17,15 +18,21 @@ contract TestIcoContract {
         lock.controllerFailed();
     }
 
-    function lockFor(address investor, uint256 amount, uint256 neumarks)
+    function investFor(address investor, uint256 amount, uint256 neumarks)
         payable
         returns (uint8)
     {
-        return (uint8)(lock.lock.value(msg.value)(investor, amount, neumarks));
+        // mint new ETH-T for yourself
+        require(ownedToken.deposit.value(msg.value)(address(this), amount));
+        // make allowance for lock
+        require(ownedToken.approve(address(lock), amount));
+        // lock in lock
+        return (uint8)(lock.lock(investor, amount, neumarks));
     }
 
-    function TestIcoContract(LockedAccount _lock) {
+    function TestIcoContract(LockedAccount _lock, MutableToken _ownedToken) {
         lock = _lock;
+        ownedToken = _ownedToken;
     }
 }
 
@@ -39,7 +46,7 @@ contract TestLockedAccount {
         uint256 FP_SCALE = 10000; // todo do smth with this
 
         var locked = new LockedAccount(ownedToken, neumarkToken, 18 * 30 days, FP_SCALE / 10); //10 %
-        var icoContract = new TestIcoContract(locked);
+        var icoContract = new TestIcoContract(locked, ownedToken);
         locked.setController(icoContract);
         return (locked, icoContract);
     }
@@ -52,7 +59,7 @@ contract TestLockedAccount {
         uint timebase = block.timestamp;
         lock.mockTime(timebase);
         // only controller can lock
-        uint8 rc = icoContract.lockFor.value(1 ether)(address(investor), 1 ether, 0.5 ether);
+        uint8 rc = icoContract.investFor.value(1 ether)(address(investor), 1 ether, 0.5 ether);
         // uint8 rc = icoContract.lockFor.value(1 ether)(address(investor), 0, 0);
         Assert.equal((uint)(rc), 0, "Expected OK rc from lock()");
         // check if ownedToken supply is 1 ether
@@ -66,7 +73,7 @@ contract TestLockedAccount {
         Assert.equal(l_d, timebase + 18 * 30 days, 'more or less 18 months in future');
         // lock someone else
         var investor2 = new SenderProxy();
-        rc = icoContract.lockFor.value(0.5 ether)(address(investor2), 0.5 ether, 0.1 ether);
+        rc = icoContract.investFor.value(0.5 ether)(address(investor2), 0.5 ether, 0.1 ether);
         Assert.equal(lock.totalLockedAmount(), 1.5 ether, "lock should own locked amount");
         Assert.equal(lock.ownedToken().totalSupply(), 1.5 ether, 'ownedToken should own locked amount');
         Assert.equal(lock.totalInvestors(), 2, 'should have 2 investors');

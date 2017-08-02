@@ -57,7 +57,7 @@ contract LockedAccount is Ownable, TimeSource {
     // total number of locked investors
     uint public totalInvestors;
     // a token controlled by LockedAccount, read ERC20 + extensions to read what token is it (ETH/EUR etc.)
-    MutableToken public ownedToken;
+    ERC20 public ownedToken;
     // current state of the locking contract
     LockState public lockState;
     // longstop period in seconds
@@ -100,14 +100,16 @@ contract LockedAccount is Ownable, TimeSource {
     // locks 'amount' for 'investor' address
     // callable only from ICO contract that gets currency directly (ETH/EUR)
     function lock(address investor, uint256 amount, uint256 neumarks)
-        payable
         onlycontroller
         onlyState(LockState.AcceptingLocks)
         public
         returns (ReturnCodes)
     {
         require(amount > 0);
-        require(ownedToken.deposit.value(msg.value)(address(this), amount));
+        // check if controller made allowance
+        require(ownedToken.allowance(msg.sender, address(this)) >= amount);
+        // transfer to self yourself
+        require(ownedToken.transferFrom(msg.sender, address(this), amount));
         Account storage a = accounts[investor];
         a.balance = _addBalance(a.balance, amount);
         a.neumarksDue += neumarks;
@@ -236,7 +238,7 @@ contract LockedAccount is Ownable, TimeSource {
     // _ownedToken - token contract with resource locked by LockedAccount, where LockedAccount is allowed to make deposits
     // _neumarkToken - neumark token contract where LockedAccount is allowed to burn tokens and add revenue
     // _controller - typically ICO contract: can lock, release all locks, enable escape hatch
-    function LockedAccount(MutableToken _ownedToken, NeumarkSurrogate _neumarkToken,
+    function LockedAccount(ERC20 _ownedToken, NeumarkSurrogate _neumarkToken,
         uint _longstopPeriod, uint _penaltyPrc)
     {
         ownedToken = _ownedToken;
