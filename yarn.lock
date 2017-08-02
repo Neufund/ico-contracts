@@ -6025,7 +6025,7 @@ web3-requestmanager@^1.0.0-beta.13:
     web3-providers-ipc "^1.0.0-beta.13"
     web3-providers-ws "^1.0.0-beta.13"
 
-web3-utils@1.0.0-beta.13, web3-utils@^1.0.0-beta.13:
+web3-utils@^1.0.0-beta.13, web3-utils@^1.1.0:
   version "1.0.0-beta.13"
   resolved "https://registry.yarnpkg.com/web3-utils/-/web3-utils-1.0.0-beta.13.tgz#9fa2d1db258f455df8db7c3063c06d54191e48a1"
   dependencies:
