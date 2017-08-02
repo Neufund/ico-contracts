@@ -11,7 +11,7 @@ contract('Curve', (accounts) => {
   it('should start at zero', async () => {
     assert.equal(await curve.totalEuros.call(), 0);
   });
-  it('should be corect', async () => {
+  it('should compute exactly over the whole range', async () => {
     const correct = [
       [0, 0],
       [1, 6],
@@ -109,8 +109,7 @@ contract('Curve', (accounts) => {
     await Promise.all(
       correct.map(async ([i, v]) => {
         const r = (await curve.curve.call(i)).valueOf();
-        console.log(`curve(${i}) = ${r}`);
-        assert.equal(r, v, `Curve failed for value ${i}`);
+        assert.equal(r, v, `Curve compute failed for value ${i}`);
       })
     );
   });

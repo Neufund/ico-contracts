@@ -88,55 +88,65 @@ contract Curve is Ownable {
         // TODO: Proof or check for overflow.
 
         // Gas consumption (for x):
-        // 0    11652
-        // 1    11749
-        // 10   11749
-        // 100  11749
-        // 10³  11749
-        // 10⁶  11749
-        // 10⁹  11750
+        // 0    742
+        // 1    1228
+        // 10   3059
+        // 100  3448
+        // 10³  3799
+        // 10⁶  6769
+        // 10⁹  12851
 
+        // (1 - N/D) ≈ e^(-6.5/C)
         uint256 C = 1500000000;
-        uint256 S = 2**32;
         uint256 N = 343322036817947715929;
         uint256 D = 2**96;
+        uint256 P = 2**32;
 
         // Hard cap
         if(x >= C) {
             return 1497744841;
         }
 
-        uint256 n = C * S;
+        // Compute C - C·(1 - N/D)^x using binomial expansion
+        uint256 n = C * P;
         uint256 d = 1;
-        uint256 s = 0;
+        uint256 a = 0;
         uint256 bits = 0;
         for(uint256 i = 0; i < 34;) {
             // Rescale fraction
             (n, d) = rescale(n, d);
+            if(n == 0)
+                break;
 
             // Positive term
             n *= (x - i) * N;
             i += 1;
             d *= i * D;
-            s += n / d;
+            a += n / d;
 
             // Rescale fraction
             (n, d) = rescale(n, d);
+            if(n == 0)
+                break;
 
             // Negative term
             n *= (x - i) * N;
             i += 1;
             d *= i * D;
-            s -= n / d;
+            a -= n / d;
         }
-        return s / S;
+        return a / P;
     }
 
+    // Rescale a fraction so the numerator and denominator
+    // are less than 2¹²⁸
     function rescale(uint256 n, uint256 d)
         internal
         constant
         returns (uint256, uint256)
     {
+        // Round scaling down to 32 bit
+        // (so we have at least 96 bits of accuracy left)
         uint256 bits = n | d;
         if(bits > 2**128) {
             if(bits > 2**192) {
