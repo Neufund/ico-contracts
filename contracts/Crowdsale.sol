@@ -126,9 +126,12 @@ contract Crowdsale is Ownable, TimeSource {
         public
     {
         require(validPurchase());
-        //TODO: Get Neumark value from Curve contract
-        uint256 neumark = msg.value / 6;
-        NeumarkCont.generateTokens(msg.sender, neumark);
+        require(!hasEnded());
+
+        // convert ether into full euros
+        uint256 fullEuros = msg.value.mul(200).div(1 ether);
+        // get neumarks
+        uint256 neumark = curve.issue(fullEuros, msg.sender);
         //send Money to ETH-T contract
         ownedToken.deposit.value(msg.value)(address(this), msg.value);
         // make allowance for lock
