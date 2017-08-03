@@ -19,15 +19,19 @@ contract Curve is Ownable {
         _;
     }
 
-    function Curve(NeumarkController neumarkController) {
+    function Curve(NeumarkController neumarkController)
+        Ownable()
+    {
+        totalEuros = 0;
         NEUMARK_CONTROLLER = neumarkController;
     }
 
     function issue(uint256 euros, address beneficiary)
-        onlyOwner()
+        //onlyOwner()
+        public
         returns (uint256)
     {
-        require(totalEuros + euros < totalEuros);
+        require(totalEuros + euros >= totalEuros);
         uint256 toIssue = incremental(euros);
         totalEuros = totalEuros + euros;
         NEUMARK_CONTROLLER.generateTokens(beneficiary, toIssue);
@@ -36,7 +40,7 @@ contract Curve is Ownable {
     }
 
     function burnNeumark(uint256 neumarks, address beneficiary)
-        onlyOwner()
+        //onlyOwner()
         public
         returns (uint256)
     {
@@ -44,7 +48,8 @@ contract Curve is Ownable {
     }
 
     function burn(uint256 euros, uint256 neumarks, address beneficiary)
-        onlyOwner()
+        //onlyOwner()
+        public
         checkInverse(euros, neumarks)
         // TODO: Client side code
         // TODO: Solve race condition?
@@ -67,7 +72,7 @@ contract Curve is Ownable {
         constant
         returns (uint256)
     {
-        require(totalEuros + euros < totalEuros);
+        require(totalEuros + euros >= totalEuros);
         uint256 from = cumulative(totalEuros);
         uint256 to = cumulative(totalEuros + euros);
         assert(to >= from); // Issuance curve needs to be monotonic

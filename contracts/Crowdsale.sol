@@ -35,6 +35,7 @@ contract Crowdsale{
     uint minCap  = _minCap;
 
   }
+
   function commit(address beneficiary) payable {
 /*      require(beneficiary != 0x0);
       require(validPurchase());
@@ -57,6 +58,4 @@ contract Crowdsale{
     // TODO: Add Capsize check
     // TODO: Add ICO preiod check
   }
-
-
 }
