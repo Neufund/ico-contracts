@@ -48,28 +48,6 @@ contract Crowdsale is Ownable, TimeSource {
         NeumarkCont = _neumarkController;
         ownedToken = _ethToken;
         curve = _curve;
-
-        /*
-        uint startTime = _startTime;
-        uint endTime = _endTime;
-        uint maxCap = _maxCap;
-        uint minCap  = _minCap;
-
-    }
-    function commit(address beneficiary) payable {
-        /*      require(beneficiary != 0x0);
-        require(validPurchase());
-
-        uint256 weiAmount = msg.value;
-
-        // calculate token amount to be created
-        uint256 tokens = weiAmount.mul(1);
-
-        // update state
-        weiRaised = weiRaised.add(weiAmount);
-
-
-        forwardFunds(); */
     }
 
     function wasSuccessful()
