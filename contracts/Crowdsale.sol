@@ -2,61 +2,147 @@ pragma solidity ^0.4.11;
 
 import 'zeppelin-solidity/contracts/token/MintableToken.sol';
 import 'zeppelin-solidity/contracts/math/SafeMath.sol';
+import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import './NeumarkController.sol';
 import './EtherToken.sol';
 import './LockedAccount.sol';
+import './Neumark.sol';
+import './TimeSource.sol';
+import './Curve.sol';
 
 
-contract Crowdsale{
-  using SafeMath for uint256;
+contract Crowdsale is Ownable, TimeSource {
+    using SafeMath for uint256;
 
-  uint256 public constant startDate = 1501681287;
-  uint256 public constant endDate = 1501681287 + 30 days;
-  uint256 public constant maxCap = 10000 ether;
-  uint256 public constant minCap = 1 ether;
+    //events
+    event CommitmentCompleted(bool isSuccess, uint256 totalCommitedAmount);
+    event Commited(address indexed investor, uint256 amount, uint256 neumarks, uint256 eurEquivalent);
 
-  LockedAccount public lockedAccount;
-  MutableToken public ownedToken;
-  Neumark public neumarkToken;
+    LockedAccount public lockedAccount;
+    MutableToken public ownedToken;
+    Neumark public neumarkToken;
+    NeumarkController public NeumarkCont;
+    Curve public curve;
 
-  function Crowdsale(EtherToken _ethToken, NeumarkController _neumarkController, LockedAccount _locked ) //uint256 _startTime, uint _endTime, uint _maxCap, uint _minCap,
-  {
-    lockedAccount = _locked;
-    neumarkToken = _neumarkController.TOKEN();
-    ownedToken = _ethToken;
-    /*require(_startTime >= block.timestamp);
-    require(_endTime >= _startTime);
-    require(_minCap >= 0);
-    require(_maxCap >= _minCap);
+    uint256 public startDate;
+    uint256 public endDate;
+    uint256 public maxCap;
+    uint256 public minCap;
 
-    uint startTime = _startTime;
-    uint endTime = _endTime;
-    uint maxCap = _maxCap;
-    uint minCap  = _minCap;
+    function Crowdsale(uint256 _startDate, uint256 _endDate, uint256 _minCap,
+         uint256 _maxCap, EtherToken _ethToken,
+          NeumarkController _neumarkController, LockedAccount _locked,Curve _curve )
+    {
+        require(_endDate >= _startDate);
+        require(_minCap >= 0);
+        require(_maxCap >= _minCap);
 
-  }
-  function commit(address beneficiary) payable {
-/*      require(beneficiary != 0x0);
-      require(validPurchase());
+        startDate = _startDate;
+        endDate = _endDate;
+        maxCap = _maxCap;
+        minCap = _minCap;
 
-      uint256 weiAmount = msg.value;
+        lockedAccount = _locked;
+        neumarkToken = _neumarkController.TOKEN();
+        NeumarkCont = _neumarkController;
+        ownedToken = _ethToken;
+        curve = _curve;
+    }
 
-      // calculate token amount to be created
-      uint256 tokens = weiAmount.mul(1);
+    function wasSuccessful()
+        constant
+        public
+        returns (bool)
+    {
+        return lockedAccount.totalLockedAmount() >= minCap;
+    }
 
-      // update state
-      weiRaised = weiRaised.add(weiAmount);
+    function hasEnded()
+        constant
+        public
+        returns(bool)
+    {
+        return lockedAccount.totalLockedAmount() >= maxCap || currentTime() >= endDate;
+    }
 
+    function finalize()
+        public
+    {
+        require(hasEnded());
+        if (wasSuccessful()) {
+            // maybe do smth to neumark controller like enable trading
+            // enable escape hatch
+            lockedAccount.controllerSucceeded();
+            CommitmentCompleted(true, lockedAccount.totalLockedAmount());
+        } else {
+            // kill/block neumark contract
+            // unlock all accounts in lockedAccount
+            lockedAccount.controllerFailed();
+            CommitmentCompleted(true, lockedAccount.totalLockedAmount());
+        }
+    }
 
-      forwardFunds(); */
-  }
+    // a test function to change start date of ICO - may be useful for UI demo
+    function _changeStartDate(uint256 date)
+        onlyOwner
+        public
+    {
+        startDate = date;
+    }
 
-  function validPurchase() internal constant returns (bool) {
-    bool nonZeroPurchase = msg.value != 0;
-    return nonZeroPurchase;
-    // TODO: Add Capsize check
-    // TODO: Add ICO preiod check
-  }
+    // a test function to change start date of ICO - may be useful for UI demo
+    function _changeEndDate(uint256 date)
+        onlyOwner
+        public
+    {
+        endDate = date;
+    }
+
+    function _changeMaxCap(uint256 _cap)
+        onlyOwner
+        public
+    {
+        maxCap = _cap;
+    }
+
+    function _changeMinCap(uint256 _cap)
+        onlyOwner
+        public
+    {
+        minCap = _cap;
+    }
+
+    function commit()
+        payable
+        public
+    {
+        require(validPurchase());
+        require(!hasEnded());
+
+        // convert ether into full euros
+        uint256 fullEuros = msg.value.mul(200).div(1 ether);
+        // get neumarks
+        uint256 neumark = curve.issue(fullEuros, msg.sender);
+        //send Money to ETH-T contract
+        ownedToken.deposit.value(msg.value)(address(this), msg.value);
+        // make allowance for lock
+        ownedToken.approve(address(lockedAccount), msg.value);
+        // lock in lock
+        lockedAccount.lock(msg.sender, msg.value, neumark);
+        Commited(msg.sender, msg.value, neumark, fullEuros);
+    }
+
+    function validPurchase()
+        internal
+        constant
+        returns (bool)
+    {
+        bool nonZeroPurchase = msg.value != 0;
+        return nonZeroPurchase;
+        // TODO: Add Capsize check
+        // TODO: Add ICO preiod check
+    }
 
 
 }
+//TODO Change name of contract to CommitmentContract

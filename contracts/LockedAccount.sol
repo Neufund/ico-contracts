@@ -3,23 +3,8 @@ pragma solidity ^0.4.11;
 import 'zeppelin-solidity/contracts/token/ERC20Basic.sol';
 import 'zeppelin-solidity/contracts/math/SafeMath.sol';
 import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
+import './TimeSource.sol';
 import './EtherToken.sol';
-
-contract TimeSource {
-    uint256 private mockNow;
-
-    function currentTime() public constant returns (uint256) {
-        return mockNow > 0 ? mockNow : block.timestamp;
-    }
-
-    function mockTime(uint256 t) public {
-        // no mocking on mainnet
-        if (block.number > 3316029)
-            revert();
-        mockNow = t;
-    }
-}
-
 
 contract NeumarkSurrogate is ERC20Basic {
     // will burn tokens of 'who' that were pre-approved to be burned for the 'sender'

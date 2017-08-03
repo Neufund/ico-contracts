@@ -1,11 +1,20 @@
 const Curve = artifacts.require('./Curve.sol');
+const NeumarkFactory = artifacts.require('./NeumarkFactory.sol');
 const Neumark = artifacts.require('./Neumark.sol');
+const NeumarkController = artifacts.require('./NeumarkController.sol');
 
 contract('Curve', (accounts) => {
   let curve;
+  let neumark;
+  let factory;
+  let controller;
 
   beforeEach(async () => {
-    curve = await Curve.deployed();
+    factory = await NeumarkFactory.new();
+    neumark = await Neumark.new(factory.address);
+    controller = await NeumarkController.new(neumark.address);
+    await neumark.changeController(controller.address);
+    curve = await Curve.new(controller.address);
   });
 
   it('should start at zero', async () => {
@@ -112,5 +121,19 @@ contract('Curve', (accounts) => {
         assert.equal(r, v, `Curve compute failed for value ${i}`);
       })
     );
+  });
+  it('should issue Neumarks', async () => {
+    assert.equal((await curve.totalEuros.call()).valueOf(), 0);
+    assert.equal((await neumark.totalSupply.call()).valueOf(), 0);
+
+    const r = await curve.issue(100, accounts[1]); // TODO check result
+    assert.equal((await curve.totalEuros.call()).valueOf(), 100);
+    assert.equal((await neumark.totalSupply.call()).valueOf(), 649);
+    assert.equal((await neumark.balanceOf.call(accounts[1])).valueOf(), 649);
+
+    await curve.issue(900, accounts[2]);
+    assert.equal((await curve.totalEuros.call()).valueOf(), 1000);
+    assert.equal((await neumark.totalSupply.call()).valueOf(), 6499);
+    assert.equal((await neumark.balanceOf.call(accounts[2])).valueOf(), 6499 - 649);
   });
 });
