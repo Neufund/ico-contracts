@@ -35,12 +35,19 @@ contract Curve is Ownable {
         return toIssue;
     }
 
+    function burnNeumark(uint256 neumarks, address beneficiary)
+        onlyOwner()
+        public
+        returns (uint256)
+    {
+        burn(rewindInverse(neumarks), neumarks, beneficiary);
+    }
+
     function burn(uint256 euros, uint256 neumarks, address beneficiary)
         onlyOwner()
         checkInverse(euros, neumarks)
         // TODO: Client side code
         // TODO: Solve race condition?
-        returns (uint256)
     {
         totalEuros -= euros;
         NEUMARK_CONTROLLER.destroyTokens(beneficiary, neumarks);
@@ -76,6 +83,21 @@ contract Curve is Ownable {
         uint256 to = cumulative(totalEuros);
         assert(to >= from); // Issuance curve needs to be monotonic
         return to - from;
+    }
+
+    function rewindInverse(uint256 neumarks)
+        constant
+        returns (uint256)
+    {
+        if(neumarks == 0) {
+            return 0;
+        }
+        uint256 to = cumulative(totalEuros);
+        require(to > neumarks);
+        uint256 from = to - neumarks;
+        uint256 euros = inverse(from, 0, totalEuros);
+        assert(rewind(euros) == neumarks);
+        return euros;
     }
 
     function curve(uint256 x)
@@ -132,5 +154,26 @@ contract Curve is Ownable {
             a -= n;
         }
         return a / P;
+    }
+
+    function inverse(uint256 x, uint256 min, uint256 max)
+        constant
+        returns (uint256)
+    {
+        require(cummulative(min) <= x);
+        require(cummulative(max) >= x);
+
+        // Binary search
+        uint256 low = min;
+        uint256 high = max;
+        while (high > low) {
+            uint mid = (high + low + 1) / 2;
+            if (cumulative(mid) <= from) {
+                low = mid;
+            } else {
+                high = mid - 1;
+            }
+        }
+        return min;
     }
 }
