@@ -8,6 +8,8 @@ const EtherToken = artifacts.require('EtherToken');
 const NeumarkController = artifacts.require('NeumarkController');
 const Curve = artifacts.require('Curve');
 
+const Ether = Wie => (Wie * 1000000000000000000);
+
 const BigNumber = web3.BigNumber;
 
 const should = require('chai')
