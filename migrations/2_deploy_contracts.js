@@ -39,11 +39,11 @@ module.exports = deployer =>
     );
     const lock = await LockedAccount.deployed();
     console.log('Deploying crowdsale');
-    await deployer.deploy(Crowdsale, 1501804800, 1502356520, 2000, 1000, etherToken.address, NeumarkController.address, lock.address);
+    await deployer.deploy(Curve, NeumarkController.address);
+    await deployer.link(SafeMath, Crowdsale);
+    await deployer.deploy(Crowdsale, 1501804800, 1502356520, 2000 * 10**18, 1 * 10**18, etherToken.address, NeumarkController.address, lock.address, Curve.address);
     const crowdsale = await Crowdsale.deployed();
     await lock.setController(crowdsale.address);
-
-    await deployer.deploy(Curve, NeumarkController.address);
 
     // await sleep(10000); // Verify that Truffle actually waits for the promise to complete.
     console.log('Contracts deployed!');
