@@ -160,20 +160,32 @@ contract Curve is Ownable {
         constant
         returns (uint256)
     {
-        require(cummulative(min) <= x);
-        require(cummulative(max) >= x);
+        require(max >= min);
+        require(curve(min) <= x);
+        require(curve(max) >= x);
 
         // Binary search
-        uint256 low = min;
-        uint256 high = max;
-        while (high > low) {
-            uint mid = (high + low + 1) / 2;
-            if (cumulative(mid) <= from) {
-                low = mid;
+        while (max > min) {
+            uint256 mid = (max + min + 1) / 2;
+            uint256 val = curve(mid);
+            if(val == x) {
+                return mid;
+            }
+            if(val < x) {
+                min = mid;
             } else {
-                high = mid - 1;
+                max = mid - 1;
             }
         }
-        return min;
+        assert(max == min);
+
+        // NOTE: It is possible that there is no inverse
+        // for example curve(0) = 0 and curve(1) = 6, so
+        // there is no value y such that curve(y) = 5.
+        // In this case we return a value such that curve(y) < x
+        // and curve(y + 1) > x.
+        assert(curve(max) < x);
+        assert(curve(max + 1) > x);
+        return max;
     }
 }
