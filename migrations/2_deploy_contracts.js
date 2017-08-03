@@ -45,8 +45,8 @@ module.exports = deployer =>
     await deployer.link(SafeMath, Crowdsale);
     await deployer.deploy(
       Crowdsale,
-      1501804800,
-      1502356520,
+      Date.now() / 1000 + 60,
+      Date.now() / 1000 + 900,
       ether(1),
       ether(2000),
       etherToken.address,
