@@ -7,6 +7,7 @@ const LockedAccount = artifacts.require('LockedAccount');
 const SafeMath = artifacts.require('SafeMath');
 const EtherToken = artifacts.require('EtherToken');
 const Crowdsale = artifacts.require('Crowdsale');
+const Curve = artifacts.require('./Curve.sol');
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const months = 30 * 24 * 60 * 60;
@@ -29,12 +30,21 @@ module.exports = deployer =>
     await deployer.link(SafeMath, EtherToken);
     const etherToken = await EtherToken.deployed();
     await deployer.link(SafeMath, LockedAccount);
-    await deployer.deploy(LockedAccount, etherToken.address, neumark.address, 18 * months, Math.round(0.1 * FP_SCALE));
+    await deployer.deploy(
+      LockedAccount,
+      etherToken.address,
+      neumark.address,
+      18 * months,
+      Math.round(0.1 * FP_SCALE)
+    );
     const lock = await LockedAccount.deployed();
     console.log('Deploying crowdsale');
     await deployer.deploy(Crowdsale, 1501804800, 1502356520, 2000, 1000, etherToken.address, NeumarkController.address, lock.address);
     const crowdsale = await Crowdsale.deployed();
     await lock.setController(crowdsale.address);
-  //  await sleep(10000); // Verify that Truffle actually waits for the promise to complete.
+
+    await deployer.deploy(Curve, NeumarkController.address);
+
+    // await sleep(10000); // Verify that Truffle actually waits for the promise to complete.
     console.log('Contracts deployed!');
   });
