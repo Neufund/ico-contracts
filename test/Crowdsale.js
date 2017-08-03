@@ -20,7 +20,7 @@ const days = 24 * 60 * 60;
 const months = 30 * 24 * 60 * 60;
 
 const FP_SCALE = 10000;
-const ether = wei => (wei * 10**18);
+const ether = wei => (wei * 10 ** 18);
 
 contract(Crowdsale, (accounts) => {
   let neumark;
@@ -31,7 +31,7 @@ contract(Crowdsale, (accounts) => {
   let crowdsale;
 
   beforeEach(async () => {
-    let neumarkFactory = await NeumarkFactory.new();
+    const neumarkFactory = await NeumarkFactory.new();
     neumark = await Neumark.new(neumarkFactory.address);
     neumarkController = await NeumarkController.new(neumark.address);
     await neumark.changeController(neumarkController.address);
@@ -76,10 +76,10 @@ contract(Crowdsale, (accounts) => {
   });
 
   it('should commit 1 ether', async () => {
-    const investor = accounts[0];
-    const ticket = 1 * 10**18;
+    const investor = accounts[1];
+    const ticket = 1 * 10 ** 18;
     assert.equal(await crowdsale.hasEnded.call(), false, 'commitment should run');
-    await crowdsale.commit({value: ticket, from: investor});
+    await crowdsale.commit({ value: ticket, from: investor });
     assert.equal(await lockedAccount.totalLockedAmount(), ticket, 'lockedAccount balance must match ticket');
     assert.equal(await lockedAccount.totalInvestors(), 1);
     assert.equal(await etherToken.totalSupply(), ticket, 'ticket must be in etherToken');
@@ -91,12 +91,12 @@ contract(Crowdsale, (accounts) => {
   });
 
   it('commitment should succeed due to cap reached', async () => {
-    const investor = accounts[0];
-    const ticket = 1 * 10**18;
+    const investor = accounts[1];
+    const ticket = 1 * 10 ** 18;
     assert.equal(await crowdsale.hasEnded.call(), false, 'commitment should run');
-    await crowdsale.commit({value: ticket, from: investor});
+    await crowdsale.commit({ value: ticket, from: investor });
     // decrease max cap
-    await crowdsale._changeMaxCap(ticket/2);
+    await crowdsale._changeMaxCap(ticket / 2);
     assert.equal(await crowdsale.hasEnded.call(), true, 'commitment should end');
     assert.equal(await crowdsale.wasSuccessful.call(), true, 'commitment should succeed');
     // now finalize
