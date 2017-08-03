@@ -39,7 +39,7 @@ module.exports = deployer =>
     );
     const lock = await LockedAccount.deployed();
     console.log('Deploying crowdsale');
-    await deployer.deploy(Crowdsale, etherToken.address, NeumarkController.address, lock.address);
+    await deployer.deploy(Crowdsale, 1501804800, 1502356520, 2000, 1000, etherToken.address, NeumarkController.address, lock.address);
     const crowdsale = await Crowdsale.deployed();
     await lock.setController(crowdsale.address);
 
