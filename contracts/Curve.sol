@@ -88,13 +88,14 @@ contract Curve is Ownable {
         // TODO: Proof or check for overflow.
 
         // Gas consumption (for x):
-        // 0    742
-        // 1    1228
-        // 10   3059
-        // 100  3448
-        // 10³  3799
-        // 10⁶  6769
-        // 10⁹  12851
+        // 0    468
+        // 1    621
+        // 10   784
+        // 100  784
+        // 10³  937
+        // 10⁶  1416
+        // 10⁹  6156
+        // >    240
 
         // (1 - N/D) ≈ e^(-6.5/C)
         uint256 C = 1500000000;
@@ -109,66 +110,27 @@ contract Curve is Ownable {
 
         // Compute C - C·(1 - N/D)^x using binomial expansion
         uint256 n = C * P;
-        uint256 d = 1;
         uint256 a = 0;
-        uint256 bits = 0;
-        for(uint256 i = 0; i < 34;) {
-            // Rescale fraction
-            (n, d) = rescale(n, d);
-            if(n == 0)
-                break;
+        uint256 i = 0;
+        while(n != 0) {
 
             // Positive term
             n *= (x - i) * N;
             i += 1;
             n /= i;
-            d *= D;
-            a += n / d;
+            n /= D;
+            a += n;
 
-            // Rescale fraction
-            (n, d) = rescale(n, d);
-            if(n == 0)
-                break;
+            // Exit if n == 0
+            if(n == 0) break;
 
             // Negative term
             n *= (x - i) * N;
             i += 1;
             n /= i;
-            d *= D;
-            a -= n / d;
+            n /= D;
+            a -= n;
         }
         return a / P;
-    }
-
-    // Rescale a fraction so the numerator and denominator
-    // are less than 2¹²⁸
-    function rescale(uint256 n, uint256 d)
-        internal
-        constant
-        returns (uint256, uint256)
-    {
-        // Round scaling down to 32 bit
-        // (so we have at least 96 bits of accuracy left)
-        uint256 bits = n | d;
-        if(bits > 2**128) {
-            if(bits > 2**192) {
-                if(bits > 2**224) {
-                    n /= 2**128;
-                    d /= 2**128;
-                } else {
-                    n /= 2**96;
-                    d /= 2**96;
-                }
-            } else {
-                if(bits > 2**160) {
-                    n /= 2**64;
-                    d /= 2**64;
-                } else {
-                    n /= 2**32;
-                    d /= 2**32;
-                }
-            }
-        }
-        return (n, d);
     }
 }
