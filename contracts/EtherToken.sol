@@ -17,7 +17,7 @@ contract MutableToken is ERC20 {
 }
 
 library Math {
-    // todo: propose changes to zeppeling, I want this function
+    // todo: propose changes to zeppelin, I want this function
     function divRound(uint v, uint d) public constant returns(uint) {
         // round up if % is half or more
         return (v + (d/2)) / d;
