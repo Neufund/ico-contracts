@@ -5,6 +5,7 @@ import 'zeppelin-solidity/contracts/math/SafeMath.sol';
 import './NeumarkController.sol';
 import './EtherToken.sol';
 import './LockedAccount.sol';
+import './Neumark.sol';
 
 
 contract Crowdsale{
@@ -18,17 +19,20 @@ contract Crowdsale{
   LockedAccount public lockedAccount;
   MutableToken public ownedToken;
   Neumark public neumarkToken;
+  NeumarkController public NeumarkCont;
 
-  function Crowdsale(EtherToken _ethToken, NeumarkController _neumarkController, LockedAccount _locked ) //uint256 _startTime, uint _endTime, uint _maxCap, uint _minCap,
+  function Crowdsale(uint256 _startTime, uint _endTime, uint _maxCap, uint _minCap, EtherToken _ethToken, NeumarkController _neumarkController, LockedAccount _locked )
   {
-    lockedAccount = _locked;
-    neumarkToken = _neumarkController.TOKEN();
-    ownedToken = _ethToken;
-    /*require(_startTime >= block.timestamp);
+    require(_startTime >= block.timestamp);
     require(_endTime >= _startTime);
     require(_minCap >= 0);
     require(_maxCap >= _minCap);
 
+    lockedAccount = _locked;
+    neumarkToken = _neumarkController.TOKEN();
+    NeumarkCont = _neumarkController;
+    ownedToken = _ethToken;
+    /*
     uint startTime = _startTime;
     uint endTime = _endTime;
     uint maxCap = _maxCap;
@@ -49,6 +53,32 @@ contract Crowdsale{
 
 
       forwardFunds(); */
+  }
+
+ /* function wasSuccessful() public return (bool) {
+
+  }
+
+  function hasEnded() public returns(bool) {
+
+  }
+
+  function finalize() public {
+
+  }*/
+
+  function commit() payable {
+      require(validPurchase());
+      //TODO: Get Neumark value from Curve contract
+      uint256 neumark = msg.value / 6;
+      NeumarkCont.generateTokens(msg.sender, neumark);
+      //send Money to ETH-T contract
+      ownedToken.deposit.value(msg.value)(address(this), msg.value);
+      // make allowance for lock
+      ownedToken.approve(address(lockedAccount), msg.value);
+      // lock in lock
+      lockedAccount.lock(msg.sender, msg.value, neumark);
+
   }
 
   function validPurchase() internal constant returns (bool) {
