@@ -16,7 +16,7 @@ contract Crowdsale is Ownable, TimeSource {
 
     //events
     event CommitmentCompleted(bool isSuccess, uint256 totalCommitedAmount);
-
+    event Commited(address indexed investor, uint256 amount, uint256 neumarks, uint256 eurEquivalent);
 
     LockedAccount public lockedAccount;
     MutableToken public ownedToken;
@@ -116,7 +116,7 @@ contract Crowdsale is Ownable, TimeSource {
         ownedToken.approve(address(lockedAccount), msg.value);
         // lock in lock
         lockedAccount.lock(msg.sender, msg.value, neumark);
-
+        Commited(msg.sender, msg.value, neumark, fullEuros);
     }
 
     function validPurchase()
