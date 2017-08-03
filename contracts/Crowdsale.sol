@@ -8,6 +8,7 @@ import './EtherToken.sol';
 import './LockedAccount.sol';
 import './Neumark.sol';
 import './TimeSource.sol';
+import './Curve.sol';
 
 
 contract Crowdsale is Ownable, TimeSource {
@@ -16,11 +17,11 @@ contract Crowdsale is Ownable, TimeSource {
     //events
     event CommitmentCompleted(bool isSuccess, uint256 totalCommitedAmount);
 
-
     LockedAccount public lockedAccount;
     MutableToken public ownedToken;
     Neumark public neumarkToken;
     NeumarkController public NeumarkCont;
+    Curve public curve;
 
     uint256 public startDate;
     uint256 public endDate;
@@ -29,7 +30,7 @@ contract Crowdsale is Ownable, TimeSource {
 
     function Crowdsale(uint256 _startDate, uint256 _endDate, uint256 _maxCap,
          uint256 _minCap, EtherToken _ethToken,
-          NeumarkController _neumarkController, LockedAccount _locked )
+          NeumarkController _neumarkController, LockedAccount _locked, Curve _curve )
     {
         require(_startDate >= block.timestamp);
         require(_endDate >= _startDate);
@@ -45,6 +46,7 @@ contract Crowdsale is Ownable, TimeSource {
         neumarkToken = _neumarkController.TOKEN();
         NeumarkCont = _neumarkController;
         ownedToken = _ethToken;
+        curve = _curve;
 
         /*
         uint startTime = _startTime;
