@@ -17,6 +17,7 @@ contract Crowdsale is Ownable, TimeSource {
     //events
     event CommitmentCompleted(bool isSuccess, uint256 totalCommitedAmount);
 
+
     LockedAccount public lockedAccount;
     MutableToken public ownedToken;
     Neumark public neumarkToken;
@@ -28,9 +29,9 @@ contract Crowdsale is Ownable, TimeSource {
     uint256 public maxCap;
     uint256 public minCap;
 
-    function Crowdsale(uint256 _startDate, uint256 _endDate, uint256 _maxCap,
-         uint256 _minCap, EtherToken _ethToken,
-          NeumarkController _neumarkController, LockedAccount _locked, Curve _curve )
+    function Crowdsale(uint256 _startDate, uint256 _endDate, uint256 _minCap,
+         uint256 _maxCap, EtherToken _ethToken,
+          NeumarkController _neumarkController, LockedAccount _locked,Curve _curve )
     {
         require(_startDate >= block.timestamp);
         require(_endDate >= _startDate);
@@ -150,3 +151,4 @@ contract Crowdsale is Ownable, TimeSource {
 
 
 }
+//TODO Change name of contract to CommitmentContract
