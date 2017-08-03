@@ -7,11 +7,14 @@ import './NeumarkController.sol';
 import './EtherToken.sol';
 import './LockedAccount.sol';
 import './Neumark.sol';
+import './TimeSource.sol';
 
 
-contract Crowdsale is Ownable
-{
+contract Crowdsale is Ownable, TimeSource {
     using SafeMath for uint256;
+
+    //events
+    event CommitmentCompleted(bool isSuccess, uint256 totalCommitedAmount);
 
     uint256 public constant startDate = 1501681287;
     uint256 public constant endDate = 1501681287 + 30 days;
@@ -62,20 +65,48 @@ contract Crowdsale is Ownable
         public
         returns (bool)
     {
-
+        return lockedAccount.totalLockedAmount() >= minCap;
     }
 
     function hasEnded()
         constant
         public
-        returns(bool) {
-
+        returns(bool)
+    {
+        return lockedAccount.totalLockedAmount() >= maxCap || currentTime() >= endDate;
     }
 
     function finalize()
         public
     {
+        require(hasEnded());
+        if (wasSuccessful()) {
+            // maybe do smth to neumark controller like enable trading
+            // enable escape hatch
+            lockedAccount.controllerSucceeded();
+            CommitmentCompleted(true, lockedAccount.totalLockedAmount());
+        } else {
+            // kill/block neumark contract
+            // unlock all accounts in lockedAccount
+            lockedAccount.controllerFailed();
+            CommitmentCompleted(true, lockedAccount.totalLockedAmount());
+        }
+    }
 
+    // a test function to change start date of ICO - may be useful for UI demo
+    function _changeStartDate(uint256 date)
+        onlyOwner
+        public
+    {
+        //startDate = date;
+    }
+
+    // a test function to change start date of ICO - may be useful for UI demo
+    function _changeEndDate(uint256 date)
+        onlyOwner
+        public
+    {
+        //endDate = date;
     }
 
     function commit()
