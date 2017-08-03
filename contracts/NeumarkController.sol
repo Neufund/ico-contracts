@@ -18,21 +18,23 @@ contract NeumarkController is Ownable, TokenController {
     }
 
     function generateTokens(address _holder, uint _value)
-        onlyOwner()
+        //onlyOwner()
         returns (bool)
     {
+        _value *= 10 ** TOKEN.decimals();
         return TOKEN.generateTokens(_holder, _value);
     }
 
-    function destroyTokens(address _owner, uint _amount)
-        onlyOwner()
+    function destroyTokens(address _owner, uint _value)
+        //onlyOwner()
         returns (bool)
     {
-        return TOKEN.destroyTokens(_owner, _amount);
+        _value *= 10 ** TOKEN.decimals();
+        return TOKEN.destroyTokens(_owner, _value);
     }
 
     function enableTransfers(bool _transfersEnabled)
-        onlyOwner()
+        //onlyOwner()
     {
         TOKEN.enableTransfers(_transfersEnabled);
     }
