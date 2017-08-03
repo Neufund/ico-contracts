@@ -121,7 +121,8 @@ contract Curve is Ownable {
             // Positive term
             n *= (x - i) * N;
             i += 1;
-            d *= i * D;
+            n /= i;
+            d *= D;
             a += n / d;
 
             // Rescale fraction
@@ -132,7 +133,8 @@ contract Curve is Ownable {
             // Negative term
             n *= (x - i) * N;
             i += 1;
-            d *= i * D;
+            n /= i;
+            d *= D;
             a -= n / d;
         }
         return a / P;
