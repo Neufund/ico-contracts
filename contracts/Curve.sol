@@ -36,7 +36,7 @@ contract Curve is Ownable {
         require(totalEuros + euros >= totalEuros);
         uint256 toIssue = incremental(euros);
         totalEuros = totalEuros + euros;
-        NEUMARK_CONTROLLER.generateTokens(beneficiary, toIssue);
+        assert(NEUMARK_CONTROLLER.generateTokens(beneficiary, toIssue));
         NeumarksIssued(beneficiary, euros, toIssue);
         return toIssue;
     }
@@ -57,7 +57,7 @@ contract Curve is Ownable {
         // TODO: Solve race condition?
     {
         totalEuros -= euros;
-        NEUMARK_CONTROLLER.destroyTokens(beneficiary, neumarks);
+        assert(NEUMARK_CONTROLLER.destroyTokens(beneficiary, neumarks));
         NeumarksBurned(beneficiary, euros, neumarks);
     }
 
