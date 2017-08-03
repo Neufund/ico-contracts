@@ -53,7 +53,7 @@ contract TestIcoContract {
 
 contract TestLockedAccount {
     // Truffle will send the TestContract one Ether after deploying the contract.
-    uint public initialBalance = 2 ether;
+    uint public initialBalance = 10 ether;
 
     function spawnLock() returns (LockedAccount, TestIcoContract) {
         EtherToken ownedToken = new EtherToken();
@@ -92,5 +92,18 @@ contract TestLockedAccount {
         Assert.equal(lock.totalLockedAmount(), 1.5 ether, "lock should own locked amount");
         Assert.equal(lock.ownedToken().totalSupply(), 1.5 ether, 'ownedToken should own locked amount');
         Assert.equal(lock.totalInvestors(), 2, 'should have 2 investors');
+    }
+
+    function testUnlockWithPenalty() {
+        var (lock, icoContract) = spawnLock();
+        // new investor
+        var investor = new SenderProxy();
+        // mock lock time to test it
+        uint timebase = block.timestamp;
+        lock.mockTime(timebase);
+        // only controller can lock
+        uint8 rc = icoContract.investFor.value(1 ether)(address(investor), 1 ether, 0.5 ether);
+        Assert.equal((uint)(rc), 0, "Expected OK rc from lock()");
+
     }
 }
