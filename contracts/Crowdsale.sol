@@ -16,27 +16,36 @@ contract Crowdsale is Ownable, TimeSource {
     //events
     event CommitmentCompleted(bool isSuccess, uint256 totalCommitedAmount);
 
-    uint256 public constant startDate = 1501681287;
-    uint256 public constant endDate = 1501681287 + 30 days;
-    uint256 public constant maxCap = 10000 ether;
-    uint256 public constant minCap = 1 ether;
 
     LockedAccount public lockedAccount;
     MutableToken public ownedToken;
     Neumark public neumarkToken;
     NeumarkController public NeumarkCont;
 
-    function Crowdsale(uint256 _startTime, uint _endTime, uint _maxCap, uint _minCap, EtherToken _ethToken, NeumarkController _neumarkController, LockedAccount _locked )
+    uint256 public startDate;
+    uint256 public endDate;
+    uint256 public maxCap;
+    uint256 public minCap;
+
+    function Crowdsale(uint256 _startDate, uint256 _endDate, uint256 _maxCap,
+         uint256 _minCap, EtherToken _ethToken,
+          NeumarkController _neumarkController, LockedAccount _locked )
     {
-        require(_startTime >= block.timestamp);
-        require(_endTime >= _startTime);
+        require(_startDate >= block.timestamp);
+        require(_endDate >= _startDate);
         require(_minCap >= 0);
         require(_maxCap >= _minCap);
+
+        startDate = _startDate;
+        endDate = _endDate;
+        maxCap = _maxCap;
+        minCap = _minCap;
 
         lockedAccount = _locked;
         neumarkToken = _neumarkController.TOKEN();
         NeumarkCont = _neumarkController;
         ownedToken = _ethToken;
+
         /*
         uint startTime = _startTime;
         uint endTime = _endTime;
@@ -98,7 +107,7 @@ contract Crowdsale is Ownable, TimeSource {
         onlyOwner
         public
     {
-        //startDate = date;
+        startDate = date;
     }
 
     // a test function to change start date of ICO - may be useful for UI demo
@@ -106,7 +115,7 @@ contract Crowdsale is Ownable, TimeSource {
         onlyOwner
         public
     {
-        //endDate = date;
+        endDate = date;
     }
 
     function commit()
