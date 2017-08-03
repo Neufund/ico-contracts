@@ -2,11 +2,11 @@ const Neumark = artifacts.require('./Neumark.sol');
 const NeumarkController = artifacts.require('./NeumarkController.sol');
 
 contract('Neumark', (accounts) => {
-  it('should have name Neumark, symbol NMK and 38 decimals', async () => {
+  it('should have name Neumark, symbol NMK and no decimals', async () => {
     const instance = await Neumark.deployed();
     assert.equal(await instance.name.call(), 'Neumark');
     assert.equal(await instance.symbol.call(), 'NMK');
-    assert.equal(await instance.decimals.call(), 38);
+    assert.equal(await instance.decimals.call(), 0);
   });
   it('should not have accounts[0] as controller ', async () => {
     const instance = await Neumark.deployed();

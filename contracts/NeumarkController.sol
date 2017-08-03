@@ -21,7 +21,7 @@ contract NeumarkController is Ownable, TokenController {
         //onlyOwner()
         returns (bool)
     {
-        _value *= 10 ** TOKEN.decimals();
+        // _value *= 10 ** TOKEN.decimals();
         return TOKEN.generateTokens(_holder, _value);
     }
 
@@ -29,7 +29,7 @@ contract NeumarkController is Ownable, TokenController {
         //onlyOwner()
         returns (bool)
     {
-        _value *= 10 ** TOKEN.decimals();
+        // _value *= 10 ** TOKEN.decimals();
         return TOKEN.destroyTokens(_owner, _value);
     }
 
