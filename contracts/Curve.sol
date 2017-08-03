@@ -5,6 +5,8 @@ import './NeumarkController.sol';
 
 contract Curve is Ownable {
 
+    // TODO: Fractional Euros and Fractional Neumarks
+
     NeumarkController public NEUMARK_CONTROLLER;
 
     uint256 public totalEuros;
