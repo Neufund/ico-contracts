@@ -75,8 +75,19 @@ contract(Crowdsale, (accounts) => {
     assert.equal(await lockedAccount.lockState.call(), 3, 'lock should be in ReleaseAll');
   });
 
-  it('should invest 100 ether', async () => {
+  it('should commit 1 ether', async () => {
+    const investor = accounts[0];
+    const ticket = 1 * 10**18;
     assert.equal(await crowdsale.hasEnded.call(), false, 'commitment should run');
-    await crowdsale.commit({value: 1 * 10**18});
+    await crowdsale.commit({value: ticket, from: investor});
+    assert.equal(await lockedAccount.totalLockedAmount(), ticket, 'lockedAccount balance must match ticket');
+    assert.equal(await lockedAccount.totalInvestors(), 1);
+    assert.equal(await etherToken.totalSupply(), ticket, 'ticket must be in etherToken');
+    const lockBalance = await etherToken.balanceOf(lockedAccount.address);
+    assert.equal(lockBalance, ticket, 'balance of lock contract must equal ticket');
+    const investorBalance = await lockedAccount.balanceOf(investor);
+    const neumarkBalance = await neumark.balanceOf.call(investor);
+    console.log(neumarkBalance.valueOf());
+    assert.equal(investorBalance[1].valueOf(), neumarkBalance.valueOf(), 'neumarks due in lock must equal neumarks in token contract');
   });
 });
