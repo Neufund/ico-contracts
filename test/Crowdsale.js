@@ -44,4 +44,9 @@ contract(Crowdsale, () => {
     // check lock state
     assert.equal(await lock.lockState.call(), 3, 'lock should be in ReleaseAll');
   });
+
+  it('should invest 100 ether', async () => {
+    const instance = await Crowdsale.deployed();
+    await instance.commit({value: 1 * 10**18});
+  });
 });
