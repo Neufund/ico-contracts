@@ -33,7 +33,6 @@ contract Crowdsale is Ownable, TimeSource {
          uint256 _maxCap, EtherToken _ethToken,
           NeumarkController _neumarkController, LockedAccount _locked,Curve _curve )
     {
-        require(_startDate >= block.timestamp);
         require(_endDate >= _startDate);
         require(_minCap >= 0);
         require(_maxCap >= _minCap);
@@ -97,6 +96,20 @@ contract Crowdsale is Ownable, TimeSource {
         public
     {
         endDate = date;
+    }
+
+    function _changeMaxCap(uint256 _cap)
+        onlyOwner
+        public
+    {
+        maxCap = _cap;
+    }
+
+    function _changeMinCap(uint256 _cap)
+        onlyOwner
+        public
+    {
+        minCap = _cap;
     }
 
     function commit()
