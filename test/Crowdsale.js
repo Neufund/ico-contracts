@@ -21,7 +21,7 @@ const months = 30 * 24 * 60 * 60;
 
 const FP_SCALE = 10000;
 const ether = wei => (wei * 10 ** 18);
-
+let startTimestamp = 0;
 contract(Crowdsale, (accounts) => {
   let neumark;
   let neumarkController;
@@ -44,7 +44,7 @@ contract(Crowdsale, (accounts) => {
     );
     curve = await Curve.new(neumarkController.address);
     // apply time limit to ICO
-    const startTimestamp = new Date() / 1000;
+    startTimestamp = new Date() / 1000;
     crowdsale = await Crowdsale.new(startTimestamp - days, startTimestamp + months, ether(1), ether(2000),
       etherToken.address, neumarkController.address, lockedAccount.address, curve.address);
     // console.log(lockedAccount.setController);
@@ -53,11 +53,10 @@ contract(Crowdsale, (accounts) => {
 
 
   it('should be able to read Commitment parameters', async () => {
-    const instance = await Crowdsale.deployed();
-    assert.equal(await instance.startDate.call(), 1501804800);
-    assert.equal(await instance.ownedToken.call(), EtherToken.address);
-    assert.equal(await instance.lockedAccount.call(), LockedAccount.address);
-    assert.equal(await instance.curve.call(), Curve.address);
+    assert.equal(await crowdsale.startDate.call(), Math.floor(startTimestamp - days));
+    assert.equal(await crowdsale.ownedToken.call(), etherToken.address);
+    assert.equal(await crowdsale.lockedAccount.call(), lockedAccount.address);
+    assert.equal(await crowdsale.curve.call(), curve.address);
   });
 
   it('should complete Commitment with failed state', async () => {
