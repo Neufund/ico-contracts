@@ -117,7 +117,7 @@ contract TestLockedAccount {
         lock.mockTime(timebase);
         // issue real neumarks - we may burn same amount
         uint256 neumarks = curve.issue(1 ether, address(investor));
-        Assert.equal(curve.NEUMARK_CONTROLLER().TOKEN().balanceOf(address(investor)), neumarks + 1, 'neumarks must be allocated');
+        Assert.equal(curve.NEUMARK_CONTROLLER().TOKEN().balanceOf(address(investor)), neumarks, 'neumarks must be allocated');
         // only controller can lock
         uint8 rc = icoContract.investFor.value(1 ether)(address(investor), 1 ether, neumarks);
         Assert.equal((uint)(rc), 0, "Expected OK rc from lock()");
@@ -135,6 +135,9 @@ contract TestLockedAccount {
         Assert.equal(l_d, 0, 'investor account deleted');
         Assert.equal(lock.totalInvestors(), 0, 'should have no investors');
         Assert.equal(lock.ownedToken().balanceOf(investor) + lock.ownedToken().balanceOf(lock.feePool()), 1 ether, "investor + penalty == 1 ether");
-
+        // check penalty value
+        uint256 amount1 = 1 ether;
+        uint256 penalty = (amount1 * lock.PENALTY_PRC()) / lock.FP_SCALE();
+        Assert.equal(lock.ownedToken().balanceOf(lock.feePool()), penalty, 'fee pool has correct penalty value');
     }
 }
