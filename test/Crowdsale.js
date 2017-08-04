@@ -36,13 +36,13 @@ contract(Crowdsale, (accounts) => {
     neumarkController = await NeumarkController.new(neumark.address);
     await neumark.changeController(neumarkController.address);
     etherToken = await EtherToken.new();
+    curve = await Curve.new(neumarkController.address);
     lockedAccount = await LockedAccount.new(
       etherToken.address,
-      neumark.address,
+      curve.address,
       18 * months,
       Math.round(0.1 * FP_SCALE)
     );
-    curve = await Curve.new(neumarkController.address);
     // apply time limit to ICO
     const startTimestamp = new Date() / 1000;
     crowdsale = await Crowdsale.new(startTimestamp - days, startTimestamp + months, ether(1), ether(2000),
