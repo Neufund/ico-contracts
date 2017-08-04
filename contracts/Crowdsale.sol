@@ -21,13 +21,15 @@ contract Crowdsale is Ownable, TimeSource {
     LockedAccount public lockedAccount;
     MutableToken public ownedToken;
     Neumark public neumarkToken;
-    NeumarkController public NeumarkCont;
+    NeumarkController public neumarkController;
     Curve public curve;
 
     uint256 public startDate;
     uint256 public endDate;
     uint256 public maxCap;
     uint256 public minCap;
+
+    uint256 public constant ICO_ETHEUR_RATE = 200;
 
     function Crowdsale(uint256 _startDate, uint256 _endDate, uint256 _minCap,
          uint256 _maxCap, EtherToken _ethToken,
@@ -44,7 +46,7 @@ contract Crowdsale is Ownable, TimeSource {
 
         lockedAccount = _locked;
         neumarkToken = _neumarkController.TOKEN();
-        NeumarkCont = _neumarkController;
+        neumarkController = _neumarkController;
         ownedToken = _ethToken;
         curve = _curve;
     }
@@ -71,6 +73,7 @@ contract Crowdsale is Ownable, TimeSource {
         require(hasEnded());
         if (wasSuccessful()) {
             // maybe do smth to neumark controller like enable trading
+            neumarkController.enableTransfers(true);
             // enable escape hatch
             lockedAccount.controllerSucceeded();
             CommitmentCompleted(true, lockedAccount.totalLockedAmount());
@@ -116,11 +119,11 @@ contract Crowdsale is Ownable, TimeSource {
         payable
         public
     {
-        require(validPurchase());
+        require(validPurchase(msg.value));
         require(!hasEnded());
 
         // convert ether into full euros
-        uint256 fullEuros = msg.value.mul(200).div(1 ether);
+        uint256 fullEuros = msg.value.mul(ICO_ETHEUR_RATE).div(1 ether);
         // get neumarks
         uint256 neumark = curve.issue(fullEuros, msg.sender);
         //send Money to ETH-T contract
@@ -132,15 +135,12 @@ contract Crowdsale is Ownable, TimeSource {
         Commited(msg.sender, msg.value, neumark, fullEuros);
     }
 
-    function validPurchase()
+    function validPurchase(uint256 amount)
         internal
         constant
         returns (bool)
     {
-        bool nonZeroPurchase = msg.value != 0;
-        return nonZeroPurchase;
-        // TODO: Add Capsize check
-        // TODO: Add ICO preiod check
+        return (amount > 0) && (lockedAccount.totalLockedAmount() + amount <= maxCap);
     }
 
 
