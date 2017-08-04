@@ -136,4 +136,11 @@ contract('Curve', (accounts) => {
     assert.equal((await neumark.totalSupply.call()).valueOf(), 6499);
     assert.equal((await neumark.balanceOf.call(accounts[2])).valueOf(), 6499 - 649);
   });
+  it('should issue and then burn Neumarks', async () => {
+    const r = await curve.issue(100, accounts[1]);
+    const neumarks = (await neumark.balanceOf.call(accounts[1])).valueOf();
+    console.log(`created neumarks ${neumarks}`);
+    const burned = await curve.burnNeumark(neumarks, accounts[1]);
+    assert.equal((await neumark.balanceOf.call(accounts[1])).valueOf(), 0);
+  });
 });
