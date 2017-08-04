@@ -5,6 +5,12 @@ import "truffle/DeployedAddresses.sol";
 import "./helpers/SenderProxy.sol";
 import "../contracts/LockedAccount.sol";
 
+contract LockProxy is SenderProxy {
+    function unlock() returns (uint8) {
+        return (uint8)((LockedAccount)(_t).unlock());
+    }
+}
+
 contract TestIcoContract {
 
     LockedAccount private lock;
@@ -55,21 +61,28 @@ contract TestLockedAccount {
     // Truffle will send the TestContract one Ether after deploying the contract.
     uint public initialBalance = 10 ether;
 
-    function spawnLock() returns (LockedAccount, TestIcoContract) {
+    function spawnLock() returns (LockedAccount, TestIcoContract, Curve) {
         EtherToken ownedToken = new EtherToken();
-        NeumarkSurrogate neumarkToken = NeumarkSurrogate(0);
-        uint256 FP_SCALE = 10000; // todo do smth with this
+        NeumarkFactory nf = new NeumarkFactory();
+        var nt = new Neumark(nf);
+        var neumarkController = new NeumarkController(nt);
+        nt.changeController(neumarkController);
+        var curve = new Curve(neumarkController);
 
-        var locked = new LockedAccount(ownedToken, neumarkToken, 18 * 30 days, FP_SCALE / 10); //10 %
+        uint256 FP_SCALE = 10000; // todo do smth with this
+        var locked = new LockedAccount(ownedToken, curve, 18 * 30 days, FP_SCALE / 10); //10 %
         var icoContract = new TestIcoContract(locked, ownedToken);
+        var feePool = new FeeDistributionPool(ownedToken, nt);
+        locked.setPenaltyDistribution(feePool);
         locked.setController(icoContract);
-        return (locked, icoContract);
+        return (locked, icoContract, curve);
     }
 
     function testLock() {
-        var (lock, icoContract) = spawnLock();
+        var (lock, icoContract, curve) = spawnLock();
         // new investor
-        var investor = new SenderProxy();
+        var investor = new LockProxy();
+        investor._target(lock);
         // mock lock time to test it
         uint timebase = block.timestamp;
         lock.mockTime(timebase);
@@ -95,15 +108,33 @@ contract TestLockedAccount {
     }
 
     function testUnlockWithPenalty() {
-        var (lock, icoContract) = spawnLock();
+        var (lock, icoContract, curve) = spawnLock();
         // new investor
-        var investor = new SenderProxy();
+        var investor = new LockProxy();
+        investor._target(lock);
         // mock lock time to test it
         uint timebase = block.timestamp;
         lock.mockTime(timebase);
+        // issue real neumarks - we may burn same amount
+        uint256 neumarks = curve.issue(1 ether, address(investor));
+        Assert.equal(curve.NEUMARK_CONTROLLER().TOKEN().balanceOf(address(investor)), neumarks + 1, 'neumarks must be allocated');
         // only controller can lock
-        uint8 rc = icoContract.investFor.value(1 ether)(address(investor), 1 ether, 0.5 ether);
+        uint8 rc = icoContract.investFor.value(1 ether)(address(investor), 1 ether, neumarks);
         Assert.equal((uint)(rc), 0, "Expected OK rc from lock()");
+        // move time forward within longstop date
+        lock.mockTime(timebase + 1 days);
+        // controller says yes
+        icoContract.succ();
+        // only investor can unlock and must burn tokens
+        rc = investor.unlock();
+        Assert.equal((uint)(rc), 0, "Expected OK rc from unlock()");
+        // check if ownedToken supply is 1 ether
+        Assert.equal(lock.totalLockedAmount(), 0 ether, "all money sent to pool and to investor");
+        Assert.equal(lock.ownedToken().totalSupply(), 1 ether, 'ownedToken should still hold 1 ether');
+        var (l_a, l_n, l_d) = lock.balanceOf(address(investor));
+        Assert.equal(l_d, 0, 'investor account deleted');
+        Assert.equal(lock.totalInvestors(), 0, 'should have no investors');
+        Assert.equal(lock.ownedToken().balanceOf(investor) + lock.ownedToken().balanceOf(lock.feePool()), 1 ether, "investor + penalty == 1 ether");
 
     }
 }
