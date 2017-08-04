@@ -12,7 +12,7 @@ const Curve = artifacts.require('./Curve.sol');
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const months = 30 * 24 * 60 * 60;
 const FP_SCALE = 10000;
-const ether = Wei => (Wei * 10**18);
+const ether = Wei => Wei * 10 ** 18;
 
 /* const minCap = new web3.BigNumber(web3.toWei(1, 'ether'));
 const maxCap = new web3.BigNumber(web3.toWei(30, 'ether'));
@@ -43,10 +43,23 @@ module.exports = deployer =>
     const lock = await LockedAccount.deployed();
     console.log('Deploying crowdsale');
     await deployer.link(SafeMath, Crowdsale);
-    await deployer.deploy(Crowdsale, 1501804800, 1502356520, ether(1), ether(2000),
-      etherToken.address, NeumarkController.address, lock.address, Curve.address);
+    await deployer.deploy(
+      Crowdsale,
+      Date.now() / 1000 + 60,
+      Date.now() / 1000 + 900,
+      ether(1),
+      ether(2000),
+      etherToken.address,
+      NeumarkController.address,
+      lock.address,
+      Curve.address
+    );
     const crowdsale = await Crowdsale.deployed();
     await lock.setController(crowdsale.address);
-  //  await sleep(10000); // Verify that Truffle actually waits for the promise to complete.
+    //  await sleep(10000); // Verify that Truffle actually waits for the promise to complete.
     console.log('Contracts deployed!');
+
+    console.log('----------------------------------');
+    console.log(`ICO contract: ${crowdsale.address}`);
+    console.log('----------------------------------');
   });
