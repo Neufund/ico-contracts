@@ -5,12 +5,8 @@ import 'zeppelin-solidity/contracts/math/SafeMath.sol';
 import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import './TimeSource.sol';
 import './EtherToken.sol';
-
-contract NeumarkSurrogate is ERC20Basic {
-    // will burn tokens of 'who' that were pre-approved to be burned for the 'sender'
-    function burn(address who, uint256 amount) returns (bool);
-    function addRevenue(ERC20Basic fromToken, uint256 amount) returns (bool);
-}
+import './Curve.sol';
+import './FeeDistributionPool.sol';
 
 /* contract LockedAccountMigration {
   modifier onlyOldLockedAccount() {
@@ -54,8 +50,10 @@ contract LockedAccount is Ownable, TimeSource {
     // scale of the emulated fixed point operations
     // todo: use some nice lib for percentages etc.
     uint constant public FP_SCALE = 10000;
+    // fee distribution pool
+    FeeDistributionPool public feePool;
 
-    NeumarkSurrogate private neumarkToken;
+    Curve private neumarkCurve;
     // LockedAccountMigration private migration;
     mapping(address => Account) accounts;
 
@@ -111,6 +109,7 @@ contract LockedAccount is Ownable, TimeSource {
     // unlocks msg.sender tokens by making them withdrawable in ownedToken
     // expects number of neumarks that is due to be available to be burned on msg.sender balance - see comments
     // if used before longstop date, calculates penalty and distributes it as revenue
+    // event Debug(string str);
     function unlock()
         onlyStates(LockState.AcceptingUnlocks, LockState.ReleaseAll)
         public
@@ -123,16 +122,16 @@ contract LockedAccount is Ownable, TimeSource {
             if (lockState == LockState.AcceptingUnlocks) {
                 // burn neumarks corresponding to unspent funds
                 // address(this) has right to burn Neumarks OR it was pre approved by msg.sender: @remco?
-                if(!neumarkToken.burn(msg.sender, a.neumarksDue))
-                    return _logerror(ReturnCodes.CannotBurnNeumarks);
+                // if(neumarkCurve.burnNeumark(a.neumarksDue, msg.sender) != a.neumarksDue)
+                //   return _logerror(ReturnCodes.CannotBurnNeumarks);
                 // take the penalty if before longstopdate
                 if (currentTime() < a.longstopDate) {
                     // todo: should use divRound
                     uint256 penalty = a.balance.mul(PENALTY_PRC).div(FP_SCALE); // Math.divRound(Math.mul(a.balance, PENALTY_PRC), FP_SCALE);
-                    // transfer penalty to neumark contract
-                    require(ownedToken.transfer(address(neumarkToken), penalty));
-                    // distribute revenue via Neumark contract
-                    require(neumarkToken.addRevenue(ownedToken, penalty));
+                    // allowance for penalty to pool contract
+                    require(ownedToken.approve(address(feePool), penalty));
+                    // add to distribution
+                    feePool.addFee(penalty);
                     a.balance = _subBalance(a.balance, penalty);
                 }
             }
@@ -220,14 +219,25 @@ contract LockedAccount is Ownable, TimeSource {
         lockState = LockState.AcceptingLocks;
     }
 
+    function setPenaltyDistribution(FeeDistributionPool _feePool)
+        onlyOwner
+        onlyState(LockState.Uncontrolled)
+        public
+    {
+        // can only attach ETH distribution for Neumark
+        require(_feePool.feeToken() == ownedToken);
+        require(_feePool.distributionToken() == neumarkCurve.NEUMARK_CONTROLLER().TOKEN());
+        feePool = _feePool;
+    }
+
     // _ownedToken - token contract with resource locked by LockedAccount, where LockedAccount is allowed to make deposits
     // _neumarkToken - neumark token contract where LockedAccount is allowed to burn tokens and add revenue
     // _controller - typically ICO contract: can lock, release all locks, enable escape hatch
-    function LockedAccount(ERC20 _ownedToken, NeumarkSurrogate _neumarkToken,
+    function LockedAccount(ERC20 _ownedToken, Curve _neumarkCurve,
         uint _longstopPeriod, uint _penaltyPrc)
     {
         ownedToken = _ownedToken;
-        neumarkToken = _neumarkToken;
+        neumarkCurve = _neumarkCurve;
         LONGSTOP_PERIOD = _longstopPeriod;
         PENALTY_PRC = _penaltyPrc;
     }
