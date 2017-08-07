@@ -1,3 +1,5 @@
+import gasCost from './helpers/gasCost';
+
 const Curve = artifacts.require('./Curve.sol');
 const NeumarkFactory = artifacts.require('./NeumarkFactory.sol');
 const Neumark = artifacts.require('./Neumark.sol');
@@ -126,14 +128,24 @@ contract('Curve', (accounts) => {
     assert.equal((await curve.totalEuros.call()).valueOf(), 0);
     assert.equal((await neumark.totalSupply.call()).valueOf(), 0);
 
-    const r = await curve.issue(100, accounts[1]); // TODO check result
+    const r1 = await curve.issue(100, accounts[1]); // TODO check result
+    console.log(`\tIssue took ${gasCost(r1)}.`);
     assert.equal((await curve.totalEuros.call()).valueOf(), 100);
     assert.equal((await neumark.totalSupply.call()).valueOf(), 649);
     assert.equal((await neumark.balanceOf.call(accounts[1])).valueOf(), 649);
 
-    await curve.issue(900, accounts[2]);
+    const r2 = await curve.issue(900, accounts[2]);
+    console.log(`\tIssue took ${gasCost(r2)}.`);
     assert.equal((await curve.totalEuros.call()).valueOf(), 1000);
     assert.equal((await neumark.totalSupply.call()).valueOf(), 6499);
     assert.equal((await neumark.balanceOf.call(accounts[2])).valueOf(), 6499 - 649);
+  });
+  it('should issue and then burn Neumarks', async () => {
+    const r = await curve.issue(100, accounts[1]);
+    console.log(`\tIssue took ${gasCost(r)}.`);
+    const neumarks = (await neumark.balanceOf.call(accounts[1])).valueOf();
+    const burned = await curve.burnNeumark(neumarks, accounts[1]);
+    console.log(`\tBurn took ${gasCost(burned)}.`);
+    assert.equal((await neumark.balanceOf.call(accounts[1])).valueOf(), 0);
   });
 });
