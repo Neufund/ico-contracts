@@ -1,30 +1,43 @@
+import gasCost from './helpers/gasCost';
+
+const NeumarkFactory = artifacts.require('./NeumarkFactory.sol');
 const Neumark = artifacts.require('./Neumark.sol');
 const NeumarkController = artifacts.require('./NeumarkController.sol');
 
 contract('Neumark', (accounts) => {
+  let neumark;
+  let factory;
+  let controller;
+
+  beforeEach(async () => {
+    factory = await NeumarkFactory.new();
+    neumark = await Neumark.new(factory.address);
+    controller = await NeumarkController.new(neumark.address);
+    await neumark.changeController(controller.address);
+  });
+
+  it('should deploy', async () => {
+    console.log(`\tFactory took ${gasCost(factory)}.`);
+    console.log(`\tNeumark took ${gasCost(neumark)}.`);
+    console.log(`\tController took ${gasCost(controller)}.`);
+  });
   it('should have name Neumark, symbol NMK and no decimals', async () => {
-    const instance = await Neumark.deployed();
-    assert.equal(await instance.name.call(), 'Neumark');
-    assert.equal(await instance.symbol.call(), 'NMK');
-    assert.equal(await instance.decimals.call(), 0);
+    assert.equal(await neumark.name.call(), 'Neumark');
+    assert.equal(await neumark.symbol.call(), 'NMK');
+    assert.equal(await neumark.decimals.call(), 0);
   });
   it('should not have accounts[0] as controller ', async () => {
-    const instance = await Neumark.deployed();
-    assert.notEqual(await instance.controller.call(), accounts[0]);
+    assert.notEqual(await neumark.controller.call(), accounts[0]);
   });
   it('should have NeumarkController as controller', async () => {
-    const instance = await Neumark.deployed();
-    assert.equal(await instance.controller.call(), NeumarkController.address);
+    assert.equal(await neumark.controller.call(), controller.address);
   });
   it('should start at zero', async () => {
-    const instance = await Neumark.deployed();
-    assert.equal(await instance.totalSupply.call(), 0);
-    assert.equal(await instance.balanceOf.call(accounts[0]), 0);
+    assert.equal(await neumark.totalSupply.call(), 0);
+    assert.equal(await neumark.balanceOf.call(accounts[0]), 0);
   });
 
   it('should allow controller to generate tokens', async () => {
-    const neumark = await Neumark.deployed();
-    const controller = await NeumarkController.deployed();
     assert(await controller.generateTokens(accounts[0], 10000, { from: accounts[0] }));
     assert.equal(await neumark.totalSupply.call(), 10000, "10000 wasn't the total");
     assert.equal(
@@ -32,11 +45,5 @@ contract('Neumark', (accounts) => {
       10000,
       "10000 wasn't in the first account"
     );
-  });
-
-  it('should put 10000 MetaCoin in the first account', async () => {
-    const instance = await Neumark.deployed();
-    const balance = await instance.balanceOf.call(accounts[0]);
-    assert.equal(balance.valueOf(), 10000, "10000 wasn't in the first account");
   });
 });

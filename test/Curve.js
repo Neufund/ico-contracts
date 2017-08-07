@@ -19,6 +19,9 @@ contract('Curve', (accounts) => {
     curve = await Curve.new(controller.address);
   });
 
+  it('should deploy', async () => {
+    console.log(`\tCurve took ${gasCost(curve)}.`);
+  });
   it('should start at zero', async () => {
     assert.equal(await curve.totalEuros.call(), 0);
   });

@@ -1,7 +1,14 @@
 export const weiPrice = 222e-18; // http://coincap.io/
-export const gasPrice = 21e9 * weiPrice; // https://ethstats.net
-export const gasLimit = 6712355; // https://ethstats.net
+export const gasPrice = 50e9 * weiPrice; // https://ethstats.net
+export const gasLimit = 6712503; // https://ethstats.net
 
-export default result =>
-  `${result.receipt.gasUsed} gas (€${Math.round(100 * result.receipt.gasUsed * gasPrice) /
-    100}, ${Math.round(1000 * result.receipt.gasUsed / gasLimit) / 10}% of limit)`;
+export const gasCost = gas =>
+  `${gas} gas (€${Math.round(100 * gas * gasPrice) / 100}, ${Math.round(1000 * gas / gasLimit) /
+    10}% of limit)`;
+
+export const txGasCost = tx => gasCost(tx.receipt.gasUsed);
+
+export const contractGasCost = contract =>
+  gasCost(web3.eth.getTransactionReceipt(contract.transactionHash).gasUsed);
+
+export default obj => (obj.receipt ? txGasCost(obj) : contractGasCost(obj));
