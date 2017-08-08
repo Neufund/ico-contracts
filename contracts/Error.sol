@@ -4,22 +4,24 @@ contract Error {
 
     enum Status {
         SUCCESS,
-        Status,
+        INSUFFICIENT_FUNDS
         /// @dev Add your own
     }
 
-    event Error(Status code);
+    event Error(Status);
 
-    /// Example usage:
-    ///
-    /// if(msg.value < expected)
-    ///     return logError(Status.Status);
-    ///
+    // Example usage:
+    //
+    // if(msg.value < expected)
+    //     return logError(Status.Status);
+    //
     function logError(Status code)
         internal
-        returns (Status)
+        constant
+        returns(Status)
     {
         Error(code);
         return code;
     }
+
 }
