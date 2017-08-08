@@ -46,7 +46,9 @@ contract Curve is Ownable {
         public
         returns (uint256)
     {
-        burn(rewindInverse(neumarks), neumarks, beneficiary);
+        uint256 euros = rewindInverse(neumarks);
+        burn(euros, neumarks, beneficiary);
+        return euros;
     }
 
     function burn(uint256 euros, uint256 neumarks, address beneficiary)
@@ -100,9 +102,11 @@ contract Curve is Ownable {
             return 0;
         }
         uint256 to = cumulative(totalEuros);
-        require(to > neumarks);
-        uint256 from = to - neumarks;
-        uint256 euros = inverse(from, 0, totalEuros);
+        require(to >= neumarks);
+        uint256 fromNmk = to - neumarks;
+        uint256 fromEur = inverse(fromNmk, 0, totalEuros);
+        assert(totalEuros >= fromEur);
+        uint256 euros = totalEuros - fromEur;
         assert(rewind(euros) == neumarks);
         return euros;
     }
@@ -185,6 +189,11 @@ contract Curve is Ownable {
             }
         }
         assert(max == min);
+
+        // Did we find an exact solution?
+        if(curve(max) == x) {
+            return x;
+        }
 
         // NOTE: It is possible that there is no inverse
         // for example curve(0) = 0 and curve(1) = 6, so
