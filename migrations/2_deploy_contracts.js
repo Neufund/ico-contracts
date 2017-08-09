@@ -21,7 +21,6 @@ const startDate = Date.now.getTime() / 1000; */
 module.exports = deployer =>
   deployer.then(async () => {
     console.log('Neumark deploying...');
-    await deployer.deploy(SafeMath);
     await deployer.deploy(NeumarkFactory);
     await deployer.deploy(Neumark, NeumarkFactory.address);
     await deployer.deploy(NeumarkController, Neumark.address);
@@ -29,20 +28,17 @@ module.exports = deployer =>
     await neumark.changeController(NeumarkController.address);
     console.log('ETR-T and LockedAccount deploying...');
     await deployer.deploy(EtherToken);
-    await deployer.link(SafeMath, EtherToken);
     const etherToken = await EtherToken.deployed();
     await deployer.deploy(Curve, NeumarkController.address);
-    await deployer.link(SafeMath, LockedAccount);
     await deployer.deploy(
       LockedAccount,
       etherToken.address,
       Curve.address,
       18 * months,
-      Math.round(0.1 * FP_SCALE)
+      Math.round(0.1 * ether(1)) // fractions are in 10**18
     );
     const lock = await LockedAccount.deployed();
     console.log('Deploying crowdsale');
-    await deployer.link(SafeMath, Crowdsale);
     await deployer.deploy(
       Crowdsale,
       Date.now() / 1000 + 60,
@@ -50,7 +46,6 @@ module.exports = deployer =>
       ether(1),
       ether(2000),
       etherToken.address,
-      NeumarkController.address,
       lock.address,
       Curve.address
     );
