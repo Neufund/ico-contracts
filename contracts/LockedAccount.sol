@@ -121,9 +121,8 @@ contract LockedAccount is Ownable, TimeSource {
             // in ReleaseAll just give money back by transfering to msg.sender
             if (lockState == LockState.AcceptingUnlocks) {
                 // burn neumarks corresponding to unspent funds
-                // address(this) has right to burn Neumarks OR it was pre approved by msg.sender: @remco?
-                // if(neumarkCurve.burnNeumark(a.neumarksDue, msg.sender) != a.neumarksDue)
-                //   return _logerror(ReturnCodes.CannotBurnNeumarks);
+                // before burn happens, msg.sender must make allowance to curve contract with a.neumarksDue
+                neumarkCurve.burnNeumark(a.neumarksDue, msg.sender);
                 // take the penalty if before longstopdate
                 if (currentTime() < a.longstopDate) {
                     // todo: should use divRound
@@ -137,12 +136,12 @@ contract LockedAccount is Ownable, TimeSource {
             }
             // transfer amount back to investor - now it can withdraw
             require(ownedToken.transfer(msg.sender, a.balance));
+            // remove balance, investor and
+            FundsUnlocked(msg.sender, a.balance);
+            _subBalance(a.balance, a.balance);
+            totalInvestors -= 1;
+            delete accounts[msg.sender];
         }
-        // remove balance, investor and
-        FundsUnlocked(msg.sender, a.balance);
-        _subBalance(a.balance, a.balance);
-        totalInvestors -= 1;
-        delete accounts[msg.sender];
         return ReturnCodes.OK;
     }
 
