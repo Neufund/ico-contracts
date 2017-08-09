@@ -42,7 +42,7 @@ contract Curve is Ownable {
     }
 
     function burnNeumark(uint256 neumarks, address beneficiary)
-        // beneficiary should make allowance to burn neumarks
+        // @remco I do not see use case where we burn someone's neumark
         //onlyOwner()
         public
         returns (uint256)
@@ -52,8 +52,18 @@ contract Curve is Ownable {
         return euros;
     }
 
+    function burnNeumark(uint256 neumarks)
+        // @remco I do not see use case where we burn someone's neumark
+        //onlyOwner()
+        public
+    {
+        uint256 euros = rewindInverse(neumarks);
+        burn(euros, neumarks, msg.sender);
+    }
+
     function burn(uint256 euros, uint256 neumarks, address beneficiary)
         //onlyOwner()
+        //@remco - this should be internal function, i do not see an use case for any client to call it
         public
         checkInverse(euros, neumarks)
         // TODO: Client side code
