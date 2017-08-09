@@ -3,8 +3,7 @@ pragma solidity ^0.4.11;
 contract Error {
 
     enum Status {
-        SUCCESS,
-        Status,
+        SUCCESS
         /// @dev Add your own
     }
 
@@ -15,6 +14,7 @@ contract Error {
     /// if(msg.value < expected)
     ///     return logError(Status.Status);
     ///
+
     function logError(Status code)
         internal
         returns (Status)

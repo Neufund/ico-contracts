@@ -42,6 +42,7 @@ contract Curve is Ownable {
     }
 
     function burnNeumark(uint256 neumarks, address beneficiary)
+        // beneficiary should make allowance to burn neumarks
         //onlyOwner()
         public
         returns (uint256)
