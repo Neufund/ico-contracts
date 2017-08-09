@@ -3,7 +3,7 @@ pragma solidity ^0.4.11;
 
 /// Error pattern is used to inform clients (web3, other smart contracts) on "business logic" errors
 /// You should still use require() for input validation/access control
-contract Error {
+contract ReturnsErrors {
 
     enum Status {
         SUCCESS,
