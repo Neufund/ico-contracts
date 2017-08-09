@@ -1,9 +1,15 @@
 pragma solidity ^0.4.11;
 
+
+/// Error pattern is used to inform clients (web3, other smart contracts) on "business logic" errors
+/// You should still use require() for input validation/access control
 contract Error {
 
     enum Status {
-        SUCCESS
+        SUCCESS,
+        NOT_ENOUGH_NEUMARKS_TO_UNLOCK, // investor didn't approve enough neumarks to be burned
+        NOT_ENOUGH_FUNDS // not enough funds on investors account (for example to invest in ICO)
+
         /// @dev Add your own
     }
 
