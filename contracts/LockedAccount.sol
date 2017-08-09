@@ -8,6 +8,7 @@ import './TimeSource.sol';
 import './EtherToken.sol';
 import './Curve.sol';
 import './FeeDistributionPool.sol';
+import './TokenOffering.sol';
 
 /* contract LockedAccountMigration {
   modifier onlyOldLockedAccount() {
@@ -21,12 +22,13 @@ import './FeeDistributionPool.sol';
 } */
 
 contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
+    // lock state
+    enum LockState {Uncontrolled, AcceptingLocks, AcceptingUnlocks, ReleaseAll }
+
     // events
     event FundsLocked(address indexed investor, uint256 amount, uint256 neumarks);
     event FundsUnlocked(address indexed investor, uint256 amount);
-
-    // lock state
-    enum LockState {Uncontrolled, AcceptingLocks, AcceptingUnlocks, ReleaseAll }
+    event LockStateTransition(LockState oldState, LockState newState);
 
     // total amount of tokens locked
     uint public totalLockedAmount;
@@ -41,7 +43,7 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
     // penalty: fraction of stored amount on escape hatch
     uint public penaltyFraction;
     // govering ICO contract that may lock money or unlock all account if fails
-    address public controller;
+    TokenOffering public controller;
     // fee distribution pool
     FeeDistributionPool public feePool;
 
@@ -58,7 +60,7 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
 
     //modifiers
     modifier onlycontroller {
-        require(msg.sender == controller);
+        require(msg.sender == address(controller));
         _;
     }
 
@@ -88,6 +90,7 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
         Account storage a = accounts[investor];
         a.balance = _addBalance(a.balance, amount);
         a.neumarksDue += neumarks;
+        assert(isSafeMultiplier(a.neumarksDue));
         if (a.longstopDate == 0) {
             // this is new account - longstopDate always > 0
             totalInvestors += 1;
@@ -151,21 +154,22 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
         return (a.balance, a.neumarksDue, a.longstopDate);
     }
 
-    // allows to anyone to release all funds without burning Neumarks
+    /// allows to anyone to release all funds without burning Neumarks and any other penalties
     function controllerFailed()
         onlyState(LockState.AcceptingLocks)
         onlycontroller
         public
     {
-        lockState = LockState.ReleaseAll;
+        _changeState(LockState.ReleaseAll);
     }
 
+    /// allows anyone to use escape hatch
     function controllerSucceeded()
         onlyState(LockState.AcceptingLocks)
         onlycontroller
         public
     {
-        lockState = LockState.AcceptingUnlocks;
+        _changeState(LockState.AcceptingUnlocks);
     }
 
     // todo: not implemented
@@ -176,14 +180,17 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
         // migrates
     }*/
 
-    function setController(address _controller)
+    // owner can always change the controller
+    function setController(TokenOffering _controller)
         onlyOwner
-        onlyState(LockState.Uncontrolled)
+        onlyStates(LockState.Uncontrolled, LockState.AcceptingLocks)
         public
     {
-        require(controller == address(0));
+        // do not let change controller that didn't yet finished
+        if (address(controller) != 0)
+            require(controller.isFinalized());
         controller = _controller;
-        lockState = LockState.AcceptingLocks;
+        _changeState(LockState.AcceptingLocks);
     }
 
     function setPenaltyDistribution(FeeDistributionPool _feePool)
@@ -210,14 +217,7 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
         penaltyFraction = _penaltyFraction;
     }
 
-    /* function changeNeumarkToken(NeumarkSurrogate newNeumarkToken)
-        onlyOwner
-        onlyInitialized
-    {
-
-    }
-
-    function enableMigration(LockedAccountMigration migration)
+    /* function enableMigration(LockedAccountMigration migration)
         onlyOwner
         onlyInitialized
     {
@@ -234,5 +234,12 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
     function _subBalance(uint balance, uint amount) private returns (uint) {
         totalLockedAmount -= amount;
         return balance - amount;
+    }
+
+    function _changeState(LockState newState) private {
+        if (newState != lockState) {
+            LockStateTransition(lockState, newState);
+            lockState = newState;
+        }
     }
 }
