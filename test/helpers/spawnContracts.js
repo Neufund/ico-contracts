@@ -24,7 +24,7 @@ export const ether = wei => (wei * 10 ** 18);
 
 export async function spawnLockedAccount(longStopDateMonths, unlockPenalty) {
   etherToken = await EtherToken.new();
-  console.log(`\tEtherToken took ${gasCost(etherToken)}.`);
+  // console.log(`\tEtherToken took ${gasCost(etherToken)}.`);
   const neumarkFactory = await NeumarkFactory.new();
   neumark = await Neumark.new(neumarkFactory.address);
   neumarkController = await NeumarkController.new(neumark.address);
@@ -34,17 +34,17 @@ export async function spawnLockedAccount(longStopDateMonths, unlockPenalty) {
     etherToken.address,
     curve.address,
     longStopDateMonths * months,
-    Math.round(unlockPenalty * FP_SCALE)
+    Math.round(unlockPenalty * ether(1))
   );
-  console.log(`\tLockedAccount took ${gasCost(lockedAccount)}.`);
+  // console.log(`\tLockedAccount took ${gasCost(lockedAccount)}.`);
   feePool = await FeeDistributionPool.new(etherToken.address, neumark.address);
-  console.log(`\FeeDistributionPool took ${gasCost(feePool)}.`);
+  // console.log(`\FeeDistributionPool took ${gasCost(feePool)}.`);
   await lockedAccount.setPenaltyDistribution(feePool.address);
 }
 
 export async function spawnCrowdsale(startTimestamp, duration, minCap, maxCap) {
   crowdsale = await Crowdsale.new(startTimestamp, startTimestamp + duration, minCap, maxCap,
-    etherToken.address, neumarkController.address, lockedAccount.address, curve.address);
+    etherToken.address, lockedAccount.address, curve.address);
   // console.log(lockedAccount.setController);
   await lockedAccount.setController(crowdsale.address);
 }

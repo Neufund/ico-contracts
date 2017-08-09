@@ -34,8 +34,8 @@ contract('LockedAccount', (accounts) => {
     const neumarks = parseInt(eventValue(tx, 'NeumarksIssued', 'neumarks'));
     assert.equal(parseInt(await chain.neumark.balanceOf(investor)), neumarks, 'neumarks must be allocated');
     // only controller can lock
-    tx = await testCommitmentContract.investFor(investor, ticket, neumarks, { value: ticket, from: investor });
-    assert.equal(error(tx), 0, "Expected OK rc from lock()");
+    await testCommitmentContract.investFor(investor, ticket, neumarks, { value: ticket, from: investor });
+    // assert.equal(error(tx), 0, "Expected OK rc from lock()");
     const investorBalance = await chain.lockedAccount.balanceOf(investor);
     assert.equal(parseInt(investorBalance[0]), ticket, 'investor balance should equal locked eth');
     assert.equal(parseInt(investorBalance[1]), neumarks, 'investor neumarks due should equal neumarks');
@@ -44,7 +44,7 @@ contract('LockedAccount', (accounts) => {
     assert.equal(investorBalance[2], timebase + 18 * 30 * chain.days, 'more or less 18 months in future');
     // lock someone else
     const investor2 = accounts[2];
-    tx = await testCommitmentContract.investFor(investor2, ticket / 2, ticket / 4, { value: ticket / 2, from: investor2 });
+    await testCommitmentContract.investFor(investor2, ticket / 2, ticket / 4, { value: ticket / 2, from: investor2 });
     assert.equal(await chain.lockedAccount.totalLockedAmount(), 1.5 * ticket, "lock should own locked amount");
     assert.equal(await chain.etherToken.totalSupply(), 1.5 * ticket, 'ownedToken should own locked amount');
     assert.equal(await chain.lockedAccount.totalInvestors(), 2, 'should have 2 investors');
@@ -62,17 +62,18 @@ contract('LockedAccount', (accounts) => {
     const neumarks = parseInt(eventValue(tx, 'NeumarksIssued', 'neumarks'));
     assert.equal(parseInt(await chain.neumark.balanceOf(investor)), neumarks, 'neumarks must be allocated');
     // only controller can lock
-    tx = await testCommitmentContract.investFor(investor, ticket, neumarks, { value: ticket, from: accounts[0] });
-    assert.equal(error(tx), 0, "Expected OK rc from lock()");
+    await testCommitmentContract.investFor(investor, ticket, neumarks, { value: ticket, from: accounts[0] });
+    // assert.equal(error(tx), 0, "Expected OK rc from lock()");
     // move time forward within longstop date
     await chain.lockedAccount.mockTime(timebase + chain.days);
     // controller says yes
     await testCommitmentContract.succ();
     // must enable token transfers
     await chain.neumarkController.enableTransfers(true);
-    // investor approves transfer to curve contract
+    // investor approves transfer to lock contract to burn neumarks
     //console.log(`investor has ${parseInt(await chain.neumark.balanceOf(investor))}`);
-    await chain.neumark.approve(chain.curve.address, neumarks, {from: investor});
+    tx = await chain.neumark.approve(chain.lockedAccount.address, neumarks, {from: investor});
+    assert.equal(eventValue(tx, 'Approval', '_amount'), neumarks);
     // only investor can unlock and must burn tokens
     tx = await chain.lockedAccount.unlock({from: investor});
     assert.equal(error(tx), 0, "Expected OK rc from unlock()");
@@ -87,7 +88,7 @@ contract('LockedAccount', (accounts) => {
     assert.equal(parseInt(await chain.etherToken.balanceOf(investor)) + parseInt(await chain.etherToken.balanceOf(chain.feePool.address)),
       ticket, "investor + penalty == 1 ether");
     // check penalty value
-    const penalty = (ticket * await chain.lockedAccount.PENALTY_PRC()) / await chain.lockedAccount.FP_SCALE();
+    const penalty = (ticket * await chain.lockedAccount.penaltyFraction()) / chain.ether(1);
     assert.equal(await chain.etherToken.balanceOf(chain.feePool.address), penalty, 'fee pool has correct penalty value');
     // 0 neumarks at the end
     assert.equal(parseInt(await chain.neumark.balanceOf(investor)), 0, 'all investor neumarks burned');

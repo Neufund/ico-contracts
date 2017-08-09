@@ -6,7 +6,6 @@ const Crowdsale = artifacts.require('Crowdsale');
 
 const should = require('chai')
   .use(require('chai-as-promised'))
-  .use(require('chai-bignumber')(BigNumber))
   .should();
 
 contract(Crowdsale, (accounts) => {

@@ -147,7 +147,7 @@ contract('Curve', (accounts) => {
     const r = await curve.issue(100, accounts[1]);
     console.log(`\tIssue took ${gasCost(r)}.`);
     const neumarks = (await neumark.balanceOf.call(accounts[1])).valueOf();
-    const burned = await curve.burnNeumark(neumarks, accounts[1]);
+    const burned = await curve.burnNeumark(neumarks, {from: accounts[1]});
     console.log(`\tBurn took ${gasCost(burned)}.`);
     assert.equal((await neumark.balanceOf.call(accounts[1])).valueOf(), 0);
   });
