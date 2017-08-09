@@ -14,7 +14,7 @@ contract TestLockedAccount is LockedAccount {
         require(ico != address(0));
         Account storage a = accounts[msg.sender];
         if (amount > a.balance)
-            return logError(Status.NOT_ENOUGH_FUNDS);
+            return logError(Status.INSUFFICIENT_FUNDS);
         //if (canInvest(ico) {
             // or whatever interface we'll have here to notify of balance change!
         //    ico.invest(amount);

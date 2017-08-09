@@ -8,7 +8,7 @@ contract ReturnsErrors {
     enum Status {
         SUCCESS,
         NOT_ENOUGH_NEUMARKS_TO_UNLOCK, // investor didn't approve enough neumarks to be burned
-        NOT_ENOUGH_FUNDS // not enough funds on investors account (for example to invest in ICO)
+        INSUFFICIENT_FUNDS // not enough funds on investors account (for example to invest in ICO)
 
         /// @dev Add your own
     }
