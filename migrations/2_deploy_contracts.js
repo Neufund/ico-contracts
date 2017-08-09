@@ -6,7 +6,7 @@ const Neumark = artifacts.require('./Neumark.sol');
 const LockedAccount = artifacts.require('LockedAccount');
 const SafeMath = artifacts.require('SafeMath');
 const EtherToken = artifacts.require('EtherToken');
-const Crowdsale = artifacts.require('Crowdsale');
+const PublicCommitment = artifacts.require('PublicCommitment');
 const Curve = artifacts.require('./Curve.sol');
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -38,9 +38,9 @@ module.exports = deployer =>
       Math.round(0.1 * ether(1)) // fractions are in 10**18
     );
     const lock = await LockedAccount.deployed();
-    console.log('Deploying crowdsale');
+    console.log('Deploying public commitment');
     await deployer.deploy(
-      Crowdsale,
+      PublicCommitment,
       Date.now() / 1000 + 60,
       Date.now() / 1000 + 900,
       ether(1),
@@ -49,12 +49,12 @@ module.exports = deployer =>
       lock.address,
       Curve.address
     );
-    const crowdsale = await Crowdsale.deployed();
-    await lock.setController(crowdsale.address);
-    //  await sleep(10000); // Verify that Truffle actually waits for the promise to complete.
+    const publicCommitment = await PublicCommitment.deployed();
+    console.log('Commitment deployed');
+    await lock.setController(publicCommitment.address);
     console.log('Contracts deployed!');
 
     console.log('----------------------------------');
-    console.log(`ICO contract: ${crowdsale.address}`);
+    console.log(`ICO contract: ${publicCommitment.address}`);
     console.log('----------------------------------');
   });

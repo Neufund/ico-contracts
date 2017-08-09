@@ -6,7 +6,7 @@ const NeumarkController = artifacts.require('NeumarkController');
 const NeumarkFactory = artifacts.require('NeumarkFactory');
 const Neumark = artifacts.require('Neumark');
 const Curve = artifacts.require('Curve');
-const Crowdsale = artifacts.require('Crowdsale');
+const TestCommitment = artifacts.require('TestCommitment');
 const FeeDistributionPool = artifacts.require('FeeDistributionPool');
 
 export let neumark;
@@ -14,7 +14,7 @@ export let neumarkController;
 export let etherToken;
 export let lockedAccount;
 export let curve;
-export let crowdsale;
+export let commitment;
 export let feePool;
 
 export const days = 24 * 60 * 60;
@@ -42,9 +42,9 @@ export async function spawnLockedAccount(longStopDateMonths, unlockPenalty) {
   await lockedAccount.setPenaltyDistribution(feePool.address);
 }
 
-export async function spawnCrowdsale(startTimestamp, duration, minCap, maxCap) {
-  crowdsale = await Crowdsale.new(startTimestamp, startTimestamp + duration, minCap, maxCap,
+export async function spawnPublicCommitment(startTimestamp, duration, minCommitment, maxCommitment) {
+  commitment = await TestCommitment.new(startTimestamp, startTimestamp + duration, minCommitment, maxCommitment,
     etherToken.address, lockedAccount.address, curve.address);
   // console.log(lockedAccount.setController);
-  await lockedAccount.setController(crowdsale.address);
+  await lockedAccount.setController(commitment.address);
 }
