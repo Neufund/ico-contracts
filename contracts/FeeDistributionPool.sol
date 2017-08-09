@@ -23,8 +23,6 @@ contract FeeDistributionPool {
         public
     {
         require(amount > 0);
-        // check if token is supported for revenue distribution
-        // require(address(feeToken) == address(fromToken));
         // check if controller made allowance
         require(feeToken.allowance(msg.sender, address(this)) >= amount);
         // transfer to self yourself
