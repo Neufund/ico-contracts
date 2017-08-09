@@ -1,11 +1,12 @@
 pragma solidity ^0.4.11;
 
 import "../LockedAccount.sol";
+import '../TokenWithDeposit.sol';
 
-contract TestCommitmentContract {
+contract TestCommitmentContract is ReturnsErrors {
 
     LockedAccount private lock;
-    MutableToken private ownedToken;
+    TokenWithDeposit private ownedToken;
 
     function succ() {
         lock.controllerSucceeded();
@@ -17,19 +18,18 @@ contract TestCommitmentContract {
 
     function investFor(address investor, uint256 amount, uint256 neumarks)
         payable
-        returns (uint8)
     {
         // mint new ETH-T for yourself
         require(ownedToken.deposit.value(msg.value)(address(this), amount));
         // make allowance for lock
         require(ownedToken.approve(address(lock), amount));
         // lock in lock
-        return (uint8)(lock.lock(investor, amount, neumarks));
+        lock.lock(investor, amount, neumarks);
     }
 
     function invest()
         payable
-        returns (uint8)
+        returns (Status)
     {
         // call neumark contracts to mine
         require(msg.value > 0);
@@ -39,10 +39,11 @@ contract TestCommitmentContract {
         // make allowance for lock
         require(ownedToken.approve(address(lock), msg.value));
         // lock in lock
-        require((uint8)(lock.lock(msg.sender, msg.value, neumarks)) == 0);
+        lock.lock(msg.sender, msg.value, neumarks);
+        return Status.SUCCESS;
     }
 
-    function TestCommitmentContract(LockedAccount _lock, MutableToken _ownedToken) {
+    function TestCommitmentContract(LockedAccount _lock, TokenWithDeposit _ownedToken) {
         lock = _lock;
         ownedToken = _ownedToken;
     }

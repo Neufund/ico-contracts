@@ -3,23 +3,21 @@ pragma solidity ^0.4.11;
 import 'zeppelin-solidity/contracts/token/MintableToken.sol';
 import 'zeppelin-solidity/contracts/math/SafeMath.sol';
 import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
-import './NeumarkController.sol';
 import './EtherToken.sol';
 import './LockedAccount.sol';
-import './Neumark.sol';
 import './TimeSource.sol';
 import './Curve.sol';
+import './Math.sol';
+import './TokenWithDeposit.sol';
 
 
-contract Crowdsale is Ownable, TimeSource {
-    using SafeMath for uint256;
-
+contract Crowdsale is Ownable, TimeSource, Math {
     //events
     event CommitmentCompleted(bool isSuccess, uint256 totalCommitedAmount);
     event Commited(address indexed investor, uint256 amount, uint256 neumarks, uint256 eurEquivalent);
 
     LockedAccount public lockedAccount;
-    MutableToken public ownedToken;
+    TokenWithDeposit public ownedToken;
     Neumark public neumarkToken;
     NeumarkController public neumarkController;
     Curve public curve;
@@ -32,8 +30,7 @@ contract Crowdsale is Ownable, TimeSource {
     uint256 public constant ICO_ETHEUR_RATE = 200;
 
     function Crowdsale(uint256 _startDate, uint256 _endDate, uint256 _minCap,
-         uint256 _maxCap, EtherToken _ethToken,
-          NeumarkController _neumarkController, LockedAccount _locked,Curve _curve )
+         uint256 _maxCap, EtherToken _ethToken, LockedAccount _locked, Curve _curve )
     {
         require(_endDate >= _startDate);
         require(_minCap >= 0);
@@ -45,10 +42,10 @@ contract Crowdsale is Ownable, TimeSource {
         minCap = _minCap;
 
         lockedAccount = _locked;
-        neumarkToken = _neumarkController.TOKEN();
-        neumarkController = _neumarkController;
-        ownedToken = _ethToken;
         curve = _curve;
+        neumarkController = _curve.NEUMARK_CONTROLLER();
+        neumarkToken = neumarkController.TOKEN();
+        ownedToken = _ethToken;
     }
 
     function wasSuccessful()
@@ -123,7 +120,7 @@ contract Crowdsale is Ownable, TimeSource {
         require(!hasEnded());
 
         // convert ether into full euros
-        uint256 fullEuros = msg.value.mul(ICO_ETHEUR_RATE).div(1 ether);
+        uint256 fullEuros = proportion(msg.value, ICO_ETHEUR_RATE, 1 ether);
         // get neumarks
         uint256 neumark = curve.issue(fullEuros, msg.sender);
         //send Money to ETH-T contract
