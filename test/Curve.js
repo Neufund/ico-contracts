@@ -27,7 +27,7 @@ contract('Curve', (accounts) => {
     console.log(`\tCurve took ${gasCost(curve)}.`);
   });
   it('should start at zero', async () => {
-    assert.equal(await curve.totalEuros.call(), 0);
+    assert.equal(await curve.totalEuroUlps.call(), 0);
   });
   it('should compute exactly over the whole range', async () => {
     const correct = [
@@ -149,27 +149,43 @@ contract('Curve', (accounts) => {
     );
   });
   it('should issue Neumarks', async () => {
-    assert.equal((await curve.totalEuros.call()).valueOf(), 0);
+    assert.equal((await curve.totalEuroUlps.call()).valueOf(), 0);
     assert.equal((await neumark.totalSupply.call()).valueOf(), 0);
 
-    const r1 = await curve.issue(100, accounts[1]); // TODO check result
+    const r1 = await curve.issue(EUR_DECIMALS.mul(100), accounts[1]); // TODO check result
     console.log(`\tIssue took ${gasCost(r1)}.`);
-    assert.equal((await curve.totalEuros.call()).valueOf(), 100);
-    assert.equal((await neumark.totalSupply.call()).valueOf(), 649);
-    assert.equal((await neumark.balanceOf.call(accounts[1])).valueOf(), 649);
+    assert.equal((await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(), 100);
+    assert.equal((await neumark.totalSupply.call()).div(NMK_DECIMALS).floor().valueOf(), 649);
+    assert.equal(
+      (await neumark.balanceOf.call(accounts[1])).div(NMK_DECIMALS).floor().valueOf(),
+      649
+    );
 
-    const r2 = await curve.issue(900, accounts[2]);
+    const r2 = await curve.issue(EUR_DECIMALS.mul(900), accounts[2]);
     console.log(`\tIssue took ${gasCost(r2)}.`);
-    assert.equal((await curve.totalEuros.call()).valueOf(), 1000);
-    assert.equal((await neumark.totalSupply.call()).valueOf(), 6499);
-    assert.equal((await neumark.balanceOf.call(accounts[2])).valueOf(), 6499 - 649);
+    assert.equal((await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(), 1000);
+    assert.equal((await neumark.totalSupply.call()).div(NMK_DECIMALS).floor().valueOf(), 6499);
+    assert.equal(
+      (await neumark.balanceOf.call(accounts[2])).div(NMK_DECIMALS).floor().valueOf(),
+      5849
+    );
   });
   it('should issue and then burn Neumarks', async () => {
-    const r = await curve.issue(100, accounts[1]);
+    // Issue Neumarks for 1 mln Euros
+    const euroUlps = EUR_DECIMALS.mul(1000000);
+    const r = await curve.issue(euroUlps, accounts[1]);
     console.log(`\tIssue took ${gasCost(r)}.`);
-    const neumarks = (await neumark.balanceOf.call(accounts[1])).valueOf();
-    const burned = await curve.burnNeumark(neumarks, accounts[1]);
+    const neumarkUlps = await neumark.balanceOf.call(accounts[1]);
+    const neumarks = neumarkUlps.div(NMK_DECIMALS).floor().valueOf();
+
+    // Burn a third the Neumarks
+    const toBurn = Math.floor(neumarks / 3);
+    const toBurnUlps = NMK_DECIMALS.mul(toBurn);
+    const burned = await curve.burnNeumark(toBurnUlps, accounts[1]);
     console.log(`\tBurn took ${gasCost(burned)}.`);
-    assert.equal((await neumark.balanceOf.call(accounts[1])).valueOf(), 0);
+    assert.equal(
+      (await neumark.balanceOf.call(accounts[1])).div(NMK_DECIMALS).floor().valueOf(),
+      neumarks - toBurn
+    );
   });
 });
