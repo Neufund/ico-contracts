@@ -120,16 +120,16 @@ contract Crowdsale is Ownable, TimeSource {
         require(!hasEnded());
 
         // convert ether into full euros
-        uint256 fullEuros = msg.value.mul(200).div(1 ether);
+        uint256 euroUlps = msg.value.mul(200);
         // get neumarks
-        uint256 neumark = curve.issue(fullEuros, msg.sender);
+        uint256 neumarkUlps = curve.issue(euroUlps, msg.sender);
         //send Money to ETH-T contract
         ownedToken.deposit.value(msg.value)(address(this), msg.value);
         // make allowance for lock
         ownedToken.approve(address(lockedAccount), msg.value);
         // lock in lock
-        lockedAccount.lock(msg.sender, msg.value, neumark);
-        Commited(msg.sender, msg.value, neumark, fullEuros);
+        lockedAccount.lock(msg.sender, msg.value, neumarkUlps);
+        Commited(msg.sender, msg.value, neumarkUlps, euroUlps);
     }
 
     function validPurchase()
