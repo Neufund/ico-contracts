@@ -121,16 +121,16 @@ contract Curve is Ownable {
         // TODO: Proof or check for overflow.
 
         // Gas consumption (for x in EUR):
-        // 0    325 409 (84)
-        // 1    586
-        // 10   586
-        // 100  681
-        // 10³  681
-        // 10⁶  1120
-        // 10⁹  4241
-        // CAP  4241
-        // LIM  13328
-        // ≥    342
+        // 0    324 408 (84)
+        // 1    530
+        // 10   530
+        // 100  606
+        // 10³  606
+        // 10⁶  953
+        // 10⁹  3426
+        // CAP  4055
+        // LIM  10686
+        // ≥    258
 
         uint256 NMK_DECIMALS = 10**18;
         uint256 EUR_DECIMALS = 10**18;
@@ -151,7 +151,7 @@ contract Curve is Ownable {
         uint256 C = CAP * NMK_DECIMALS;
 
         // Compute C - C·(1 - 1/D)^x using binomial expansion
-        // Assuming D ≫ 1
+        // Assuming x ≫ 1 and D ≫ 1
         uint256 n = C;
         uint256 a = 0;
         uint256 d = D;
@@ -160,12 +160,10 @@ contract Curve is Ownable {
                 n := div(mul(n, x), d)
                 jumpi(done, iszero(n))
                 a := add(a, n)
-                x := sub(x, 1)
                 d := add(d, D)
                 n := div(mul(n, x), d)
                 jumpi(done, iszero(n))
                 a := sub(a, n)
-                x := sub(x, 1)
                 d := add(d, D)
                 jump(repeat)
             done:
@@ -181,7 +179,6 @@ contract Curve is Ownable {
             // Exit if n == 0
             if(n == 0) break;
             a += n;
-            x -= 1;
             d += D;
 
             // Negative term
@@ -191,7 +188,6 @@ contract Curve is Ownable {
             // Exit if n == 0
             if(n == 0) break;
             a -= n;
-            x -= 1;
             d += D;
         }
         */
