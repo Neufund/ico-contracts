@@ -172,7 +172,6 @@ contract Curve is Ownable {
         return a;
     }
 
-
     function inverse(uint256 x, uint256 min, uint256 max)
         constant
         returns (uint256)
