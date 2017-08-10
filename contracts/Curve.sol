@@ -120,52 +120,85 @@ contract Curve is Ownable {
         // TODO: Proof error bounds / correctness.
         // TODO: Proof or check for overflow.
 
-        // Gas consumption (for x):
-        // 0    468
-        // 1    621
-        // 10   784
-        // 100  784
-        // 10³  937
-        // 10⁶  1416
-        // 10⁹  6156
-        // >    240
+        // Gas consumption (for x in EUR):
+        // 0    325 409 (84)
+        // 1    586
+        // 10   586
+        // 100  681
+        // 10³  681
+        // 10⁶  1120
+        // 10⁹  4241
+        // CAP  4241
+        // LIM  13328
+        // ≥    342
 
-        // (1 - N/D) ≈ e^(-6.5/C)
-        uint256 C = 1500000000;
-        uint256 N = 343322036817947715929;
-        uint256 D = 2**96;
-        uint256 P = 2**32;
+        uint256 NMK_DECIMALS = 10**18;
+        uint256 EUR_DECIMALS = 10**18;
+        uint256 CAP = 1500000000;
 
-        // Hard cap
-        if(x >= C) {
-            return 1497744841;
+        // At some point the curve is flat to within a small
+        // fraction of a Neumark. We just make it flat.
+        uint256 LIM = 83 * 10**8 * EUR_DECIMALS;
+        if(x >= LIM) {
+            return CAP * NMK_DECIMALS;
         }
 
-        // Compute C - C·(1 - N/D)^x using binomial expansion
-        uint256 n = C * P;
+        // 1 - 1/D ≈ e^(-6.5 / CAP·EUR_DECIMALS)
+        // D = Round[1 / (1 - e^(-6.5 / CAP·EUR_DECIMALS))]
+        uint256 D = 230769230769230769230769231;
+
+        // Cap in NMK-ULP (Neumark units of least precision).
+        uint256 C = CAP * NMK_DECIMALS;
+
+        // Compute C - C·(1 - 1/D)^x using binomial expansion
+        // Assuming D ≫ 1
+        uint256 n = C;
         uint256 a = 0;
-        uint256 i = 0;
-        while(n != 0) {
+        uint256 d = D;
+        assembly {
+            repeat:
+                n := div(mul(n, x), d)
+                jumpi(done, iszero(n))
+                a := add(a, n)
+                x := sub(x, 1)
+                d := add(d, D)
+                n := div(mul(n, x), d)
+                jumpi(done, iszero(n))
+                a := sub(a, n)
+                x := sub(x, 1)
+                d := add(d, D)
+                jump(repeat)
+            done:
+        }
+
+        /*
+        while(true) {
 
             // Positive term
-            n *= (x - i) * N;
-            i += 1;
-            n /= i;
-            n /= D;
-            a += n;
+            n *= x;
+            n /= d;
 
             // Exit if n == 0
             if(n == 0) break;
+            a += n;
+            x -= 1;
+            d += D;
 
             // Negative term
-            n *= (x - i) * N;
-            i += 1;
-            n /= i;
-            n /= D;
+            n *= x;
+            n /= d;
+
+            // Exit if n == 0
+            if(n == 0) break;
             a -= n;
+            x -= 1;
+            d += D;
         }
-        return a / P;
+        */
+
+        return a;
     }
+
 
     function inverse(uint256 x, uint256 min, uint256 max)
         constant
