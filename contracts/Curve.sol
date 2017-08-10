@@ -111,6 +111,17 @@ contract Curve is Ownable {
         return euros;
     }
 
+    // Gas consumption (for x in EUR):
+    // 0    324
+    // 1    530
+    // 10   530
+    // 100  606
+    // 10³  606
+    // 10⁶  953
+    // 10⁹  3426
+    // CAP  4055
+    // LIM  10686
+    // ≥    258
     function curve(uint256 x)
         public
         constant
@@ -119,18 +130,6 @@ contract Curve is Ownable {
         // TODO: Explain.
         // TODO: Proof error bounds / correctness.
         // TODO: Proof or check for overflow.
-
-        // Gas consumption (for x in EUR):
-        // 0    324 408 (84)
-        // 1    530
-        // 10   530
-        // 100  606
-        // 10³  606
-        // 10⁶  953
-        // 10⁹  3426
-        // CAP  4055
-        // LIM  10686
-        // ≥    258
 
         uint256 NMK_DECIMALS = 10**18;
         uint256 EUR_DECIMALS = 10**18;
@@ -150,8 +149,10 @@ contract Curve is Ownable {
         // Cap in NMK-ULP (Neumark units of least precision).
         uint256 C = CAP * NMK_DECIMALS;
 
-        // Compute C - C·(1 - 1/D)^x using binomial expansion
-        // Assuming x ≫ 1 and D ≫ 1
+        // Compute C - C·(1 - 1/D)^x using binomial expansion.
+        // Assuming D ≫ x ≫ 1 so we don't bother with
+        // the `x -= 1` because we will converge before this
+        // has a noticable impact on `x`.
         uint256 n = C;
         uint256 a = 0;
         uint256 d = D;
@@ -168,30 +169,6 @@ contract Curve is Ownable {
                 jump(repeat)
             done:
         }
-
-        /*
-        while(true) {
-
-            // Positive term
-            n *= x;
-            n /= d;
-
-            // Exit if n == 0
-            if(n == 0) break;
-            a += n;
-            d += D;
-
-            // Negative term
-            n *= x;
-            n /= d;
-
-            // Exit if n == 0
-            if(n == 0) break;
-            a -= n;
-            d += D;
-        }
-        */
-
         return a;
     }
 
