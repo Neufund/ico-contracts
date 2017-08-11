@@ -106,4 +106,7 @@ contract(TestCommitment, ([owner, investor, investor2]) => {
     // escape hatch is used after C is finalized
     // this will lower the cap so in theory if C was finished due to cap it may become active again!
   });
+
+  it('cap revealing no-repeat and no-before', async () => {
+  });
 });
