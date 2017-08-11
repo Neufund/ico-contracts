@@ -2,13 +2,16 @@ import advanceToBlock from './helpers/advanceToBlock';
 import EVMThrow from './helpers/EVMThrow';
 import * as chain from './helpers/spawnContracts'
 
+const BigNumber = web3.BigNumber
+
 const TestCommitment = artifacts.require('TestCommitment');
 
-const should = require('chai')
+const expect = require('chai')
   .use(require('chai-as-promised'))
-  .should();
+  .use(require('chai-bignumber')(BigNumber))
+  .expect;
 
-contract(TestCommitment, (accounts) => {
+contract(TestCommitment, ([owner, investor, investor2]) => {
   let startTimestamp = Math.floor(new Date() / 1000 - chain.days);
 
   beforeEach(async () => {
@@ -17,19 +20,31 @@ contract(TestCommitment, (accounts) => {
     await chain.spawnPublicCommitment(startTimestamp, chain.months, chain.ether(10), chain.ether(2000), chain.ether(1), 218.1192809)
   });
 
+  it('first commit sets caps', async () => {
+    assert.equal(await chain.lockedAccount.controller(), chain.commitment.address, 'must controll lockedAccount');
+    expect(await chain.commitment.started()).to.be.false;
+    await chain.commitment.commit({ value: chain.ether(1), from: investor });
+    // caps are set from min and max commitments
+    expect(await chain.commitment.maxAbsCap(), 'max cap to max commitment').to.be.bignumber.equal(chain.ether(2000));
+    expect(await chain.commitment.minAbsCap(), 'min cap to min commitment').to.be.bignumber.equal(chain.ether(10));
+    expect(await chain.commitment.started()).to.be.true;
+  });
 
   it('should be able to read Commitment parameters', async () => {
     assert.equal(await chain.commitment.startDate.call(), startTimestamp);
     assert.equal(await chain.commitment.paymentToken.call(), chain.etherToken.address);
     assert.equal(await chain.commitment.lockedAccount.call(), chain.lockedAccount.address);
     assert.equal(await chain.commitment.curve.call(), chain.curve.address);
+    assert.equal(await chain.commitment.minCommitment.call(), chain.ether(10));
+    // caps must be zero before investment
+    assert.equal(await chain.commitment.maxAbsCap.call(), 0);
   });
 
-  it('should complete Commitment with failed state', async () => {
+  it('should complete Commitment with failed state without any investors', async () => {
     assert.equal(await chain.lockedAccount.lockState.call(), 1, 'lock should be in AcceptingLocks');
     const timestamp = await chain.lockedAccount.currentTime();
     assert.equal(await chain.commitment.hasEnded.call(), false, 'commitment should run');
-    console.log(`obtained timestamp ${timestamp}`);
+    // console.log(`obtained timestamp ${timestamp}`);
     // make commitment finish due to end date
     await chain.commitment._changeEndDate(timestamp - 1);
     assert.equal(await chain.commitment.hasEnded.call(), true, 'commitment should end');
@@ -42,10 +57,14 @@ contract(TestCommitment, (accounts) => {
   });
 
   it('should commit 1 ether', async () => {
-    const investor = accounts[1];
     const ticket = 1 * 10 ** 18;
     assert.equal(await chain.commitment.hasEnded.call(), false, 'commitment should run');
-    await chain.commitment.commit({ value: ticket, from: investor });
+    let tx = await chain.commitment.commit({ value: ticket, from: investor });
+    // check event
+    const event = eventValue(tx, 'FundsInvested');
+    expect(event).to.exist();
+    expect(event.args.amount).to.be.bignumber.equal(ticket);
+    // check balances
     assert.equal(await chain.lockedAccount.totalLockedAmount(), ticket, 'lockedAccount balance must match ticket');
     assert.equal(await chain.lockedAccount.totalInvestors(), 1);
     assert.equal(await chain.etherToken.totalSupply(), ticket, 'ticket must be in etherToken');
@@ -57,7 +76,6 @@ contract(TestCommitment, (accounts) => {
   });
 
   it('commitment should succeed due to cap reached', async () => {
-    const investor = accounts[1];
     const ticket = 1 * 10 ** 18;
     assert.equal(await chain.commitment.hasEnded.call(), false, 'commitment should run');
     await chain.commitment.commit({ value: ticket, from: investor });
