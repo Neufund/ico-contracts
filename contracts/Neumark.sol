@@ -12,7 +12,7 @@ import './NeumarkFactory.sol';
 contract Neumark is MiniMeToken {
 
     string constant TOKEN_NAME     = "Neumark";
-    uint8  constant TOKEN_DECIMALS = 0;
+    uint8  constant TOKEN_DECIMALS = 18;
     string constant TOKEN_SYMBOL   = "NMK";
 
     function Neumark(
