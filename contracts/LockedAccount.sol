@@ -125,8 +125,7 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
                 neumarkCurve.burnNeumark(a.neumarksDue);
                 // take the penalty if before longstopdate
                 if (currentTime() < a.longstopDate) {
-                    // todo: should use divRound
-                    uint256 penalty = fraction(a.balance, penaltyFraction); // Math.divRound(Math.mul(a.balance, penaltyFraction), FP_SCALE);
+                    uint256 penalty = fraction(a.balance, penaltyFraction);
                     // allowance for penalty to pool contract
                     require(ownedToken.approve(address(feePool), penalty));
                     // add to distribution

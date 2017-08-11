@@ -9,120 +9,132 @@ contract Curve is Ownable {
 
     NeumarkController public NEUMARK_CONTROLLER;
 
-    uint256 public totalEuros;
+    uint256 public totalEuroUlps;
 
     event NeumarksIssued(address beneficiary, uint256 euros, uint256 neumarks);
     event NeumarksBurned(address beneficiary, uint256 euros, uint256 neumarks);
 
-    modifier checkInverse(uint256 euros, uint256 neumark)
+    modifier checkInverse(uint256 euroUlps, uint256 neumarkUlps)
     {
         // TODO: Error margin?
-        require(rewind(euros) == neumark);
+        require(rewind(euroUlps) == neumarkUlps);
         _;
     }
 
     function Curve(NeumarkController neumarkController)
         Ownable()
     {
-        totalEuros = 0;
+        totalEuroUlps = 0;
         NEUMARK_CONTROLLER = neumarkController;
     }
 
-    function issue(uint256 euros, address beneficiary)
+    function issue(uint256 euroUlps, address beneficiary)
         //onlyOwner()
         public
         returns (uint256)
     {
-        require(totalEuros + euros >= totalEuros);
-        uint256 toIssue = incremental(euros);
-        totalEuros = totalEuros + euros;
-        assert(NEUMARK_CONTROLLER.generateTokens(beneficiary, toIssue));
-        NeumarksIssued(beneficiary, euros, toIssue);
-        return toIssue;
+        require(totalEuroUlps + euroUlps >= totalEuroUlps);
+        uint256 neumarkUlps = incremental(euroUlps);
+        totalEuroUlps = totalEuroUlps + euroUlps;
+        assert(NEUMARK_CONTROLLER.generateTokens(beneficiary, neumarkUlps));
+        NeumarksIssued(beneficiary, euroUlps, neumarkUlps);
+        return neumarkUlps;
     }
 
-    function burnNeumark(uint256 neumarks, address beneficiary)
+    function burnNeumarkFor(uint256 neumarkUlps, address beneficiary)
         // @remco I do not see use case where we burn someone's neumark
         //onlyOwner()
         public
         returns (uint256)
     {
-        uint256 euros = rewindInverse(neumarks);
-        burn(euros, neumarks, beneficiary);
-        return euros;
+        uint256 euroUlps = rewindInverse(neumarkUlps);
+        burn(euroUlps, neumarkUlps, beneficiary);
+        return euroUlps;
     }
 
-    function burnNeumark(uint256 neumarks)
+    function burnNeumark(uint256 neumarkUlps)
         // @remco I do not see use case where we burn someone's neumark
         //onlyOwner()
         public
     {
-        uint256 euros = rewindInverse(neumarks);
-        burn(euros, neumarks, msg.sender);
+        uint256 euroUlps = rewindInverse(neumarkUlps);
+        burn(euroUlps, neumarkUlps, msg.sender);
     }
 
-    function burn(uint256 euros, uint256 neumarks, address beneficiary)
+    function burn(uint256 euroUlps, uint256 neumarkUlps, address beneficiary)
         //onlyOwner()
         //@remco - this should be internal function, i do not see an use case for any client to call it
         public
-        checkInverse(euros, neumarks)
+        // TODO: checkInverse(euroUlps, neumarkUlps)
         // TODO: Client side code
         // TODO: Solve race condition?
     {
-        totalEuros -= euros;
-        assert(NEUMARK_CONTROLLER.destroyTokens(beneficiary, neumarks));
-        NeumarksBurned(beneficiary, euros, neumarks);
+        totalEuroUlps -= euroUlps;
+        assert(NEUMARK_CONTROLLER.destroyTokens(beneficiary, neumarkUlps));
+        NeumarksBurned(beneficiary, euroUlps, neumarkUlps);
     }
 
-    function cumulative(uint256 euros)
+    function cumulative(uint256 euroUlps)
         public
         constant
         returns (uint256)
     {
-        return curve(euros);
+        return curve(euroUlps);
     }
 
-    function incremental(uint256 euros)
+    function incremental(uint256 euroUlps)
         public
         constant
         returns (uint256)
     {
-        require(totalEuros + euros >= totalEuros);
-        uint256 from = cumulative(totalEuros);
-        uint256 to = cumulative(totalEuros + euros);
+        require(totalEuroUlps + euroUlps >= totalEuroUlps);
+        uint256 from = cumulative(totalEuroUlps);
+        uint256 to = cumulative(totalEuroUlps + euroUlps);
         assert(to >= from); // Issuance curve needs to be monotonic
         return to - from;
     }
 
-    function rewind(uint256 euros)
+    function rewind(uint256 euroUlps)
         constant
         returns (uint256)
     {
-        require(totalEuros >= euros);
-        uint256 from = cumulative(totalEuros - euros);
-        uint256 to = cumulative(totalEuros);
+        require(totalEuroUlps >= euroUlps);
+        uint256 from = cumulative(totalEuroUlps - euroUlps);
+        uint256 to = cumulative(totalEuroUlps);
         assert(to >= from); // Issuance curve needs to be monotonic
         return to - from;
     }
 
-    function rewindInverse(uint256 neumarks)
+    function rewindInverse(uint256 neumarkUlps)
         constant
         returns (uint256)
     {
-        if(neumarks == 0) {
+        if(neumarkUlps == 0) {
             return 0;
         }
-        uint256 to = cumulative(totalEuros);
-        require(to >= neumarks);
-        uint256 fromNmk = to - neumarks;
-        uint256 fromEur = inverse(fromNmk, 0, totalEuros);
-        assert(totalEuros >= fromEur);
-        uint256 euros = totalEuros - fromEur;
-        assert(rewind(euros) == neumarks);
+        uint256 to = cumulative(totalEuroUlps);
+        require(to >= neumarkUlps);
+        uint256 fromNmk = to - neumarkUlps;
+        uint256 fromEur = inverse(fromNmk, 0, totalEuroUlps);
+        assert(totalEuroUlps >= fromEur);
+        uint256 euros = totalEuroUlps - fromEur;
+        // TODO: Inverse is not exact!
+        // assert(rewind(euros) == neumarkUlps);
         return euros;
     }
 
-    function curve(uint256 x)
+    // Gas consumption (for x in EUR):
+    // 0    324
+    // 1    530
+    // 10   530
+    // 100  606
+    // 10³  606
+    // 10⁶  953
+    // 10⁹  3426
+    // CAP  4055
+    // LIM  10686
+    // ≥    258
+    function curve(uint256 euroUlps)
         public
         constant
         returns(uint256)
@@ -131,69 +143,63 @@ contract Curve is Ownable {
         // TODO: Proof error bounds / correctness.
         // TODO: Proof or check for overflow.
 
-        // Gas consumption (for x):
-        // 0    468
-        // 1    621
-        // 10   784
-        // 100  784
-        // 10³  937
-        // 10⁶  1416
-        // 10⁹  6156
-        // >    240
+        uint256 NMK_DECIMALS = 10**18;
+        uint256 EUR_DECIMALS = 10**18;
+        uint256 CAP = 1500000000;
 
-        // (1 - N/D) ≈ e^(-6.5/C)
-        uint256 C = 1500000000;
-        uint256 N = 343322036817947715929;
-        uint256 D = 2**96;
-        uint256 P = 2**32;
-
-        // Hard cap
-        if(x >= C) {
-            return 1497744841;
+        // At some point the curve is flat to within a small
+        // fraction of a Neumark. We just make it flat.
+        uint256 LIM = 83 * 10**8 * EUR_DECIMALS;
+        if(euroUlps >= LIM) {
+            return CAP * NMK_DECIMALS;
         }
 
-        // Compute C - C·(1 - N/D)^x using binomial expansion
-        uint256 n = C * P;
+        // 1 - 1/D ≈ e^(-6.5 / CAP·EUR_DECIMALS)
+        // D = Round[1 / (1 - e^(-6.5 / CAP·EUR_DECIMALS))]
+        uint256 D = 230769230769230769230769231;
+
+        // Cap in NMK-ULP (Neumark units of least precision).
+        uint256 C = CAP * NMK_DECIMALS;
+
+        // Compute C - C·(1 - 1/D)^x using binomial expansion.
+        // Assuming D ≫ x ≫ 1 so we don't bother with
+        // the `x -= 1` because we will converge before this
+        // has a noticable impact on `x`.
+        uint256 n = C;
         uint256 a = 0;
-        uint256 i = 0;
-        while(n != 0) {
-
-            // Positive term
-            n *= (x - i) * N;
-            i += 1;
-            n /= i;
-            n /= D;
-            a += n;
-
-            // Exit if n == 0
-            if(n == 0) break;
-
-            // Negative term
-            n *= (x - i) * N;
-            i += 1;
-            n /= i;
-            n /= D;
-            a -= n;
+        uint256 d = D;
+        assembly {
+            repeat:
+                n := div(mul(n, euroUlps), d)
+                jumpi(done, iszero(n))
+                a := add(a, n)
+                d := add(d, D)
+                n := div(mul(n, euroUlps), d)
+                jumpi(done, iszero(n))
+                a := sub(a, n)
+                d := add(d, D)
+                jump(repeat)
+            done:
         }
-        return a / P;
+        return a;
     }
 
-    function inverse(uint256 x, uint256 min, uint256 max)
+    function inverse(uint256 neumarkUlps, uint256 min, uint256 max)
         constant
         returns (uint256)
     {
         require(max >= min);
-        require(curve(min) <= x);
-        require(curve(max) >= x);
+        require(curve(min) <= neumarkUlps);
+        require(curve(max) >= neumarkUlps);
 
         // Binary search
         while (max > min) {
             uint256 mid = (max + min + 1) / 2;
             uint256 val = curve(mid);
-            if(val == x) {
+            if(val == neumarkUlps) {
                 return mid;
             }
-            if(val < x) {
+            if(val < neumarkUlps) {
                 min = mid;
             } else {
                 max = mid - 1;
@@ -202,8 +208,8 @@ contract Curve is Ownable {
         assert(max == min);
 
         // Did we find an exact solution?
-        if(curve(max) == x) {
-            return x;
+        if(curve(max) == neumarkUlps) {
+            return max;
         }
 
         // NOTE: It is possible that there is no inverse
@@ -211,8 +217,8 @@ contract Curve is Ownable {
         // there is no value y such that curve(y) = 5.
         // In this case we return a value such that curve(y) < x
         // and curve(y + 1) > x.
-        assert(curve(max) < x);
-        assert(curve(max + 1) > x);
+        assert(curve(max) < neumarkUlps);
+        assert(curve(max + 1) > neumarkUlps);
         return max;
     }
 }

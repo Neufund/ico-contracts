@@ -29,13 +29,13 @@ contract TestCommitment is PublicCommitment {
     function _changeMaxCap(uint256 _cap)
         public
     {
-        maxCap = _cap;
+        maxAbsCap = _cap;
     }
 
     function _changeMinCap(uint256 _cap)
         public
     {
-        minCap = _cap;
+        minAbsCap = _cap;
     }
 
     function _investFor(address investor, uint256 amount, uint256 neumarks)
@@ -49,9 +49,10 @@ contract TestCommitment is PublicCommitment {
         lockedAccount.lock(investor, amount, neumarks);
     }
 
-    function TestCommitment(uint256 _startDate, uint256 _endDate, uint256 _minCommitment,
-         uint256 _maxCommitment, TokenWithDeposit _ethToken, LockedAccount _lockedAccount, Curve _curve)
-         PublicCommitment(_startDate, _endDate, _minCommitment, _maxCommitment, _ethToken, _lockedAccount, _curve)
+    function TestCommitment(uint256 _startDate, uint256 _endDate, uint256 _minCommitment, uint256 _maxCommitment,
+        uint256 _minTicket, uint256 _ethEurFraction, TokenWithDeposit _ethToken, LockedAccount _lockedAccount, Curve _curve)
+         PublicCommitment(_startDate, _endDate, _minCommitment, _maxCommitment, _minTicket, _ethEurFraction,
+             _ethToken, _lockedAccount, _curve)
     {
     }
 }

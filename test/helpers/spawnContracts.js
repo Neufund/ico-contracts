@@ -42,8 +42,9 @@ export async function spawnLockedAccount(longStopDateMonths, unlockPenalty) {
   await lockedAccount.setPenaltyDistribution(feePool.address);
 }
 
-export async function spawnPublicCommitment(startTimestamp, duration, minCommitment, maxCommitment) {
+export async function spawnPublicCommitment(startTimestamp, duration, minCommitment, maxCommitment, minTicket, eurEthRate) {
   commitment = await TestCommitment.new(startTimestamp, startTimestamp + duration, minCommitment, maxCommitment,
+    minTicket, ether(eurEthRate),
     etherToken.address, lockedAccount.address, curve.address);
   // console.log(lockedAccount.setController);
   await lockedAccount.setController(commitment.address);
