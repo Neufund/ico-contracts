@@ -3,6 +3,12 @@ import error from './helpers/error'
 import eventValue from './helpers/eventValue'
 import * as chain from './helpers/spawnContracts'
 
+const BigNumber = web3.BigNumber
+const expect = require('chai')
+  .use(require('chai-as-promised'))
+  .use(require('chai-bignumber')(BigNumber))
+  .expect;
+
 const LockedAccount = artifacts.require('LockedAccount');
 
 contract('LockedAccount', (accounts) => {
@@ -56,8 +62,8 @@ contract('LockedAccount', (accounts) => {
     await chain.lockedAccount.mockTime(timebase);
     // issue real neumarks - we may burn same amount
     let tx = await chain.curve.issue(ticket, investor);
-    const neumarks = parseInt(eventValue(tx, 'NeumarksIssued', 'neumarks'));
-    assert.equal(parseInt(await chain.neumark.balanceOf(investor)), neumarks, 'neumarks must be allocated');
+    const neumarks = eventValue(tx, 'NeumarksIssued', 'neumarks');
+    expect(await chain.neumark.balanceOf(investor), 'neumarks must be allocated').to.be.bignumber.equal(neumarks);
     // only controller can lock
     await chain.commitment._investFor(investor, ticket, neumarks, { value: ticket, from: accounts[0] });
     // assert.equal(error(tx), 0, "Expected OK rc from lock()");
@@ -70,7 +76,7 @@ contract('LockedAccount', (accounts) => {
     // investor approves transfer to lock contract to burn neumarks
     //console.log(`investor has ${parseInt(await chain.neumark.balanceOf(investor))}`);
     tx = await chain.neumark.approve(chain.lockedAccount.address, neumarks, {from: investor});
-    assert.equal(eventValue(tx, 'Approval', '_amount'), neumarks);
+    expect(eventValue(tx, 'Approval', '_amount')).to.be.bignumber.equal(neumarks);
     // only investor can unlock and must burn tokens
     tx = await chain.lockedAccount.unlock({from: investor});
     assert.equal(error(tx), 0, "Expected OK rc from unlock()");

@@ -4,13 +4,12 @@ import * as chain from './helpers/spawnContracts'
 import eventValue from './helpers/eventValue'
 
 const BigNumber = web3.BigNumber
-
-const TestCommitment = artifacts.require('TestCommitment');
-
 const expect = require('chai')
   .use(require('chai-as-promised'))
   .use(require('chai-bignumber')(BigNumber))
   .expect;
+
+const TestCommitment = artifacts.require('TestCommitment');
 
 contract(TestCommitment, ([owner, investor, investor2]) => {
   let startTimestamp = Math.floor(new Date() / 1000 - chain.days);
