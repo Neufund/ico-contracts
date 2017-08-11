@@ -31,16 +31,17 @@ contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
     uint256 public minAbsCap;
     uint256 public maxAbsCap;
 
+    bool public finalized;
+    bool public started;
+
     NeumarkController internal neumarkController;
-    bool internal finalized;
-    bool internal started;
 
     function commit()
         payable
         public
     {
         // first commit checks lockedAccount and generates status code event
-        require(address(lockedAccount.controller) == address(this));
+        require(address(lockedAccount.controller()) == address(this));
         // on first commit caps will be frozen
         initializeCaps();
         require(msg.value >= minTicket);
@@ -78,7 +79,7 @@ contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
         public
         returns(bool)
     {
-        return started && lockedAccount.totalLockedAmount() >= maxAbsCap || currentTime() >= endDate;
+        return started && (lockedAccount.totalLockedAmount() >= maxAbsCap || currentTime() >= endDate);
     }
 
     /// overrides TokenOffering
