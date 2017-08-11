@@ -41,7 +41,7 @@ contract Curve is Ownable {
         return toIssue;
     }
 
-    function burnNeumark(uint256 neumarks, address beneficiary)
+    function burnNeumarkFor(uint256 neumarks, address beneficiary)
         // @remco I do not see use case where we burn someone's neumark
         //onlyOwner()
         public
