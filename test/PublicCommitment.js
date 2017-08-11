@@ -14,7 +14,7 @@ contract(TestCommitment, (accounts) => {
   beforeEach(async () => {
     await chain.spawnLockedAccount(18, 0.1);
     // apply time limit to ICO
-    await chain.spawnPublicCommitment(startTimestamp, chain.months, chain.ether(1), chain.ether(2000))
+    await chain.spawnPublicCommitment(startTimestamp, chain.months, chain.ether(10), chain.ether(2000), chain.ether(1), 218.1192809)
   });
 
 
@@ -69,5 +69,16 @@ contract(TestCommitment, (accounts) => {
     await chain.commitment.finalize();
     // check lock state
     assert.equal(await chain.lockedAccount.lockState.call(), 2, 'lock should be in AcceptingUnlocks');
+  });
+
+  it('converts to EUR correctly and issues Neumark', async () => {
+    // few cases of ETH->EUR->Neumark using PublicCommitment and independent check of values
+  });
+
+  // it -> check min ticket
+  // it -> check fix cost inv crossing ticket size by 1 wei
+
+  it('check ETH EUT Neumark rates in investment', async () => {
+    // few cases of ETH->EUR->Neumark using PublicCommitment and independent check of values
   });
 });
