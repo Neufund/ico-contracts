@@ -32,7 +32,7 @@ contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
     uint256 public maxAbsCap;
 
     bool public finalized;
-    bool public started;
+    bool public capsInitialized;
 
     NeumarkController internal neumarkController;
 
@@ -43,7 +43,9 @@ contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
         // first commit checks lockedAccount and generates status code event
         require(address(lockedAccount.controller()) == address(this));
         // on first commit caps will be frozen
-        initializeCaps();
+        if (!capsInitialized) {
+            initializeCaps();
+        }
         require(msg.value >= minTicket);
         require(!hasEnded());
         uint256 total = add(lockedAccount.totalLockedAmount(), msg.value);
@@ -79,7 +81,8 @@ contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
         public
         returns(bool)
     {
-        return started && (lockedAccount.totalLockedAmount() >= maxAbsCap || currentTime() >= endDate);
+        // todo: add finalized check
+        return capsInitialized && (lockedAccount.totalLockedAmount() >= maxAbsCap || currentTime() >= endDate);
     }
 
     /// overrides TokenOffering
@@ -122,6 +125,20 @@ contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
         finalized = true;
     }
 
+    /// if this is first commitment or before, caps must be finalized from lockedAccount
+    /// as we require that next commitment phase sets caps based on results of previous commitment phase
+    // ANYONE can call it
+    function initializeCaps()
+        public
+    {
+        require(!capsInitialized);
+        require(currentTime() > startDate);
+        // continue previous commitments on this lockedAccount
+        minAbsCap = minCommitment + lockedAccount.totalLockedAmount();
+        maxAbsCap = maxCommitment + lockedAccount.totalLockedAmount();
+        capsInitialized = true;
+    }
+
     /// called by finalize() so may be called by ANYONE
     /// intended to be overriden
     function onCommitmentSuccessful()
@@ -162,18 +179,8 @@ contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
         return true;
     }
 
-    /// if this is first commitment, caps must be finalized from lockedAccount
-    /// as we require that next commitment phase sets caps based on results of previous commitment phase
-    function initializeCaps()
-        private
-        constant
-    {
-        if (started) return;
-        // continue previous commitments on this lockedAccount
-        minAbsCap = minCommitment + lockedAccount.totalLockedAmount();
-        maxAbsCap = maxCommitment + lockedAccount.totalLockedAmount();
-        started = true;
-    }
+    /// default function not callable. prevent investors without transaction data
+    function () { revert(); }
 
     /// declare capital commitment into Neufund ecosystem between _startDate and _endDate
     /// min and max amounts in this commitment is _minCommitment - _maxCommitment
