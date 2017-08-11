@@ -45,6 +45,8 @@ module.exports = deployer =>
       Date.now() / 1000 + 900,
       ether(1),
       ether(2000),
+      ether(1), // min ticket size
+      ether(200), // eur rate to eth
       etherToken.address,
       lock.address,
       Curve.address
