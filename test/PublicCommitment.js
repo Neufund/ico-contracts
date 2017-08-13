@@ -59,6 +59,7 @@ contract(TestCommitment, ([owner, investor, investor2]) => {
 
   it('should commit 1 ether', async () => {
     const ticket = 1 * 10 ** 18;
+    expect(await chain.neumark.totalSupply()).to.be.bignumber.equal(0);
     assert.equal(await chain.commitment.hasEnded.call(), false, 'commitment should run');
     let tx = await chain.commitment.commit({ value: ticket, from: investor });
     // check event
@@ -73,7 +74,15 @@ contract(TestCommitment, ([owner, investor, investor2]) => {
     assert.equal(lockBalance, ticket, 'balance of lock contract must equal ticket');
     const investorBalance = await chain.lockedAccount.balanceOf(investor);
     const neumarkBalance = await chain.neumark.balanceOf.call(investor);
-    assert.equal(investorBalance[1].valueOf(), neumarkBalance.valueOf(), 'neumarks due in lock must equal neumarks in token contract');
+    // console.log(`investor ${investorBalance[1].valueOf()} total nmk ${neumarkBalance.valueOf()}`)
+    assert.equal(investorBalance[1].valueOf(), neumarkBalance.valueOf(), 'neumarks due in lock must equal balance in token contract');
+    // fifth force and investor's neumarks should be same (half half split)
+    const operatorBalance = await chain.neumark.balanceOf(chain.operatorWallet);
+    console.log(`${chain.operatorWallet} has ${operatorBalance}`);
+    const supply = await chain.neumark.totalSupply();
+    expect(supply, "lock and operator have all neumarks").to.be.bignumber.equal(operatorBalance.plus(investorBalance[1]));
+    // allow for 1 wei difference
+    expect(operatorBalance.minus(investorBalance[1]).abs(), "half half split").to.be.bignumber.below(2);
   });
 
   it('commitment should succeed due to cap reached', async () => {
@@ -88,6 +97,8 @@ contract(TestCommitment, ([owner, investor, investor2]) => {
     await chain.commitment.finalize();
     // check lock state
     assert.equal(await chain.lockedAccount.lockState.call(), 2, 'lock should be in AcceptingUnlocks');
+    // check if neumarks transferable
+    assert.equal(await chain.neumark.transfersEnabled(), true, 'neumark transfers should be enabled')
   });
 
   it('converts to EUR correctly and issues Neumark', async () => {
@@ -95,7 +106,6 @@ contract(TestCommitment, ([owner, investor, investor2]) => {
   });
 
   // it -> check min ticket
-  // it -> check fix cost inv crossing ticket size by 1 wei
 
   it('check ETH EUT Neumark rates in investment', async () => {
     // few cases of ETH->EUR->Neumark using PublicCommitment and independent check of values

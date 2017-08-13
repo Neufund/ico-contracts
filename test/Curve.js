@@ -152,7 +152,7 @@ contract('Curve', (accounts) => {
     assert.equal((await curve.totalEuroUlps.call()).valueOf(), 0);
     assert.equal((await neumark.totalSupply.call()).valueOf(), 0);
 
-    const r1 = await curve.issue(EUR_DECIMALS.mul(100), accounts[1]); // TODO check result
+    const r1 = await curve.issue(EUR_DECIMALS.mul(100), {from: accounts[1]}); // TODO check result
     console.log(`\tIssue took ${gasCost(r1)}.`);
     assert.equal((await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(), 100);
     assert.equal((await neumark.totalSupply.call()).div(NMK_DECIMALS).floor().valueOf(), 649);
@@ -161,7 +161,7 @@ contract('Curve', (accounts) => {
       649
     );
 
-    const r2 = await curve.issue(EUR_DECIMALS.mul(900), accounts[2]);
+    const r2 = await curve.issue(EUR_DECIMALS.mul(900), {from: accounts[2]});
     console.log(`\tIssue took ${gasCost(r2)}.`);
     assert.equal((await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(), 1000);
     assert.equal((await neumark.totalSupply.call()).div(NMK_DECIMALS).floor().valueOf(), 6499);
@@ -173,7 +173,7 @@ contract('Curve', (accounts) => {
   it('should issue and then burn Neumarks', async () => {
     // Issue Neumarks for 1 mln Euros
     const euroUlps = EUR_DECIMALS.mul(1000000);
-    const r = await curve.issue(euroUlps, accounts[1]);
+    const r = await curve.issue(euroUlps, {from: accounts[1]});
     console.log(`\tIssue took ${gasCost(r)}.`);
     const neumarkUlps = await neumark.balanceOf.call(accounts[1]);
     const neumarks = neumarkUlps.div(NMK_DECIMALS).floor().valueOf();

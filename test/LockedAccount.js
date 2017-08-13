@@ -33,7 +33,7 @@ contract('LockedAccount', (accounts) => {
     const ticket = chain.ether(1);
     await chain.lockedAccount.mockTime(timebase);
     // issue real neumarks - we may burn same amount
-    let tx = await chain.curve.issue(ticket, investor);
+    let tx = await chain.curve.issue(ticket, {from: investor});
     const neumarks = parseInt(eventValue(tx, 'NeumarksIssued', 'neumarks'));
     assert.equal(parseInt(await chain.neumark.balanceOf(investor)), neumarks, 'neumarks must be allocated');
     // only controller can lock
@@ -61,7 +61,7 @@ contract('LockedAccount', (accounts) => {
     const ticket = chain.ether(1);
     await chain.lockedAccount.mockTime(timebase);
     // issue real neumarks - we may burn same amount
-    let tx = await chain.curve.issue(ticket, investor);
+    let tx = await chain.curve.issue(ticket, {from: investor});
     const neumarks = eventValue(tx, 'NeumarksIssued', 'neumarks');
     expect(await chain.neumark.balanceOf(investor), 'neumarks must be allocated').to.be.bignumber.equal(neumarks);
     // only controller can lock
@@ -96,4 +96,9 @@ contract('LockedAccount', (accounts) => {
     // 0 neumarks at the end
     assert.equal(parseInt(await chain.neumark.balanceOf(investor)), 0, 'all investor neumarks burned');
   });
+
+  // it -> investor locks twice
+  // it -> unlock after long stop
+  // it -> unlock in release all
+  // it -> unlock throws in prohibited states ()
 });
