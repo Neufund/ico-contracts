@@ -28,9 +28,18 @@ contract Curve is Ownable {
         NEUMARK_CONTROLLER = neumarkController;
     }
 
-    function issue(uint256 euroUlps, address beneficiary)
+    // issues to msg.sender, further neumarks distribution happens there
+    function issue(uint256 euroUlps)
         //onlyOwner()
         public
+        returns (uint256)
+    {
+        return issueTo(euroUlps, msg.sender);
+    }
+
+    function issueTo(uint256 euroUlps, address beneficiary)
+        //onlyOwner()
+        public // I do not see any case where this function is public
         returns (uint256)
     {
         require(totalEuroUlps + euroUlps >= totalEuroUlps);
@@ -41,7 +50,7 @@ contract Curve is Ownable {
         return neumarkUlps;
     }
 
-    function burnNeumarkFor(uint256 neumarkUlps, address beneficiary)
+    function burnNeumarkFrom(uint256 neumarkUlps, address beneficiary)
         // @remco I do not see use case where we burn someone's neumark
         //onlyOwner()
         public
@@ -56,9 +65,9 @@ contract Curve is Ownable {
         // @remco I do not see use case where we burn someone's neumark
         //onlyOwner()
         public
+        returns (uint256)
     {
-        uint256 euroUlps = rewindInverse(neumarkUlps);
-        burn(euroUlps, neumarkUlps, msg.sender);
+        return burnNeumarkFrom(neumarkUlps, msg.sender);
     }
 
     function burn(uint256 euroUlps, uint256 neumarkUlps, address beneficiary)
