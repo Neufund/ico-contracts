@@ -45,6 +45,7 @@ contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
     {
         // first commit checks lockedAccount and generates status code event
         require(address(lockedAccount.controller()) == address(this));
+        require(currentTime() >= startDate);
         // on first commit caps will be frozen
         if (!capsInitialized) {
             initializeCaps();
@@ -135,7 +136,7 @@ contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
         public
     {
         require(!capsInitialized);
-        require(currentTime() > startDate);
+        require(currentTime() >= startDate);
         // continue previous commitments on this lockedAccount
         minAbsCap = minCommitment + lockedAccount.totalLockedAmount();
         maxAbsCap = maxCommitment + lockedAccount.totalLockedAmount();
@@ -173,7 +174,6 @@ contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
         return distributeNeumarks(investor, curve.issue(euros));
     }
 
-    event DebugI(uint256 value);
     /// distributes neumarks on `this` balance to investor and platform operator: half half
     /// returns amount of investor part
     function distributeNeumarks(address investor, uint256 neumarks)
@@ -182,16 +182,11 @@ contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
     {
         // distribute half half
         uint256 investorNeumarks = divRound(neumarks, 2);
-        DebugI(neumarks);
-        DebugI(investorNeumarks);
-        DebugI(neumarks - investorNeumarks);
-        DebugI(neumarkToken.balanceOf(address(this)));
         // @ remco is there a better way to distribute?
         bool isEnabled = neumarkToken.transfersEnabled();
         if (!isEnabled)
             neumarkController.enableTransfers(true);
         require(neumarkToken.transfer(investor, investorNeumarks));
-        DebugI(neumarkToken.balanceOf(address(this)));
         require(neumarkToken.transfer(platformOperatorWallet, neumarks - investorNeumarks));
         neumarkController.enableTransfers(isEnabled);
         return investorNeumarks;
