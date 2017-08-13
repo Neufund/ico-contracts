@@ -39,7 +39,7 @@ contract WhitelistedCommitment is PublicCommitment {
         // issue neumarks for fixed price investors
         uint256 euros = convertToEUR(totalFixedCostAmount);
         // stored in this smart contract balance
-        totalFixedCostNeumarks = curve.issue(euros, address(this));
+        totalFixedCostNeumarks = curve.issue(euros);
         // leave array for easy enumeration
         fixedCostInvestors = addresses;
     }
@@ -110,8 +110,8 @@ contract WhitelistedCommitment is PublicCommitment {
             uint256 remainingBalance = neumarkToken.balanceOf(address(this));
             if (absDiff(fixedreward, remainingBalance) < 1000)
                 fixedreward = remainingBalance; // send all
-            // transfer reward to investor
-            require(neumarkToken.transfer(investor, fixedreward));
+            // distribute to investor and platform operator
+            fixedreward = distributeNeumarks(investor, fixedreward);
             // decrease ticket size
             fixedCost[investor] -= eth;
         }

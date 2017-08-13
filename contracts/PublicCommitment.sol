@@ -35,6 +35,9 @@ contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
     bool public capsInitialized;
 
     NeumarkController internal neumarkController;
+    // wallet that keeps Platform Operator share of neumarks
+    // todo: take from Universe
+    address internal platformOperatorWallet = address(0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c);
 
     function commit()
         payable
@@ -166,8 +169,32 @@ contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
         internal
         returns (uint256)
     {
-        // straightforward case for public commitment
-        return curve.issue(euros, investor);
+        // issue to self
+        return distributeNeumarks(investor, curve.issue(euros));
+    }
+
+    event DebugI(uint256 value);
+    /// distributes neumarks on `this` balance to investor and platform operator: half half
+    /// returns amount of investor part
+    function distributeNeumarks(address investor, uint256 neumarks)
+        internal
+        returns (uint256)
+    {
+        // distribute half half
+        uint256 investorNeumarks = divRound(neumarks, 2);
+        DebugI(neumarks);
+        DebugI(investorNeumarks);
+        DebugI(neumarks - investorNeumarks);
+        DebugI(neumarkToken.balanceOf(address(this)));
+        // @ remco is there a better way to distribute?
+        bool isEnabled = neumarkToken.transfersEnabled();
+        if (!isEnabled)
+            neumarkController.enableTransfers(true);
+        require(neumarkToken.transfer(investor, investorNeumarks));
+        DebugI(neumarkToken.balanceOf(address(this)));
+        require(neumarkToken.transfer(platformOperatorWallet, neumarks - investorNeumarks));
+        neumarkController.enableTransfers(isEnabled);
+        return investorNeumarks;
     }
 
     /// validates amount and investor as taken from msg
