@@ -144,6 +144,18 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
         return Status.SUCCESS;
     }
 
+    // todo: handle callback from Neumark token method `approveAndCall`
+    // this allows to unlock and allow neumarks to be burned in one transaction
+    function receiveApproval(address from, uint256 _amount, address _token, bytes _data)
+        public
+    {
+        require(_data.length == 0);
+        // only from neumarks
+        require(_token == address(neumarkToken));
+        // this will check if allowance was made and if _amount is enough to unlock
+        unlock();
+    }
+
     function balanceOf(address investor)
         constant
         public
