@@ -34,6 +34,7 @@ contract('LockedAccount', (accounts) => {
     await chain.lockedAccount.mockTime(timebase);
     // issue real neumarks - we may burn same amount
     let tx = await chain.curve.issue(ticket, {from: investor});
+    // todo: do not use parseInt
     const neumarks = parseInt(eventValue(tx, 'NeumarksIssued', 'neumarks'));
     assert.equal(parseInt(await chain.neumark.balanceOf(investor)), neumarks, 'neumarks must be allocated');
     // only controller can lock
@@ -101,4 +102,5 @@ contract('LockedAccount', (accounts) => {
   // it -> unlock after long stop
   // it -> unlock in release all
   // it -> unlock throws in prohibited states ()
+  // it -> receiveApproval test
 });
