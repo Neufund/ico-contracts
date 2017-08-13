@@ -1,5 +1,11 @@
 import gasCost from './helpers/gasCost';
-import BigNumber from 'bignumber.js';
+import eventValue from './helpers/eventValue'
+
+const BigNumber = web3.BigNumber
+const expect = require('chai')
+  .use(require('chai-as-promised'))
+  .use(require('chai-bignumber')(BigNumber))
+  .expect;
 
 const Curve = artifacts.require('./Curve.sol');
 const NeumarkFactory = artifacts.require('./NeumarkFactory.sol');
@@ -187,5 +193,19 @@ contract('Curve', (accounts) => {
       (await neumark.balanceOf.call(accounts[1])).div(NMK_DECIMALS).floor().valueOf(),
       neumarks - toBurn
     );
+  });
+  it('should issue same amount in multiple issuances', async () => {
+    // 1 ether + 100 wei in eur
+    const eurRate = 218.1192809;
+    const euroUlps = EUR_DECIMALS.mul(1).add(100).mul(eurRate);
+    const totNMK = await curve.cumulative(euroUlps);
+    // issue for 1 ether
+    const euro1EthUlps = EUR_DECIMALS.mul(1).mul(eurRate);
+    let tx = await curve.issue(euro1EthUlps);
+    const p1NMK = eventValue(tx, 'NeumarksIssued', 'neumarks');
+    // issue for 100 wei
+    tx = await curve.issue((new BigNumber(100)).mul(eurRate));
+    const p2NMK = eventValue(tx, 'NeumarksIssued', 'neumarks');
+    expect(totNMK).to.be.bignumber.equal(p1NMK.plus(p2NMK));
   });
 });
