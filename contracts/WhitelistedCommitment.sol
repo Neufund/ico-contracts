@@ -16,7 +16,7 @@ contract WhitelistedCommitment is PublicCommitment {
     uint256 public totalFixedCostNeumarks;
 
 
-    function setFixed(address[] addresses, uint32[] ticketsETH)
+    function setFixed(address[] addresses, uint256[] ticketsETH)
         public
         onlyOwner
     {
@@ -34,7 +34,7 @@ contract WhitelistedCommitment is PublicCommitment {
             fixedCost[addresses[idx]] = ticket;
             // also allow to invest from whitelist along the curve
             whitelisted[addresses[idx]] = 1;
-            add(totalFixedCostAmount, ticket);
+            totalFixedCostAmount = add(totalFixedCostAmount, ticket);
         }
         // issue neumarks for fixed price investors
         uint256 euros = convertToEUR(totalFixedCostAmount);
@@ -65,7 +65,7 @@ contract WhitelistedCommitment is PublicCommitment {
     function onCommitmentSuccesful()
         internal
     {
-        // do nothing as public commitment should start soon
+        // do nothing as public commitment should continue this one
     }
 
     /// allows to abort commitment process before it starts and rollback curve
@@ -88,19 +88,24 @@ contract WhitelistedCommitment is PublicCommitment {
             curve.burnNeumark(neumarks);
         }
     }
-
+    event Debug(uint256 value);
     /// overrides base class to compute neumark reward for fixed price investors
     function giveNeumarks(address investor, uint256 eth, uint256 euros)
         internal
         returns (uint256)
     {
         uint256 fixedTicket = fixedCost[investor]; // returns 0 in case of investor not in mapping
+        Debug(fixedTicket);
+        Debug(eth);
         // what is above limit for fixed price should be rewarded from curve
         uint256 reward = 0;
         if ( eth > fixedTicket ) {
-            reward = PublicCommitment.giveNeumarks(investor, eth - fixedTicket, euros);
-            eth -= fixedTicket;
+            if (fixedTicket > 0) // recompute euro if part of msg.value goes thru whitelist
+                euros = convertToEUR(eth - fixedTicket);
+            reward = curve.issue(euros); // PublicCommitment.giveNeumarks(investor, eth - fixedTicket, euros);
+            eth = fixedTicket;
         }
+        Debug(eth);
         // get pro rata neumark reward for any eth left
         uint256 fixedreward = 0;
         if (eth > 0) {
@@ -110,12 +115,11 @@ contract WhitelistedCommitment is PublicCommitment {
             uint256 remainingBalance = neumarkToken.balanceOf(address(this));
             if (absDiff(fixedreward, remainingBalance) < 1000)
                 fixedreward = remainingBalance; // send all
-            // distribute to investor and platform operator
-            fixedreward = distributeNeumarks(investor, fixedreward);
             // decrease ticket size
             fixedCost[investor] -= eth;
         }
-        return reward + fixedreward;
+        // distribute to investor and platform operator
+        return distributeNeumarks(investor, reward + fixedreward);
     }
 
     /// overrides base class to check if msg.sender is on any of the lists
@@ -125,5 +129,12 @@ contract WhitelistedCommitment is PublicCommitment {
         returns (bool)
     {
         return (whitelisted[msg.sender] > 0 || fixedCost[msg.sender] > 0);
+    }
+
+    function WhitelistedCommitment(uint256 _startDate, uint256 _endDate, uint256 _minCommitment, uint256 _maxCommitment,
+        uint256 _minTicket, uint256 _ethEurFraction, TokenWithDeposit _ethToken, LockedAccount _lockedAccount, Curve _curve)
+         PublicCommitment(_startDate, _endDate, _minCommitment, _maxCommitment, _minTicket, _ethEurFraction,
+             _ethToken, _lockedAccount, _curve)
+    {
     }
 }
