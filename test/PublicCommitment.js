@@ -2,6 +2,8 @@ import advanceToBlock from './helpers/advanceToBlock';
 import EVMThrow from './helpers/EVMThrow';
 import * as chain from './helpers/spawnContracts'
 import eventValue from './helpers/eventValue'
+import {increaseTime, setTimeTo} from './helpers/increaseTime'
+import {latestTime, latestTimestamp} from './helpers/latestTime'
 
 const BigNumber = web3.BigNumber
 const expect = require('chai')
@@ -12,15 +14,18 @@ const expect = require('chai')
 const TestCommitment = artifacts.require('TestCommitment');
 
 contract(TestCommitment, ([owner, investor, investor2]) => {
-  let startTimestamp = Math.floor(new Date() / 1000 - chain.days);
+  let startTimestamp;
+  let commitmentDuration = chain.months;
 
   beforeEach(async () => {
+    startTimestamp = latestTimestamp() + chain.days;
     await chain.spawnLockedAccount(18, 0.1);
     // apply time limit to ICO
-    await chain.spawnPublicCommitment(startTimestamp, chain.months, chain.ether(1), chain.ether(2000), chain.ether(1), 218.1192809)
+    await chain.spawnPublicCommitment(startTimestamp, commitmentDuration, chain.ether(1), chain.ether(2000), chain.ether(1), 218.1192809)
   });
 
   it('first commit sets caps', async () => {
+    await setTimeTo(startTimestamp); // start commitment
     assert.equal(await chain.lockedAccount.controller(), chain.commitment.address, 'must controll lockedAccount');
     expect(await chain.commitment.capsInitialized()).to.be.false;
     await chain.commitment.commit({ value: chain.ether(1), from: investor });
@@ -31,23 +36,31 @@ contract(TestCommitment, ([owner, investor, investor2]) => {
   });
 
   it('should be able to read Commitment parameters', async () => {
-    assert.equal(await chain.commitment.startDate.call(), startTimestamp);
+    assert.equal(await chain.commitment.startDate.call(), startTimestamp, "startDate");
     assert.equal(await chain.commitment.paymentToken.call(), chain.etherToken.address);
     assert.equal(await chain.commitment.lockedAccount.call(), chain.lockedAccount.address);
     assert.equal(await chain.commitment.curve.call(), chain.curve.address);
-    assert.equal(await chain.commitment.minCommitment.call(), chain.ether(1));
+    expect(await chain.commitment.minCommitment()).to.be.bignumber.equal(chain.ether(1));
     // caps must be zero before investment
-    assert.equal(await chain.commitment.maxAbsCap.call(), 0);
+    expect(await chain.commitment.maxAbsCap()).to.be.bignumber.equal(0);
+  });
+
+  it('commit before startDate', async () => {
+
+  });
+
+  it('commit after startDate', async () => {
+    // few cases of ETH->EUR->Neumark using PublicCommitment and independent check of values
   });
 
   it('should complete Commitment with failed state without any investors', async () => {
+    await setTimeTo(startTimestamp); // commitment starts
     assert.equal(await chain.lockedAccount.lockState.call(), 1, 'lock should be in AcceptingLocks');
-    const timestamp = await chain.lockedAccount.currentTime();
-    await chain.commitment._changeEndDate(timestamp + 1 * chain.days);
+    await setTimeTo(startTimestamp + chain.days); // day forward
     assert.equal(await chain.commitment.hasEnded.call(), false, 'commitment should run');
     await chain.commitment.initializeCaps();
     // make commitment finish due to end date
-    await chain.commitment.mockTime(timestamp + 1 * chain.days + 1 );
+    await setTimeTo(startTimestamp + commitmentDuration); // day forward
     assert.equal(await chain.commitment.hasEnded.call(), true, 'commitment should end');
     assert.equal(await chain.commitment.wasSuccessful.call(), false, 'commitment should fail');
     // now finalize
@@ -60,6 +73,7 @@ contract(TestCommitment, ([owner, investor, investor2]) => {
   it('should commit 1 ether', async () => {
     const ticket = 1 * 10 ** 18;
     expect(await chain.neumark.totalSupply()).to.be.bignumber.equal(0);
+    await setTimeTo(startTimestamp); // commitment starts
     assert.equal(await chain.commitment.hasEnded.call(), false, 'commitment should run');
     let tx = await chain.commitment.commit({ value: ticket, from: investor });
     // check event
@@ -67,18 +81,18 @@ contract(TestCommitment, ([owner, investor, investor2]) => {
     expect(event).to.exist;
     expect(event.args.amount).to.be.bignumber.equal(ticket);
     // check balances
-    assert.equal(await chain.lockedAccount.totalLockedAmount(), ticket, 'lockedAccount balance must match ticket');
+    expect(await chain.lockedAccount.totalLockedAmount(), 'lockedAccount balance must match ticket').to.be.bignumber.equal(ticket);
     assert.equal(await chain.lockedAccount.totalInvestors(), 1);
-    assert.equal(await chain.etherToken.totalSupply(), ticket, 'ticket must be in etherToken');
+    expect(await await chain.etherToken.totalSupply(), 'ticket must be in etherToken').to.be.bignumber.equal(ticket);
     const lockBalance = await chain.etherToken.balanceOf(chain.lockedAccount.address);
-    assert.equal(lockBalance, ticket, 'balance of lock contract must equal ticket');
+    expect(lockBalance, 'balance of lock contract must equal ticket').to.be.bignumber.equal(ticket);
     const investorBalance = await chain.lockedAccount.balanceOf(investor);
     const neumarkBalance = await chain.neumark.balanceOf.call(investor);
     // console.log(`investor ${investorBalance[1].valueOf()} total nmk ${neumarkBalance.valueOf()}`)
-    assert.equal(investorBalance[1].valueOf(), neumarkBalance.valueOf(), 'neumarks due in lock must equal balance in token contract');
+    expect(investorBalance[1], 'neumarks due in lock must equal balance in token contract').to.be.bignumber.equal(neumarkBalance.valueOf());
     // fifth force and investor's neumarks should be same (half half split)
     const operatorBalance = await chain.neumark.balanceOf(chain.operatorWallet);
-    console.log(`${chain.operatorWallet} has ${operatorBalance}`);
+    // console.log(`${chain.operatorWallet} has ${operatorBalance}`);
     const supply = await chain.neumark.totalSupply();
     expect(supply, "lock and operator have all neumarks").to.be.bignumber.equal(operatorBalance.plus(investorBalance[1]));
     // allow for 1 wei difference
@@ -87,10 +101,12 @@ contract(TestCommitment, ([owner, investor, investor2]) => {
 
   it('commitment should succeed due to cap reached', async () => {
     const ticket = 2 * 10 ** 18;
+    await setTimeTo(startTimestamp); // commitment starts
     assert.equal(await chain.commitment.hasEnded.call(), false, 'commitment should run');
     await chain.commitment.commit({ value: ticket, from: investor });
-    // decrease max cap
-    await chain.commitment._changeMaxCap(ticket * 0.75);
+    // decrease max cap so it is exactly ticket
+    await setTimeTo(startTimestamp + chain.days); // day forward
+    await chain.commitment._changeMaxCap(ticket);
     assert.equal(await chain.commitment.hasEnded.call(), true, 'commitment should end');
     assert.equal(await chain.commitment.wasSuccessful.call(), true, 'commitment should succeed - min cap reached');
     // now finalize
@@ -118,4 +134,12 @@ contract(TestCommitment, ([owner, investor, investor2]) => {
 
   it('cap revealing no-repeat and no-before', async () => {
   });
+
+  it('commitment should succeed due to endDate reached', async () => {
+  });
+
+  // it ->
+  // it ->
+  // it -> commit after max cap reached
+  // it -> send ether to default func should fail
 });
