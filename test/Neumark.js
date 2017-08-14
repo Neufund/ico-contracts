@@ -24,7 +24,7 @@ contract('Neumark', (accounts) => {
   it('should have name Neumark, symbol NMK and no decimals', async () => {
     assert.equal(await neumark.name.call(), 'Neumark');
     assert.equal(await neumark.symbol.call(), 'NMK');
-    assert.equal(await neumark.decimals.call(), 0);
+    assert.equal(await neumark.decimals.call(), 18);
   });
   it('should not have accounts[0] as controller ', async () => {
     assert.notEqual(await neumark.controller.call(), accounts[0]);

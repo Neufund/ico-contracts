@@ -7,7 +7,10 @@ const NeumarkFactory = artifacts.require('NeumarkFactory');
 const Neumark = artifacts.require('Neumark');
 const Curve = artifacts.require('Curve');
 const TestCommitment = artifacts.require('TestCommitment');
+const WhitelistedCommitment = artifacts.require('WhitelistedCommitment');
 const FeeDistributionPool = artifacts.require('FeeDistributionPool');
+
+const BigNumber = web3.BigNumber
 
 export let neumark;
 export let neumarkController;
@@ -16,11 +19,12 @@ export let lockedAccount;
 export let curve;
 export let commitment;
 export let feePool;
+// todo: take from universe
+export let operatorWallet = "0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c";
 
 export const days = 24 * 60 * 60;
 export const months = 30 * 24 * 60 * 60;
-export const FP_SCALE = 10000;
-export const ether = wei => (wei * 10 ** 18);
+export const ether = wei => ((new BigNumber(wei)).mul(10 ** 18));
 
 export async function spawnLockedAccount(longStopDateMonths, unlockPenalty) {
   etherToken = await EtherToken.new();
@@ -42,8 +46,17 @@ export async function spawnLockedAccount(longStopDateMonths, unlockPenalty) {
   await lockedAccount.setPenaltyDistribution(feePool.address);
 }
 
-export async function spawnPublicCommitment(startTimestamp, duration, minCommitment, maxCommitment) {
+export async function spawnPublicCommitment(startTimestamp, duration, minCommitment, maxCommitment, minTicket, eurEthRate) {
   commitment = await TestCommitment.new(startTimestamp, startTimestamp + duration, minCommitment, maxCommitment,
+    minTicket, ether(eurEthRate),
+    etherToken.address, lockedAccount.address, curve.address);
+  // console.log(lockedAccount.setController);
+  await lockedAccount.setController(commitment.address);
+}
+
+export async function spawnWhitelistedCommitment(startTimestamp, duration, minCommitment, maxCommitment, minTicket, eurEthRate) {
+  commitment = await WhitelistedCommitment.new(startTimestamp, startTimestamp + duration, minCommitment, maxCommitment,
+    minTicket, ether(eurEthRate),
     etherToken.address, lockedAccount.address, curve.address);
   // console.log(lockedAccount.setController);
   await lockedAccount.setController(commitment.address);

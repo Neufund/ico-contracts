@@ -125,8 +125,7 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
                 neumarkCurve.burnNeumark(a.neumarksDue);
                 // take the penalty if before longstopdate
                 if (currentTime() < a.longstopDate) {
-                    // todo: should use divRound
-                    uint256 penalty = fraction(a.balance, penaltyFraction); // Math.divRound(Math.mul(a.balance, penaltyFraction), FP_SCALE);
+                    uint256 penalty = fraction(a.balance, penaltyFraction);
                     // allowance for penalty to pool contract
                     require(ownedToken.approve(address(feePool), penalty));
                     // add to distribution
@@ -143,6 +142,18 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
             delete accounts[msg.sender];
         }
         return Status.SUCCESS;
+    }
+
+    // todo: handle callback from Neumark token method `approveAndCall`
+    // this allows to unlock and allow neumarks to be burned in one transaction
+    function receiveApproval(address from, uint256 _amount, address _token, bytes _data)
+        public
+    {
+        require(_data.length == 0);
+        // only from neumarks
+        require(_token == address(neumarkToken));
+        // this will check if allowance was made and if _amount is enough to unlock
+        unlock();
     }
 
     function balanceOf(address investor)
