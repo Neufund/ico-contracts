@@ -21,8 +21,9 @@ contract('WhitelistedCommitment', ([_ ,owner, investor, investor2]) => {
   let startTimestamp;
 
   beforeEach(async () => {
-    startTimestamp = latestTimestamp() + chain.days;
     await chain.spawnLockedAccount(18, 0.1);
+    // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurrate
+    startTimestamp = latestTimestamp() + chain.days;
     await chain.spawnWhitelistedCommitment(startTimestamp, chain.months, chain.ether(1), chain.ether(2000), chain.ether(1), 218.1192809)
   });
 
