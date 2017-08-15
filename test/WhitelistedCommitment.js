@@ -16,13 +16,14 @@ const expect = require('chai')
 const WhitelistedCommitment = artifacts.require('WhitelistedCommitment');
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-contract(WhitelistedCommitment, ([_ ,owner, investor, investor2]) => {
+contract('WhitelistedCommitment', ([_ ,owner, investor, investor2]) => {
   // commitment starts in one day
   let startTimestamp;
 
   beforeEach(async () => {
-    startTimestamp = latestTimestamp() + chain.days;
     await chain.spawnLockedAccount(18, 0.1);
+    // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurrate
+    startTimestamp = latestTimestamp() + chain.days;
     await chain.spawnWhitelistedCommitment(startTimestamp, chain.months, chain.ether(1), chain.ether(2000), chain.ether(1), 218.1192809)
   });
 

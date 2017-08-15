@@ -13,13 +13,14 @@ const expect = require('chai')
 
 const TestCommitment = artifacts.require('TestCommitment');
 
-contract(TestCommitment, ([owner, investor, investor2]) => {
+contract('PublicCommitment', ([owner, investor, investor2]) => {
   let startTimestamp;
   let commitmentDuration = chain.months;
 
   beforeEach(async () => {
-    startTimestamp = latestTimestamp() + chain.days;
     await chain.spawnLockedAccount(18, 0.1);
+    // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurrate
+    startTimestamp = latestTimestamp() + chain.days;
     // apply time limit to ICO
     await chain.spawnPublicCommitment(startTimestamp, commitmentDuration, chain.ether(1), chain.ether(2000), chain.ether(1), 218.1192809)
   });

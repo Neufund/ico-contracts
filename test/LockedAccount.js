@@ -1,7 +1,10 @@
+import moment from 'moment'
 import gasCost from './helpers/gasCost';
 import error from './helpers/error'
 import eventValue from './helpers/eventValue'
 import * as chain from './helpers/spawnContracts'
+import increaseTime, {setTimeTo} from './helpers/increaseTime'
+import latestTime, {latestTimestamp} from './helpers/latestTime'
 
 const BigNumber = web3.BigNumber
 const expect = require('chai')
@@ -12,11 +15,13 @@ const expect = require('chai')
 const LockedAccount = artifacts.require('LockedAccount');
 
 contract('LockedAccount', (accounts) => {
-  let startTimestamp = Math.floor(new Date() / 1000 - chain.days);
+  let startTimestamp;
 
   beforeEach(async () => {
     await chain.spawnLockedAccount(18, 0.1);
-    await chain.spawnPublicCommitment(startTimestamp, chain.months, chain.ether(1), chain.ether(2000));
+    // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurrate
+    startTimestamp = latestTimestamp();
+    await chain.spawnPublicCommitment(startTimestamp, chain.months, chain.ether(1), chain.ether(2000), chain.ether(1), 300.1219871);
   });
 
   it('should be able to read lock parameters', async () => {
@@ -28,39 +33,33 @@ contract('LockedAccount', (accounts) => {
   it('should lock 1 ether', async () => {
     // new investor
     const investor = accounts[1];
-    // mock lock time to test it
-    let timebase = web3.eth.blockNumber;
     const ticket = chain.ether(1);
-    await chain.lockedAccount.mockTime(timebase);
     // issue real neumarks - we may burn same amount
     let tx = await chain.curve.issue(ticket, {from: investor});
-    // todo: do not use parseInt
-    const neumarks = parseInt(eventValue(tx, 'NeumarksIssued', 'neumarks'));
-    assert.equal(parseInt(await chain.neumark.balanceOf(investor)), neumarks, 'neumarks must be allocated');
+    const neumarks = eventValue(tx, 'NeumarksIssued', 'neumarks');
+    expect(await chain.neumark.balanceOf(investor), 'neumarks must be allocated').to.be.bignumber.equal(neumarks);
     // only controller can lock
     await chain.commitment._investFor(investor, ticket, neumarks, { value: ticket, from: investor });
+    const timebase = latestTimestamp(); // timestamp of block _investFor was mined
     // assert.equal(error(tx), 0, "Expected OK rc from lock()");
     const investorBalance = await chain.lockedAccount.balanceOf(investor);
-    assert.equal(parseInt(investorBalance[0]), ticket, 'investor balance should equal locked eth');
-    assert.equal(parseInt(investorBalance[1]), neumarks, 'investor neumarks due should equal neumarks');
+    expect(investorBalance[0], 'investor balance should equal locked eth').to.be.bignumber.equal(ticket);
+    expect(investorBalance[1], 'investor neumarks due should equal neumarks').to.be.bignumber.equal(neumarks);
     assert.equal(await chain.lockedAccount.totalInvestors(), 1, 'should have 1 investor');
     // verify longstop date independently
-    assert.equal(investorBalance[2], timebase + 18 * 30 * chain.days, 'more or less 18 months in future');
+    assert.equal(investorBalance[2], timebase + 18 * 30 * chain.days, '18 months in future');
     // lock someone else
     const investor2 = accounts[2];
     await chain.commitment._investFor(investor2, ticket / 2, ticket / 4, { value: ticket / 2, from: investor2 });
-    assert.equal(await chain.lockedAccount.totalLockedAmount(), 1.5 * ticket, "lock should own locked amount");
-    assert.equal(await chain.etherToken.totalSupply(), 1.5 * ticket, 'ownedToken should own locked amount');
+    expect(await chain.lockedAccount.totalLockedAmount(), "lock should own locked amount").to.be.bignumber.equal(1.5 * ticket);
+    expect(await chain.etherToken.totalSupply(), "lock should own locked amount").to.be.bignumber.equal(1.5 * ticket);
     assert.equal(await chain.lockedAccount.totalInvestors(), 2, 'should have 2 investors');
   });
 
   it('should unlock', async () => {
     // new investor
     const investor = accounts[1];
-    // mock lock time to test it
-    let timebase = web3.eth.blockNumber;
     const ticket = chain.ether(1);
-    await chain.lockedAccount.mockTime(timebase);
     // issue real neumarks - we may burn same amount
     let tx = await chain.curve.issue(ticket, {from: investor});
     const neumarks = eventValue(tx, 'NeumarksIssued', 'neumarks');
@@ -69,7 +68,7 @@ contract('LockedAccount', (accounts) => {
     await chain.commitment._investFor(investor, ticket, neumarks, { value: ticket, from: accounts[0] });
     // assert.equal(error(tx), 0, "Expected OK rc from lock()");
     // move time forward within longstop date
-    await chain.lockedAccount.mockTime(timebase + chain.days);
+    await increaseTime(moment.duration(chain.days, 's'));
     // controller says yes
     await chain.commitment._succ();
     // must enable token transfers
@@ -82,20 +81,18 @@ contract('LockedAccount', (accounts) => {
     tx = await chain.lockedAccount.unlock({from: investor});
     assert.equal(error(tx), 0, "Expected OK rc from unlock()");
     // console.log(`unlocked ${eventValue(tx, 'FundsUnlocked', 'amount')} ether`);
-    // check if ownedToken supply is 1 ether
-    assert.equal(await chain.lockedAccount.totalLockedAmount(), 0, "all money sent to pool and to investor");
-    assert.equal(await chain.etherToken.totalSupply(), ticket, 'ownedToken should still hold 1 ether');
+    expect(await chain.lockedAccount.totalLockedAmount(), 'all money sent to pool and to investor').to.be.bignumber.equal(0);
+    expect(await chain.etherToken.totalSupply(), 'ownedToken should still hold full ticket').to.be.bignumber.equal(ticket);
     // returns tuple as array
     const investorBalance = await chain.lockedAccount.balanceOf(investor);
     assert.equal(investorBalance[2], 0, 'investor account deleted'); // checked by timestamp == 0
     assert.equal(await chain.lockedAccount.totalInvestors(), 0, 'should have no investors');
-    assert.equal(parseInt(await chain.etherToken.balanceOf(investor)) + parseInt(await chain.etherToken.balanceOf(chain.feePool.address)),
-      ticket, "investor + penalty == 1 ether");
+    expect((await chain.etherToken.balanceOf(investor)).plus(await chain.etherToken.balanceOf(chain.feePool.address)), "investor + penalty == 1 ether").to.be.bignumber.equal(ticket);
     // check penalty value
-    const penalty = (ticket * await chain.lockedAccount.penaltyFraction()) / chain.ether(1);
-    assert.equal(await chain.etherToken.balanceOf(chain.feePool.address), penalty, 'fee pool has correct penalty value');
+    const penalty = ticket.mul(await chain.lockedAccount.penaltyFraction()).div(chain.ether(1));
+    expect(await chain.etherToken.balanceOf(chain.feePool.address), 'fee pool has correct penalty value').to.be.bignumber.equal(penalty);
     // 0 neumarks at the end
-    assert.equal(parseInt(await chain.neumark.balanceOf(investor)), 0, 'all investor neumarks burned');
+    expect(await chain.neumark.balanceOf(investor), 'all investor neumarks burned').to.be.bignumber.equal(0);
   });
 
   // it -> investor locks twice
