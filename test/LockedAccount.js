@@ -2,6 +2,8 @@ import gasCost from './helpers/gasCost';
 import error from './helpers/error'
 import eventValue from './helpers/eventValue'
 import * as chain from './helpers/spawnContracts'
+import {increaseTime, setTimeTo} from './helpers/increaseTime'
+import {latestTime, latestTimestamp} from './helpers/latestTime'
 
 const BigNumber = web3.BigNumber
 const expect = require('chai')
@@ -12,11 +14,12 @@ const expect = require('chai')
 const LockedAccount = artifacts.require('LockedAccount');
 
 contract('LockedAccount', (accounts) => {
-  let startTimestamp = Math.floor(new Date() / 1000 - chain.days);
+  let startTimestamp;
 
   beforeEach(async () => {
+    startTimestamp = latestTimestamp() + chain.days;
     await chain.spawnLockedAccount(18, 0.1);
-    await chain.spawnPublicCommitment(startTimestamp, chain.months, chain.ether(1), chain.ether(2000));
+    await chain.spawnPublicCommitment(startTimestamp, chain.months, chain.ether(1), chain.ether(2000), chain.ether(1), 300.1219871);
   });
 
   it('should be able to read lock parameters', async () => {
