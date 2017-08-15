@@ -16,7 +16,7 @@ const expect = require('chai')
 const WhitelistedCommitment = artifacts.require('WhitelistedCommitment');
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-contract(WhitelistedCommitment, ([_ ,owner, investor, investor2]) => {
+contract('WhitelistedCommitment', ([_ ,owner, investor, investor2]) => {
   // commitment starts in one day
   let startTimestamp;
 

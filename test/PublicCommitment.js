@@ -13,7 +13,7 @@ const expect = require('chai')
 
 const TestCommitment = artifacts.require('TestCommitment');
 
-contract(TestCommitment, ([owner, investor, investor2]) => {
+contract('TestCommitment', ([owner, investor, investor2]) => {
   let startTimestamp;
   let commitmentDuration = chain.months;
 
