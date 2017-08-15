@@ -124,23 +124,27 @@ contract('PublicCommitment', ([owner, investor, investor2]) => {
 
   // it -> check min ticket
 
-  it('check ETH EUT Neumark rates in investment', async () => {
+  it('check ETH EURT Neumark rates in investment', async () => {
     // few cases of ETH->EUR->Neumark using PublicCommitment and independent check of values
   });
 
   it('fails to re-activate Commitment by escape hatch', async () => {
-    // escape hatch is used after C is finalized
-    // this will lower the cap so in theory if C was finished due to cap it may become active again!
+    // escape hatch is used after Commitment is finalized
+    // this will lower the amount so in theory if C was finished due to cap it may become active again!
+    // checking finalize will prevent it
   });
 
   it('cap revealing no-repeat and no-before', async () => {
+    // disregard this test case until situation with caps is clear
   });
 
   it('commitment should succeed due to endDate reached', async () => {
+    //
   });
 
-  // it ->
-  // it ->
+  // it -> first ticket commits max cap
+  // it -> a really large ticket like ether(10000000)
   // it -> commit after max cap reached
   // it -> send ether to default func should fail
+  // it -> implement all cases from zeppeling Crowdsale.js and CappedCrowdsale.js
 });
