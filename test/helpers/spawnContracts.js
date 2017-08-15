@@ -26,7 +26,7 @@ export const days = 24 * 60 * 60;
 export const months = 30 * 24 * 60 * 60;
 export const ether = wei => ((new BigNumber(wei)).mul(10 ** 18));
 
-export async function spawnLockedAccount(longStopDateMonths, unlockPenalty) {
+export async function spawnLockedAccount(unlockDateMonths, unlockPenalty) {
   etherToken = await EtherToken.new();
   // console.log(`\tEtherToken took ${gasCost(etherToken)}.`);
   const neumarkFactory = await NeumarkFactory.new();
@@ -37,9 +37,8 @@ export async function spawnLockedAccount(longStopDateMonths, unlockPenalty) {
   lockedAccount = await LockedAccount.new(
     etherToken.address,
     curve.address,
-    longStopDateMonths * months,
-    Math.round(unlockPenalty * ether(1))
-  );
+    unlockDateMonths * months,
+    ether(1).mul(unlockPenalty).round());
   // console.log(`\tLockedAccount took ${gasCost(lockedAccount)}.`);
   feePool = await FeeDistributionPool.new(etherToken.address, neumark.address);
   // console.log(`\FeeDistributionPool took ${gasCost(feePool)}.`);
