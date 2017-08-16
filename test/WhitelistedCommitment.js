@@ -79,7 +79,8 @@ contract('WhitelistedCommitment', ([_ ,owner, investor, investor2]) => {
 
     let tx = await chain.commitment.commit({ value: ticketSize, from: investor });
 
-    const totalSecuredNeumarks = (await chain.curve.curve(await chain.commitment.convertToEUR(declaredSize)));
+    const ticketInEur = await chain.commitment.convertToEUR(declaredSize);
+    const totalSecuredNeumarks = await chain.curve.curve(ticketInEur);
     const expected = totalSecuredNeumarks.mul(ticketSize).div(declaredSize).div(2).round(0, 4);
     const investorBalance = await chain.lockedAccount.balanceOf(investor);
     expect(investorBalance[1].valueOf(),
