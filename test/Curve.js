@@ -1,17 +1,17 @@
-import { expect } from 'chai';
-import gasCost from './helpers/gasCost';
-import eventValue from './helpers/eventValue'
+import { expect } from "chai";
+import gasCost from "./helpers/gasCost";
+import eventValue from "./helpers/eventValue";
 
-const Curve = artifacts.require('./Curve.sol');
-const NeumarkFactory = artifacts.require('./NeumarkFactory.sol');
-const Neumark = artifacts.require('./Neumark.sol');
-const NeumarkController = artifacts.require('./NeumarkController.sol');
+const Curve = artifacts.require("./Curve.sol");
+const NeumarkFactory = artifacts.require("./NeumarkFactory.sol");
+const Neumark = artifacts.require("./Neumark.sol");
+const NeumarkController = artifacts.require("./NeumarkController.sol");
 
-const BigNumber = web3.BigNumber
+const BigNumber = web3.BigNumber;
 const EUR_DECIMALS = new BigNumber(10).toPower(18);
 const NMK_DECIMALS = new BigNumber(10).toPower(18);
 
-contract('Curve', (accounts) => {
+contract("Curve", accounts => {
   let curve;
   let neumark;
   let factory;
@@ -25,13 +25,13 @@ contract('Curve', (accounts) => {
     curve = await Curve.new(controller.address);
   });
 
-  it('should deploy', async () => {
+  it("should deploy", async () => {
     console.log(`\tCurve took ${gasCost(curve)}.`);
   });
-  it('should start at zero', async () => {
+  it("should start at zero", async () => {
     assert.equal(await curve.totalEuroUlps.call(), 0);
   });
-  it('should compute exactly over the whole range', async () => {
+  it("should compute exactly over the whole range", async () => {
     const correct = [
       [0, 0],
       [1, 6],
@@ -150,11 +150,11 @@ contract('Curve', (accounts) => {
       })
     );
   });
-  it('should issue Neumarks', async () => {
+  it("should issue Neumarks", async () => {
     assert.equal((await curve.totalEuroUlps.call()).valueOf(), 0);
     assert.equal((await neumark.totalSupply.call()).valueOf(), 0);
 
-    const r1 = await curve.issue(EUR_DECIMALS.mul(100), {from: accounts[1]}); // TODO check result
+    const r1 = await curve.issue(EUR_DECIMALS.mul(100), { from: accounts[1] }); // TODO check result
     console.log(`\tIssue took ${gasCost(r1)}.`);
     assert.equal((await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(), 100);
     assert.equal((await neumark.totalSupply.call()).div(NMK_DECIMALS).floor().valueOf(), 649);
@@ -163,7 +163,7 @@ contract('Curve', (accounts) => {
       649
     );
 
-    const r2 = await curve.issue(EUR_DECIMALS.mul(900), {from: accounts[2]});
+    const r2 = await curve.issue(EUR_DECIMALS.mul(900), { from: accounts[2] });
     console.log(`\tIssue took ${gasCost(r2)}.`);
     assert.equal((await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(), 1000);
     assert.equal((await neumark.totalSupply.call()).div(NMK_DECIMALS).floor().valueOf(), 6499);
@@ -172,10 +172,10 @@ contract('Curve', (accounts) => {
       5849
     );
   });
-  it('should issue and then burn Neumarks', async () => {
+  it("should issue and then burn Neumarks", async () => {
     // Issue Neumarks for 1 mln Euros
     const euroUlps = EUR_DECIMALS.mul(1000000);
-    const r = await curve.issue(euroUlps, {from: accounts[1]});
+    const r = await curve.issue(euroUlps, { from: accounts[1] });
     console.log(`\tIssue took ${gasCost(r)}.`);
     const neumarkUlps = await neumark.balanceOf.call(accounts[1]);
     const neumarks = neumarkUlps.div(NMK_DECIMALS).floor().valueOf();
@@ -183,14 +183,14 @@ contract('Curve', (accounts) => {
     // Burn a third the Neumarks
     const toBurn = Math.floor(neumarks / 3);
     const toBurnUlps = NMK_DECIMALS.mul(toBurn);
-    const burned = await curve.burnNeumark(toBurnUlps, {from: accounts[1]});
+    const burned = await curve.burnNeumark(toBurnUlps, { from: accounts[1] });
     console.log(`\tBurn took ${gasCost(burned)}.`);
     assert.equal(
       (await neumark.balanceOf.call(accounts[1])).div(NMK_DECIMALS).floor().valueOf(),
       neumarks - toBurn
     );
   });
-  it('should issue same amount in multiple issuances', async () => {
+  it("should issue same amount in multiple issuances", async () => {
     // 1 ether + 100 wei in eur
     const eurRate = 218.1192809;
     const euroUlps = EUR_DECIMALS.mul(1).add(100).mul(eurRate);
@@ -198,10 +198,10 @@ contract('Curve', (accounts) => {
     // issue for 1 ether
     const euro1EthUlps = EUR_DECIMALS.mul(1).mul(eurRate);
     let tx = await curve.issue(euro1EthUlps);
-    const p1NMK = eventValue(tx, 'NeumarksIssued', 'neumarks');
+    const p1NMK = eventValue(tx, "NeumarksIssued", "neumarks");
     // issue for 100 wei
-    tx = await curve.issue((new BigNumber(100)).mul(eurRate));
-    const p2NMK = eventValue(tx, 'NeumarksIssued', 'neumarks');
+    tx = await curve.issue(new BigNumber(100).mul(eurRate));
+    const p2NMK = eventValue(tx, "NeumarksIssued", "neumarks");
     expect(totNMK).to.be.bignumber.equal(p1NMK.plus(p2NMK));
   });
 });
