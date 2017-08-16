@@ -1,15 +1,10 @@
+import { expect } from 'chai';
 import advanceToBlock from './helpers/advanceToBlock';
 import EVMThrow from './helpers/EVMThrow';
 import * as chain from './helpers/spawnContracts'
 import eventValue from './helpers/eventValue'
 import {increaseTime, setTimeTo} from './helpers/increaseTime'
 import {latestTime, latestTimestamp} from './helpers/latestTime'
-
-const BigNumber = web3.BigNumber
-const expect = require('chai')
-  .use(require('chai-as-promised'))
-  .use(require('chai-bignumber')(BigNumber))
-  .expect;
 
 const TestCommitment = artifacts.require('TestCommitment');
 

@@ -1,8 +1,6 @@
 require('babel-register');
 require('babel-polyfill');
 
-require('./mocha.js');
-
 module.exports = {
   networks: {
     development: {

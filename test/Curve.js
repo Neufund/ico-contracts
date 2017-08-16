@@ -1,17 +1,13 @@
+import { expect } from 'chai';
 import gasCost from './helpers/gasCost';
 import eventValue from './helpers/eventValue'
-
-const BigNumber = web3.BigNumber
-const expect = require('chai')
-  .use(require('chai-as-promised'))
-  .use(require('chai-bignumber')(BigNumber))
-  .expect;
 
 const Curve = artifacts.require('./Curve.sol');
 const NeumarkFactory = artifacts.require('./NeumarkFactory.sol');
 const Neumark = artifacts.require('./Neumark.sol');
 const NeumarkController = artifacts.require('./NeumarkController.sol');
 
+const BigNumber = web3.BigNumber
 const EUR_DECIMALS = new BigNumber(10).toPower(18);
 const NMK_DECIMALS = new BigNumber(10).toPower(18);
 

@@ -1,3 +1,4 @@
+import { expect } from 'chai';
 import moment from 'moment'
 import gasCost from './helpers/gasCost';
 import error from './helpers/error'
@@ -5,12 +6,6 @@ import eventValue from './helpers/eventValue'
 import * as chain from './helpers/spawnContracts'
 import increaseTime, {setTimeTo} from './helpers/increaseTime'
 import latestTime, {latestTimestamp} from './helpers/latestTime'
-
-const BigNumber = web3.BigNumber
-const expect = require('chai')
-  .use(require('chai-as-promised'))
-  .use(require('chai-bignumber')(BigNumber))
-  .expect;
 
 const LockedAccount = artifacts.require('LockedAccount');
 
