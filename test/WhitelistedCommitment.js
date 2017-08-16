@@ -66,9 +66,24 @@ contract('WhitelistedCommitment', ([_ ,owner, investor, investor2]) => {
       'neumarks due in lock must equal balance in token contract').to.be.bignumber.equal(nmkForTicket.div(2).round(0, 4));
   }
 
+  async function setupFixedCostCase(declared, ticket) {
+    await chain.commitment.setFixed([investor], [declared]);
+    await setTimeTo(startTimestamp);
+  }
+
   //it -> commit fixed and verify numbers (alt cases: below ticket, ticket, above ticket, and all of those but with many commits)
   it('should commit below declared ticket on fixed cost', async () => {
-    await fixedCostCase(chain.ether(5000.2909), chain.ether(1.2));
+    const declaredSize = chain.ether(5000.2909);
+    const ticketSize = chain.ether(1.2);
+    await setupFixedCostCase(declaredSize, ticketSize);
+
+    let tx = await chain.commitment.commit({ value: ticketSize, from: investor });
+
+    const totalSecuredNeumarks = (await chain.curve.curve(await chain.commitment.convertToEUR(declaredSize)));
+    const expected = totalSecuredNeumarks.mul(ticketSize).div(declaredSize).div(2).round(0, 4);
+    const investorBalance = await chain.lockedAccount.balanceOf(investor);
+    expect(investorBalance[1].valueOf(),
+      'neumarks due in lock must equal balance in token contract').to.be.bignumber.equal(expected);
   });
 
   it('should commit declared ticket on fixed cost', async () => {
