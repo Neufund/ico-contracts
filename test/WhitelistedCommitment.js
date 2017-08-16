@@ -1,3 +1,4 @@
+import { expect } from 'chai';
 import moment from 'moment'
 import advanceToBlock from './helpers/advanceToBlock';
 import EVMThrow from './helpers/EVMThrow';
@@ -6,12 +7,6 @@ import eventValue from './helpers/eventValue'
 import {increaseTime, setTimeTo} from './helpers/increaseTime'
 import {latestTime, latestTimestamp} from './helpers/latestTime'
 
-const BigNumber = web3.BigNumber
-// BigNumber.config({ ROUNDING_MODE: BigNumber.ROUND_HALF_UP })
-const expect = require('chai')
-  .use(require('chai-as-promised'))
-  .use(require('chai-bignumber')(BigNumber))
-  .expect;
 
 const WhitelistedCommitment = artifacts.require('WhitelistedCommitment');
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
