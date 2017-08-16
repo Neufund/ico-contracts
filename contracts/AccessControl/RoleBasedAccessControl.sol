@@ -27,10 +27,11 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
     // State
     ////////////////
 
+    // subject → role → object → allowed
     mapping (address => mapping(bytes32 => mapping(address => TriState))) access;
 
-    // TODO: Retrieve list of contracts
-    // TODO: Retrieve list of users per role
+    // object → role → addresses
+    mapping (address => mapping(bytes32 => address[])) accessList;
 
     ////////////////
     // Events
@@ -113,25 +114,91 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
     function setUserRole(
         address subject,
         bytes32 role,
-        TriState access
-    )
-        public
-    {
-        return setUserRole(subject, role, GLOBAL, access);
-    }
-
-    // Assign a role to a user globally
-    function setUserRole(
-        address subject,
-        bytes32 role,
         IAccessControlled object,
         TriState newValue
     )
         public
         only(ROLE_ACCESS_CONTROLER)
     {
-        TriState oldValue = access[object][role][subject];
-        access[object][role][subject] = newValue;
+        setUserRolePrivate(subject, role, object, newValue);
+    }
+
+    // Atomically change a set of role assignments
+    function setUserRoles(
+        address[] subjects,
+        bytes32[] roles,
+        IAccessControlled[] objects,
+        TriState[] newValues
+    )
+        public
+        only(ROLE_ACCESS_CONTROLER)
+    {
+        require(subjects.length == roles.length);
+        require(subjects.length == objects.length);
+        require(subjects.length == newValues.length);
+        for(uint i = 0; i < subjects.length; i++) {
+            setUserRolePrivate(subjects[i], roles[i], objects[i], newValues[i]);
+        }
+    }
+
+    function getValue(
+        address subject,
+        bytes32 role,
+        IAccessControlled object
+    )
+        public
+        constant
+        returns (TriState)
+    {
+        return access[subject][role][object];
+    }
+
+    function getUsers(
+        IAccessControlled object,
+        bytes32 role
+    )
+        public
+        constant
+        returns (address[])
+    {
+        return accessList[object][role];
+    }
+
+    ////////////////
+    // Private functions
+    ////////////////
+
+    function setUserRolePrivate(
+        address subject,
+        bytes32 role,
+        IAccessControlled object,
+        TriState newValue
+    )
+        private
+    {
+        // Fetch old value and short-circuit no-ops
+        TriState oldValue = access[subject][role][object];
+        if(oldValue == newValue) {
+            return;
+        }
+
+        // Update the mapping
+        access[subject][role][object] = newValue;
+
+        // Update the list on add / remove
+        address[] storage list = accessList[object][role];
+        if(oldValue == TriState.Unset && newValue != TriState.Unset) {
+            list.push(subject);
+        }
+        if(oldValue != TriState.Unset && newValue == TriState.Unset) {
+            for(uint i = 0; i < list.length; i++) {
+                if(list[i] == subject) {
+                    list[i] = list[list.length - 1];
+                    delete list[list.length - 1];
+                    list.length -= 1;
+                }
+            }
+        }
 
         // An access controler is not allowed to revoke his own right on this
         // contract. This prevents access controlers from locking themselves
