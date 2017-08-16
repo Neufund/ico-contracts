@@ -9,17 +9,7 @@ import './EtherToken.sol';
 import './Curve.sol';
 import './FeeDistributionPool.sol';
 import './TokenOffering.sol';
-
-/* contract LockedAccountMigration {
-  modifier onlyOldLockedAccount() {
-    require(msg.sender == getOldLockedAccount());
-    _;
-  }
-
-  // only old locked account can call migrate function
-  function getOldLockedAccount() public constant returns (address);
-  function migrate(address investor, uint balance, uint neumarkCost, uint32 longstopDate) onlyOldLockedAccount public;
-} */
+import './LockedAccountMigration.sol';
 
 contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
     // lock state
@@ -29,6 +19,8 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
     event FundsLocked(address indexed investor, uint256 amount, uint256 neumarks);
     event FundsUnlocked(address indexed investor, uint256 amount);
     event LockStateTransition(LockState oldState, LockState newState);
+    event InvestorMigrated(address indexed investor, uint256 amount, uint256 neumarks, uint256 unlockDate);
+    event MigrationEnabled(address target);
 
     // total amount of tokens locked
     uint public totalLockedAmount;
@@ -46,16 +38,19 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
     TokenOffering public controller;
     // fee distribution pool
     FeeDistributionPool public feePool;
+    // migration target contract
+    LockedAccountMigration public migration;
 
-    Curve private neumarkCurve;
-    Neumark private neumarkToken;
+
+    Curve internal neumarkCurve;
+    Neumark internal neumarkToken;
     // LockedAccountMigration private migration;
-    mapping(address => Account) accounts;
+    mapping(address => Account) internal accounts;
 
     struct Account {
         uint256 balance;
         uint256 neumarksDue;
-        uint256 longstopDate;
+        uint256 unlockDate;
     }
 
     //modifiers
@@ -91,10 +86,10 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
         a.balance = _addBalance(a.balance, amount);
         a.neumarksDue += neumarks;
         assert(isSafeMultiplier(a.neumarksDue));
-        if (a.longstopDate == 0) {
-            // this is new account - longstopDate always > 0
+        if (a.unlockDate == 0) {
+            // this is new account - unlockDate always > 0
             totalInvestors += 1;
-            a.longstopDate = currentTime() + lockPeriod;
+            a.unlockDate = currentTime() + lockPeriod;
         }
         accounts[investor] = a;
         FundsLocked(investor, amount, neumarks);
@@ -123,8 +118,8 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
                 }
                 // burn neumarks corresponding to unspent funds
                 neumarkCurve.burnNeumark(a.neumarksDue);
-                // take the penalty if before longstopdate
-                if (currentTime() < a.longstopDate) {
+                // take the penalty if before unlockDate
+                if (currentTime() < a.unlockDate) {
                     uint256 penalty = fraction(a.balance, penaltyFraction);
                     // allowance for penalty to pool contract
                     require(ownedToken.approve(address(feePool), penalty));
@@ -137,14 +132,11 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
             require(ownedToken.transfer(msg.sender, a.balance));
             // remove balance, investor and
             FundsUnlocked(msg.sender, a.balance);
-            _subBalance(a.balance, a.balance);
-            totalInvestors -= 1;
-            delete accounts[msg.sender];
+            _removeInvestor(msg.sender, a.balance);
         }
         return Status.SUCCESS;
     }
 
-    // todo: handle callback from Neumark token method `approveAndCall`
     // this allows to unlock and allow neumarks to be burned in one transaction
     function receiveApproval(address from, uint256 _amount, address _token, bytes _data)
         public
@@ -162,7 +154,7 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
         returns (uint256, uint256, uint256)
     {
         Account storage a = accounts[investor];
-        return (a.balance, a.neumarksDue, a.longstopDate);
+        return (a.balance, a.neumarksDue, a.unlockDate);
     }
 
     /// allows to anyone to release all funds without burning Neumarks and any other penalties
@@ -183,13 +175,38 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
         _changeState(LockState.AcceptingUnlocks);
     }
 
-    // todo: not implemented
-    /* function migrate()
+    /// enables migration to new LockedAccount instance
+    /// it can be set only once to prevent setting temporary migrations that let
+    /// just one investor out
+    /// may be set in AcceptingLocks state (in unlikely event that controller fails we let investors out)
+    /// and AcceptingUnlocks - which is normal operational mode
+    function enableMigration(LockedAccountMigration _migration)
+        onlyOwner
+        onlyStates(LockState.AcceptingLocks, LockState.AcceptingUnlocks)
         public
     {
-        requires(address(migration) != 0);
+        require(address(migration) == 0);
+        // we must be the source
+        require(_migration.getMigrationFrom() == address(this));
+        migration = _migration;
+        MigrationEnabled(_migration);
+    }
+
+    /// migrate single investor
+    function migrate()
+        public
+    {
+        require(address(migration) != 0);
         // migrates
-    }*/
+        Account storage a = accounts[msg.sender];
+        // if there is anything to migrate
+        if (a.balance > 0) {
+            bool migrated = migration.migrateInvestor(msg.sender, a.balance, a.neumarksDue, a.unlockDate);
+            assert(migrated);
+            InvestorMigrated(msg.sender, a.balance, a.neumarksDue, a.unlockDate);
+            _removeInvestor(msg.sender, a.balance);
+        }
+    }
 
     // owner can always change the controller
     function setController(TokenOffering _controller)
@@ -228,26 +245,25 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
         penaltyFraction = _penaltyFraction;
     }
 
-    /* function enableMigration(LockedAccountMigration migration)
-        onlyOwner
-        onlyInitialized
-    {
-
-    } */
-
-    function _addBalance(uint balance, uint amount) private returns (uint) {
+    function _addBalance(uint balance, uint amount) internal returns (uint) {
         totalLockedAmount = add(totalLockedAmount, amount);
         uint256 newBalance = add(balance, amount);
         assert(isSafeMultiplier(newBalance));
         return newBalance;
     }
 
-    function _subBalance(uint balance, uint amount) private returns (uint) {
+    function _subBalance(uint balance, uint amount) internal returns (uint) {
         totalLockedAmount -= amount;
         return balance - amount;
     }
 
-    function _changeState(LockState newState) private {
+    function _removeInvestor(address investor, uint256 balance) internal {
+        totalLockedAmount -= balance;
+        totalInvestors -= 1;
+        delete accounts[investor];
+    }
+
+    function _changeState(LockState newState) internal {
         if (newState != lockState) {
             LockStateTransition(lockState, newState);
             lockState = newState;

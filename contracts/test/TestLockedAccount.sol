@@ -2,7 +2,6 @@ pragma solidity ^0.4.11;
 
 import "../LockedAccount.sol";
 
-
 contract TestLockedAccount is LockedAccount {
     // invests in equity token ICO
     function invest(address ico, uint256 amount)
