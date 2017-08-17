@@ -132,17 +132,6 @@ contract Curve is Ownable {
         return euros;
     }
 
-    // Gas consumption (for x in EUR):
-    // 0    324
-    // 1    530
-    // 10   530
-    // 100  606
-    // 10³  606
-    // 10⁶  953
-    // 10⁹  3426
-    // CAP  4055
-    // LIM  10686
-    // ≥    258
     function curve(uint256 euroUlps)
         public
         constant
