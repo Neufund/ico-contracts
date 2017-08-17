@@ -2,7 +2,7 @@ pragma solidity 0.4.15;
 
 import './IAccessControlled.sol';
 
-interface IAccessPolicy {
+contract IAccessPolicy {
 
     // Note: we don't make this function constant to allow for
     //       state-updating access controls such as rate limiting.
