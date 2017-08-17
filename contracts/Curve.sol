@@ -132,54 +132,35 @@ contract Curve is Ownable {
         return euros;
     }
 
-    function curve(uint256 euroUlps)
+    function curve(uint256 n)
         public
         constant
         returns(uint256)
     {
-        // TODO: Explain.
-        // TODO: Proof error bounds / correctness.
-        // TODO: Proof or check for overflow.
+        uint256 cap   = 1500000000000000000000000000;
+        uint256 D     =  230769230769230769230769231;
+        uint256 nLim  = 8300000000000000000000000000;
 
-        uint256 NMK_DECIMALS = 10**18;
-        uint256 EUR_DECIMALS = 10**18;
-        uint256 CAP = 1500000000;
-
-        // At some point the curve is flat to within a small
-        // fraction of a Neumark. We just make it flat.
-        uint256 LIM = 83 * 10**8 * EUR_DECIMALS;
-        if(euroUlps >= LIM) {
-            return CAP * NMK_DECIMALS;
+        // Return the cap if n is above the limit.
+        if(n >= nLim) {
+            return cap;
         }
 
-        // 1 - 1/D ≈ e^(-6.5 / CAP·EUR_DECIMALS)
-        // D = Round[1 / (1 - e^(-6.5 / CAP·EUR_DECIMALS))]
-        uint256 D = 230769230769230769230769231;
-
-        // Cap in NMK-ULP (Neumark units of least precision).
-        uint256 C = CAP * NMK_DECIMALS;
-
-        // Compute C - C·(1 - 1/D)^x using binomial expansion.
-        // Assuming D ≫ x ≫ 1 so we don't bother with
-        // the `x -= 1` because we will converge before this
-        // has a noticable impact on `x`.
-        uint256 n = C;
-        uint256 a = 0;
-        uint256 d = D;
-        assembly {
-            repeat:
-                n := div(mul(n, euroUlps), d)
-                jumpi(done, iszero(n))
-                a := add(a, n)
-                d := add(d, D)
-                n := div(mul(n, euroUlps), d)
-                jumpi(done, iszero(n))
-                a := sub(a, n)
-                d := add(d, D)
-                jump(repeat)
-            done:
-        }
-        return a;
+        // Approximate cap-cap·(1-1/D)^n using the Binomial theorem
+        uint256 term = cap;
+        uint256 sum = 0;
+        uint256 denom = D;
+        do assembly {
+            // We use assembler primarily to avoid the expensive
+            // divide-by-zero check solc inserts for the / operator.
+            term  := div(mul(term, n), denom)
+            sum   := add(sum, term)
+            denom := add(denom, D)
+            term  := div(mul(term, n), denom)
+            sum   := sub(sum, term)
+            denom := add(denom, D)
+        } while(term != 0);
+        return sum;
     }
 
     function inverse(uint256 neumarkUlps, uint256 min, uint256 max)
