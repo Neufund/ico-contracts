@@ -1,17 +1,16 @@
-pragma solidity ^0.4.11;
+pragma solidity 0.4.15;
 
-import 'zeppelin-solidity/contracts/token/ERC20Basic.sol';
-import 'zeppelin-solidity/contracts/math/SafeMath.sol';
 import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import './ReturnsErrors.sol';
 import './TimeSource.sol';
 import './EtherToken.sol';
 import './Curve.sol';
-import './FeeDistributionPool.sol';
 import './TokenOffering.sol';
 import './LockedAccountMigration.sol';
+import './IsContract.sol';
+import './ERC23.sol';
 
-contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
+contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math, IsContract, ApproveAndCallFallBack {
     // lock state
     enum LockState {Uncontrolled, AcceptingLocks, AcceptingUnlocks, ReleaseAll }
 
@@ -27,7 +26,7 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
     // total number of locked investors
     uint public totalInvestors;
     // a token controlled by LockedAccount, read ERC20 + extensions to read what token is it (ETH/EUR etc.)
-    ERC20 public ownedToken;
+    ERC23 public assetToken;
     // current state of the locking contract
     LockState public lockState;
     // longstop period in seconds
@@ -37,7 +36,7 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
     // govering ICO contract that may lock money or unlock all account if fails
     TokenOffering public controller;
     // fee distribution pool
-    FeeDistributionPool public feePool;
+    address public feePool;
     // migration target contract
     LockedAccountMigration public migration;
 
@@ -69,7 +68,7 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
         _;
     }
 
-    // deposits 'amount' of tokens on ownedToken contract
+    // deposits 'amount' of tokens on assetToken contract
     // locks 'amount' for 'investor' address
     // callable only from ICO contract that gets currency directly (ETH/EUR)
     function lock(address investor, uint256 amount, uint256 neumarks)
@@ -79,9 +78,9 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
     {
         require(amount > 0);
         // check if controller made allowance
-        require(ownedToken.allowance(msg.sender, address(this)) >= amount);
+        require(assetToken.allowance(msg.sender, address(this)) >= amount);
         // transfer to self yourself
-        require(ownedToken.transferFrom(msg.sender, address(this), amount));
+        require(assetToken.transferFrom(msg.sender, address(this), amount));
         Account storage a = accounts[investor];
         a.balance = _addBalance(a.balance, amount);
         a.neumarksDue += neumarks;
@@ -95,25 +94,20 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
         FundsLocked(investor, amount, neumarks);
     }
 
-    // unlocks msg.sender tokens by making them withdrawable in ownedToken
-    // expects number of neumarks that is due to be available to be burned on msg.sender balance - see comments
-    // if used before longstop date, calculates penalty and distributes it as revenue
-    // event Debug(string str);
-    function unlock()
-        onlyStates(LockState.AcceptingUnlocks, LockState.ReleaseAll)
-        public
+    function unlockFor(address investor)
+        internal
         returns (Status)
     {
-        Account storage a = accounts[msg.sender];
+        Account storage a = accounts[investor];
         // if there is anything to unlock
         if (a.balance > 0) {
-            // in ReleaseAll just give money back by transfering to msg.sender
+            // in ReleaseAll just give money back by transfering to investor
             if (lockState == LockState.AcceptingUnlocks) {
-                // before burn happens, msg.sender must make allowance to locked account
-                if (neumarkToken.allowance(msg.sender, address(this)) < a.neumarksDue) {
+                // before burn happens, investor must make allowance to locked account
+                if (neumarkToken.allowance(investor, address(this)) < a.neumarksDue) {
                     return logError(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
                 }
-                if (!neumarkToken.transferFrom(msg.sender, address(this), a.neumarksDue)) {
+                if (!neumarkToken.transferFrom(investor, address(this), a.neumarksDue)) {
                     return logError(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
                 }
                 // burn neumarks corresponding to unspent funds
@@ -121,31 +115,49 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
                 // take the penalty if before unlockDate
                 if (currentTime() < a.unlockDate) {
                     uint256 penalty = fraction(a.balance, penaltyFraction);
-                    // allowance for penalty to pool contract
-                    require(ownedToken.approve(address(feePool), penalty));
-                    // add to distribution
-                    feePool.addFee(penalty);
+                    // distribute penalty
+                    if (isContract(feePool)) {
+                        // transfer to contract
+                        require(assetToken.approveAndCall(feePool, penalty, ""));
+                    } else {
+                        // transfer to address
+                        require(assetToken.transfer(feePool, penalty));
+                    }
                     a.balance = _subBalance(a.balance, penalty);
                 }
             }
             // transfer amount back to investor - now it can withdraw
-            require(ownedToken.transfer(msg.sender, a.balance));
+            require(assetToken.transfer(investor, a.balance));
             // remove balance, investor and
-            FundsUnlocked(msg.sender, a.balance);
-            _removeInvestor(msg.sender, a.balance);
+            FundsUnlocked(investor, a.balance);
+            _removeInvestor(investor, a.balance);
         }
         return Status.SUCCESS;
     }
 
+    // unlocks msg.sender tokens by making them withdrawable in assetToken
+    // expects number of neumarks that is due to be available to be burned on msg.sender balance - see comments
+    // if used before longstop date, calculates penalty and distributes it as revenue
+    function unlock()
+        onlyStates(LockState.AcceptingUnlocks, LockState.ReleaseAll)
+        public
+        returns (Status)
+    {
+        return unlockFor(msg.sender);
+    }
+
     // this allows to unlock and allow neumarks to be burned in one transaction
     function receiveApproval(address from, uint256 _amount, address _token, bytes _data)
+        onlyStates(LockState.AcceptingUnlocks, LockState.ReleaseAll)
         public
+        returns (bool)
     {
         require(_data.length == 0);
         // only from neumarks
         require(_token == address(neumarkToken));
         // this will check if allowance was made and if _amount is enough to unlock
-        unlock();
+        unlockFor(from);
+        return true;
     }
 
     function balanceOf(address investor)
@@ -221,24 +233,24 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math {
         _changeState(LockState.AcceptingLocks);
     }
 
-    function setPenaltyDistribution(FeeDistributionPool _feePool)
+    /// sets address to which tokens from unlock penalty are sent
+    /// both simple addresses and contracts are allowed
+    /// contract needs to implement ApproveAndCallCallback interface
+    function setPenaltyDisbursal(address _feePool)
         onlyOwner
-        onlyState(LockState.Uncontrolled)
         public
     {
-        // can only attach ETH distribution for Neumark
-        require(_feePool.feeToken() == ownedToken);
-        require(_feePool.distributionToken() == neumarkCurve.NEUMARK_CONTROLLER().TOKEN());
+        // can be changed at any moment by owner
         feePool = _feePool;
     }
 
-    // _ownedToken - token contract with resource locked by LockedAccount, where LockedAccount is allowed to make deposits
+    // _assetToken - token contract with resource locked by LockedAccount, where LockedAccount is allowed to make deposits
     // _neumarkToken - neumark token contract where LockedAccount is allowed to burn tokens and add revenue
     // _controller - typically ICO contract: can lock, release all locks, enable escape hatch
-    function LockedAccount(ERC20 _ownedToken, Curve _neumarkCurve,
+    function LockedAccount(ERC23 _assetToken, Curve _neumarkCurve,
         uint _lockPeriod, uint _penaltyFraction)
     {
-        ownedToken = _ownedToken;
+        assetToken = _assetToken;
         neumarkCurve = _neumarkCurve;
         neumarkToken = neumarkCurve.NEUMARK_CONTROLLER().TOKEN();
         lockPeriod = _lockPeriod;
