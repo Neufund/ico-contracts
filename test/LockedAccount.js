@@ -86,7 +86,7 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
       await chain.etherToken.totalSupply(),
       "lock should own locked amount"
     ).to.be.bignumber.equal(initialAssetSupply.add(ticket));
-    const newInvestors = (parseInt(initialLockedBalance[2]) > 0 ? 0 : 1);
+    const newInvestors = parseInt(initialLockedBalance[2]) > 0 ? 0 : 1;
     expect(
       await chain.lockedAccount.totalInvestors(),
       "total number of investors"
@@ -112,7 +112,9 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
   async function unlockEtherWithApprove(investor, ticket, neumarkToBurn) {
     // investor approves transfer to lock contract to burn neumarks
     //console.log(`investor has ${parseInt(await chain.neumark.balanceOf(investor))}`);
-    let tx = await chain.neumark.approve(chain.lockedAccount.address, neumarkToBurn, { from: investor });
+    let tx = await chain.neumark.approve(chain.lockedAccount.address, neumarkToBurn, {
+      from: investor,
+    });
     expect(eventValue(tx, "Approval", "_amount")).to.be.bignumber.equal(neumarkToBurn);
     // only investor can unlock and must burn tokens
     tx = await chain.lockedAccount.unlock({ from: investor });
@@ -125,7 +127,9 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
     // console.log(`investor has ${await chain.neumark.balanceOf(investor)} against ${neumarkToBurn}`);
     // console.log(`${chain.lockedAccount.address} should spend`);
     // await chain.lockedAccount.receiveApproval(investor, neumarkToBurn, chain.neumark.address, "");
-    let tx = await chain.neumark.approveAndCall(chain.lockedAccount.address, neumarkToBurn, "", { from: investor });
+    let tx = await chain.neumark.approveAndCall(chain.lockedAccount.address, neumarkToBurn, "", {
+      from: investor,
+    });
     expect(eventValue(tx, "Approval", "_amount")).to.be.bignumber.equal(neumarkToBurn);
 
     return tx;
