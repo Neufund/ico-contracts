@@ -6,8 +6,11 @@ import eventValue from "./helpers/eventValue";
 import * as chain from "./helpers/spawnContracts";
 import increaseTime, { setTimeTo } from "./helpers/increaseTime";
 import latestTime, { latestTimestamp } from "./helpers/latestTime";
+import EVMThrow from "./helpers/EVMThrow";
 
-const LockedAccount = artifacts.require("LockedAccount");
+const TestFeeDistributionPool = artifacts.require("TestFeeDistributionPool");
+
+const should = require("chai").should();
 
 contract("LockedAccount", ([owner, investor, investor2]) => {
   let startTimestamp;
@@ -32,6 +35,14 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
     assert.equal(await chain.lockedAccount.assetToken.call(), chain.etherToken.address);
   });
 
+  async function expectLockEvent(tx, investor, ticket, neumarks) {
+    const event = eventValue(tx, "FundsLocked");
+    expect(event).to.exist;
+    expect(event.args.investor).to.be.bignumber.equal(investor);
+    expect(event.args.amount).to.be.bignumber.equal(ticket);
+    expect(event.args.neumarks).to.be.bignumber.equal(neumarks);
+  }
+
   async function lockEther(investor, ticket) {
     // initial state of the lock
     const initialLockedAmount = await chain.lockedAccount.totalLockedAmount();
@@ -47,10 +58,11 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
       "neumarks must be allocated"
     ).to.be.bignumber.equal(neumarks.add(initialNeumarksBalance));
     // only controller can lock
-    await chain.commitment._investFor(investor, ticket, neumarks, {
+    tx = await chain.commitment._investFor(investor, ticket, neumarks, {
       value: ticket,
       from: investor,
     });
+    await expectLockEvent(tx, investor, ticket, neumarks);
     const timebase = latestTimestamp(); // timestamp of block _investFor was mined
     const investorBalance = await chain.lockedAccount.balanceOf(investor);
     expect(investorBalance[0], "investor balance should equal locked eth").to.be.bignumber.equal(
@@ -110,8 +122,8 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
 
   async function unlockEtherWithCallback(investor, ticket, neumarkToBurn) {
     // investor approves transfer to lock contract to burn neumarks
-    console.log(`investor has ${await chain.neumark.balanceOf(investor)} against ${neumarkToBurn}`);
-    console.log(`${chain.lockedAccount.address} should spend`);
+    // console.log(`investor has ${await chain.neumark.balanceOf(investor)} against ${neumarkToBurn}`);
+    // console.log(`${chain.lockedAccount.address} should spend`);
     // await chain.lockedAccount.receiveApproval(investor, neumarkToBurn, chain.neumark.address, "");
     let tx = await chain.neumark.approveAndCall(chain.lockedAccount.address, neumarkToBurn, "", { from: investor });
     expect(eventValue(tx, "Approval", "_amount")).to.be.bignumber.equal(neumarkToBurn);
@@ -119,8 +131,47 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
     return tx;
   }
 
+  async function unlockEtherWithCallbackUnknownToken(investor, ticket, neumarkToBurn) {
+    // ether token is not allowed to call unlock on LockedAccount
+    await chain.etherToken
+      .approveAndCall(chain.lockedAccount.address, neumarkToBurn, "", { from: investor })
+      .should.be.rejectedWith(EVMThrow);
+  }
+
+  async function expectPenaltyEvent(tx, investor, ticket) {
+    const penalty = ticket.mul(await chain.lockedAccount.penaltyFraction()).div(chain.ether(1));
+    const disbursalPool = await chain.lockedAccount.penaltyDisbursalAddress();
+    const event = eventValue(tx, "PenaltyDisbursed");
+    expect(event).to.exist;
+    expect(event.args.investor).to.be.bignumber.equal(investor);
+    expect(event.args.amount).to.be.bignumber.equal(penalty);
+    expect(event.args.toPool).to.be.bignumber.equal(disbursalPool);
+  }
+
+  async function expectLastTransferEvent(tx, from, to, val) {
+    const event = eventValue(tx, "Transfer");
+    // console.log(event);
+    expect(event).to.exist;
+    expect(event.args._from).to.equal(from);
+    expect(event.args._to).to.equal(to);
+    expect(event.args._amount).to.be.bignumber.equal(val);
+  }
+
+  async function expectUnlockEvent(tx, investor, ticket, withPenalty) {
+    if (withPenalty) {
+      const penalty = ticket.mul(await chain.lockedAccount.penaltyFraction()).div(chain.ether(1));
+      ticket = ticket.sub(penalty);
+    }
+    const event = eventValue(tx, "FundsUnlocked");
+    expect(event).to.exist;
+    expect(event.args.investor).to.be.bignumber.equal(investor);
+    expect(event.args.amount).to.be.bignumber.equal(ticket);
+  }
+
   async function assertCorrectUnlock(tx, investor, ticket) {
+    const disbursalPool = await chain.lockedAccount.penaltyDisbursalAddress();
     assert.equal(error(tx), 0, "Expected OK rc from unlock()");
+    const penalty = ticket.mul(await chain.lockedAccount.penaltyFraction()).div(chain.ether(1));
     // console.log(`unlocked ${eventValue(tx, 'FundsUnlocked', 'amount')} ether`);
     expect(
       await chain.lockedAccount.totalLockedAmount(),
@@ -136,14 +187,13 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
     assert.equal(await chain.lockedAccount.totalInvestors(), 0, "should have no investors");
     expect(
       (await chain.etherToken.balanceOf(investor)).plus(
-        await chain.etherToken.balanceOf(chain.operatorWallet)
+        await chain.etherToken.balanceOf(disbursalPool)
       ),
       "investor + penalty == 1 ether"
     ).to.be.bignumber.equal(ticket);
     // check penalty value
-    const penalty = ticket.mul(await chain.lockedAccount.penaltyFraction()).div(chain.ether(1));
     expect(
-      await chain.etherToken.balanceOf(chain.operatorWallet),
+      await chain.etherToken.balanceOf(disbursalPool),
       "fee pool has correct penalty value"
     ).to.be.bignumber.equal(penalty);
     // 0 neumarks at the end
@@ -162,27 +212,55 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
     await chain.neumarkController.enableTransfers(true);
   }
 
-  it("should unlock with approval", async () => {
+  it("should unlock with approval on contract disbursal", async () => {
+    const ticket = chain.ether(1);
+    const neumarks = await lockEther(investor, ticket);
+    await enableUnlocks();
+    const testDisbursal = await TestFeeDistributionPool.new();
+    // change disbursal pool
+    await chain.lockedAccount.setPenaltyDisbursal(testDisbursal.address);
+    const unlockTx = await unlockEtherWithApprove(investor, ticket, neumarks);
+    // check if disbursal pool logged transfer
+    await assertCorrectUnlock(unlockTx, investor, ticket);
+    await expectPenaltyEvent(unlockTx, investor, ticket);
+    await expectUnlockEvent(unlockTx, investor, ticket, true);
+  });
+
+  it("should unlock with approval on simple address disbursal", async () => {
     const ticket = chain.ether(1);
     const neumarks = await lockEther(investor, ticket);
     await enableUnlocks();
     const unlockTx = await unlockEtherWithApprove(investor, ticket, neumarks);
     await assertCorrectUnlock(unlockTx, investor, ticket);
+    await expectPenaltyEvent(unlockTx, investor, ticket);
+    await expectUnlockEvent(unlockTx, investor, ticket, true);
   });
 
-  it("should unlock with approveAndCall", async () => {
+  it("should unlock with approveAndCall on simple address disbursal", async () => {
     const ticket = chain.ether(1);
     const neumarks = await lockEther(investor, ticket);
     await enableUnlocks();
     const unlockTx = await unlockEtherWithCallback(investor, ticket, neumarks);
     await assertCorrectUnlock(unlockTx, investor, ticket);
+    // truffle will not return events that are not in ABI of called contract so line below uncommented
+    //await expectPenaltyEvent(unlockTx, investor, penalty, disbursalPool);
+    // instead look for transfer event of a pool
+    const disbursalPool = await chain.lockedAccount.penaltyDisbursalAddress();
+    const penalty = ticket.mul(await chain.lockedAccount.penaltyFraction()).div(chain.ether(1));
+    // todo: find correct transfer event, not last
+    // await expectLastTransferEvent(unlockTx, chain.lockedAccount.address, disbursalPool, penalty);
+  });
+
+  it("should throw on approveAndCall with unknown token", async () => {
+    const ticket = chain.ether(1);
+    const neumarks = await lockEther(investor, ticket);
+    await enableUnlocks();
+    await unlockEtherWithCallbackUnknownToken(investor, ticket, neumarks);
   });
 
   // it -> unlock after long stop
   // it -> unlock in release all
   // it -> unlock throws in prohibited states ()
-  // it -> receiveApproval test
-  // it -> receiveApproval test from invalid token
   // it -> change fee disbursal
   // it -> fee disbursal to address
   // it -> fee disbursal to contract
