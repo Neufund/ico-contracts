@@ -2,10 +2,9 @@ pragma solidity ^0.4.11;
 
 import 'zeppelin-solidity/contracts/token/ERC20.sol';
 import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
-import 'minimetoken/contracts/MiniMeToken.sol';
-import 'zeppelin-solidity/contracts/math/SafeMath.sol';
-import './Math.sol';
-import './TimeSource.sol';
+import '../MiniMeToken.sol';
+import '../Math.sol';
+import '../TimeSource.sol';
 
 // this contract allows distibution of fees in form of a token balance (feeToken)
 // to token holders of token providing checkpointed interface (like MiniMeToken)
