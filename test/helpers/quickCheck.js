@@ -1,4 +1,4 @@
-import BigNumber from 'bignumber.js';
+import BigNumber from "bignumber.js";
 
 // 2**256 - 1
 // 2**128 + 1
@@ -10,10 +10,10 @@ import BigNumber from 'bignumber.js';
 const two = new BigNumber(2);
 
 export const extrema = {
-  '2²⁵⁶ - 1': two.toPower(256).minus(1),
-  '2¹²⁸ + 1': two.toPower(128).plus(1),
-  '2¹²⁸': two.toPower(128),
-  '2¹²⁸ - 1': two.toPower(128).minus(1),
+  "2²⁵⁶ - 1": two.toPower(256).minus(1),
+  "2¹²⁸ + 1": two.toPower(128).plus(1),
+  "2¹²⁸": two.toPower(128),
+  "2¹²⁸ - 1": two.toPower(128).minus(1),
   1: new BigNumber(1),
   0: new BigNumber(0),
 };

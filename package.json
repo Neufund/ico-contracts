@@ -36,10 +36,16 @@
     "zeppelin-solidity": "^1.2.0"
   },
   "scripts": {
-    "lint": "eslint --ignore-path .gitignore .",
+    "format": "prettier --print-width 100 --trailing-comma es5 --write --list-different test/**/*.js test/*.js",
+    "format:fix": "prettier --print-width 100 --trailing-comma es5 --write test/**/*.js test/*.js",
+    "lint": "yarn format",
+    "lint:fix": "yarn format:fix",
     "testrpc": "testrpc --deterministic",
     "test": "truffle test",
     "build": "truffle compile",
     "deploy": "truffle migrate --reset --compile-all"
+  },
+  "devDependencies": {
+    "prettier": "^1.5.3"
   }
 }

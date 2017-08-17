@@ -9,6 +9,6 @@ cache: yarn
 install:
   - yarn
 script:
+  - yarn lint
+  - yarn testrpc > /dev/null &
   - yarn test
-  - yarn run -- codecov
-  - yarn eslint
