@@ -17,6 +17,7 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math, IsContract, 
     // events
     event FundsLocked(address indexed investor, uint256 amount, uint256 neumarks);
     event FundsUnlocked(address indexed investor, uint256 amount);
+    event PenaltyDisbursed(address indexed investor, uint256 amount, address toPool);
     event LockStateTransition(LockState oldState, LockState newState);
     event InvestorMigrated(address indexed investor, uint256 amount, uint256 neumarks, uint256 unlockDate);
     event MigrationEnabled(address target);
@@ -36,7 +37,7 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math, IsContract, 
     // govering ICO contract that may lock money or unlock all account if fails
     TokenOffering public controller;
     // fee distribution pool
-    address public feePool;
+    address public penaltyDisbursalAddress;
     // migration target contract
     LockedAccountMigration public migration;
 
@@ -116,13 +117,14 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math, IsContract, 
                 if (currentTime() < a.unlockDate) {
                     uint256 penalty = fraction(a.balance, penaltyFraction);
                     // distribute penalty
-                    if (isContract(feePool)) {
+                    if (isContract(penaltyDisbursalAddress)) {
                         // transfer to contract
-                        require(assetToken.approveAndCall(feePool, penalty, ""));
+                        require(assetToken.approveAndCall(penaltyDisbursalAddress, penalty, ""));
                     } else {
                         // transfer to address
-                        require(assetToken.transfer(feePool, penalty));
+                        require(assetToken.transfer(penaltyDisbursalAddress, penalty));
                     }
+                    PenaltyDisbursed(investor, penalty, penaltyDisbursalAddress);
                     a.balance = _subBalance(a.balance, penalty);
                 }
             }
@@ -236,12 +238,12 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math, IsContract, 
     /// sets address to which tokens from unlock penalty are sent
     /// both simple addresses and contracts are allowed
     /// contract needs to implement ApproveAndCallCallback interface
-    function setPenaltyDisbursal(address _feePool)
+    function setPenaltyDisbursal(address _penaltyDisbursalAddress)
         onlyOwner
         public
     {
         // can be changed at any moment by owner
-        feePool = _feePool;
+        penaltyDisbursalAddress = _penaltyDisbursalAddress;
     }
 
     // _assetToken - token contract with resource locked by LockedAccount, where LockedAccount is allowed to make deposits
