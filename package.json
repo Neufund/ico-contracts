@@ -19,7 +19,7 @@
     "chai": "^4.1.0",
     "chai-as-promised": "^7.1.1",
     "chai-bignumber": "^2.0.1",
-    "codecov": "^2.1.0",
+    "codecov": "^2.3.0",
     "eslint": "^3.19.0",
     "eslint-config-airbnb": "^15.0.0",
     "eslint-plugin-import": "^2.2.0",
@@ -42,6 +42,7 @@
     "lint:fix": "yarn format:fix",
     "testrpc": "testrpc --deterministic",
     "test": "truffle test",
+    "test:coverage": "solidity-coverage && codecov",
     "build": "truffle compile",
     "deploy": "truffle migrate --reset --compile-all"
   },
