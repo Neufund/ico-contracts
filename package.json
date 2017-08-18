@@ -46,6 +46,7 @@
     "deploy": "truffle migrate --reset --compile-all"
   },
   "devDependencies": {
-    "prettier": "^1.5.3"
+    "prettier": "^1.5.3",
+    "solidity-coverage": "^0.2.1"
   }
 }
