@@ -36,8 +36,8 @@
     "zeppelin-solidity": "^1.2.0"
   },
   "scripts": {
-    "format": "prettier --print-width 100 --trailing-comma es5 --write --list-different test/**/*.js test/*.js",
-    "format:fix": "prettier --print-width 100 --trailing-comma es5 --write test/**/*.js test/*.js",
+    "format": "prettier --print-width 100 --trailing-comma es5 --write --list-different \"{,!(node_modules|coverage)/**/}*.js\"",
+    "format:fix": "prettier --print-width 100 --trailing-comma es5 --write \"{,!(node_modules|coverage)/**/}*.js\"",
     "lint": "yarn format",
     "lint:fix": "yarn format:fix",
     "testrpc": "testrpc --deterministic",
