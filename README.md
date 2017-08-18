@@ -10,3 +10,10 @@ yarn test # run tests
 ```
 yarn lint:fix
 ```
+
+### Test coverage
+```
+yarn test:coverage
+```
+
+you will find coverage report in `coverage/index.html`.
