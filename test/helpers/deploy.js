@@ -1,0 +1,65 @@
+import { MONTH, closeFutureDate, furterFutureDate } from "./latestTime";
+import { etherToWei } from "./unitConverter";
+
+const LockedAccount = artifacts.require("LockedAccount");
+const EtherToken = artifacts.require("EtherToken");
+const NeumarkController = artifacts.require("NeumarkController");
+const NeumarkFactory = artifacts.require("NeumarkFactory");
+const Neumark = artifacts.require("Neumark");
+const Curve = artifacts.require("Curve");
+const TestCommitment = artifacts.require("TestCommitment");
+const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
+const FeeDistributionPool = artifacts.require("FeeDistributionPool");
+
+export async function deployAllContracts({ lockedAccountCfg = {}, commitmentCfg = {} } = {}) {
+  const { unlockDateMonths = 18, unlockPenalty = 0.1 } = lockedAccountCfg;
+
+  const {
+    startTimestamp = closeFutureDate(),
+    duration = MONTH,
+    minCommitment = etherToWei(10),
+    maxCommitment = etherToWei(1000),
+    minTicket = etherToWei(1),
+    eurEthRate = etherToWei(218.1192809),
+  } = commitmentCfg;
+
+  const etherToken = await EtherToken.new();
+  const neumarkFactory = await NeumarkFactory.new();
+  const neumark = await Neumark.new(neumarkFactory.address);
+  const neumarkController = await NeumarkController.new(neumark.address);
+  await neumark.changeController(neumarkController.address);
+  const curve = await Curve.new(neumarkController.address);
+
+  const lockedAccount = await LockedAccount.new(
+    etherToken.address,
+    curve.address,
+    unlockDateMonths * MONTH,
+    etherToWei(1).mul(unlockPenalty).round()
+  );
+  const feePool = await FeeDistributionPool.new(etherToken.address, neumark.address);
+  await lockedAccount.setPenaltyDistribution(feePool.address);
+
+  const commitment = await WhitelistedCommitment.new(
+    startTimestamp,
+    startTimestamp + duration,
+    minCommitment,
+    maxCommitment,
+    minTicket,
+    etherToWei(eurEthRate),
+    etherToken.address,
+    lockedAccount.address,
+    curve.address
+  );
+
+  await lockedAccount.setController(commitment.address);
+
+  return {
+    etherToken,
+    neumarkFactory,
+    neumark,
+    neumarkController,
+    curve,
+    lockedAccount,
+    commitment,
+  };
+}

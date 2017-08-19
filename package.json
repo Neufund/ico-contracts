@@ -43,7 +43,7 @@
     "testrpc": "testrpc --deterministic",
     "test": "truffle test",
     "test:coverage": "solidity-coverage && codecov",
-    "build": "truffle compile",
+    "build": "truffle compile --all",
     "deploy": "truffle migrate --reset --compile-all"
   },
   "devDependencies": {
