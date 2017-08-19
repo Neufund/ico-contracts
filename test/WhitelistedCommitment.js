@@ -6,7 +6,7 @@ import { etherToWei } from "./helpers/unitConverter";
 import { deployAllContracts } from "./helpers/deploy";
 
 contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
-  describe.only("set fixed investors", () => {
+  describe("set fixed investors", () => {
     it("should work", async () => {
       const { commitment, curve } = await deployAllContracts();
       const investors = [accounts[0], accounts[1]];
@@ -19,6 +19,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
 
       expect(await commitment.fixedCostInvestors(0)).to.be.eq(investors[0]);
       expect(await commitment.fixedCostInvestors(1)).to.be.eq(investors[1]);
+      await expect(commitment.fixedCostInvestors).to.blockchainArrayOfSize(2);
 
       expect(await commitment.fixedCost(investors[0])).to.be.bignumber.eq(tickets[0]);
       expect(await commitment.fixedCost(investors[1])).to.be.bignumber.eq(tickets[1]);
@@ -62,15 +63,95 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
     });
   });
 
-  describe.only("set whitelisted investors", () => {
-    it("should work", () => {
+  describe("set whitelisted investors", () => {
+    it("should work", async () => {
+      const { commitment } = await deployAllContracts();
+      const investors = [accounts[0], accounts[1]];
 
+      await commitment.setWhitelist(investors);
+
+      expect(await commitment.whitelistedInvestors(0)).to.be.eq(investors[0]);
+      expect(await commitment.whitelistedInvestors(1)).to.be.eq(investors[1]);
+      await expect(commitment.whitelistedInvestors).to.blockchainArrayOfSize(2);
+
+      expect(await commitment.whitelisted(investors[0])).to.be.bignumber.eq(1);
+      expect(await commitment.whitelisted(investors[1])).to.be.bignumber.eq(1);
+
+      expect(await commitment.totalFixedCostAmount()).to.be.bignumber.eq(0);
+      expect(await commitment.totalFixedCostNeumarks()).to.be.bignumber.eq(0);
     });
 
-    it("should not be possible to set it twice", () => {});
+    it("should not be possible to set it twice", async () => {
+      const { commitment } = await deployAllContracts();
+      const investors = [accounts[0], accounts[1]];
 
-    it("should work work with fixed investors", () => {});
+      await commitment.setWhitelist(investors);
 
-    it("should not be possible to set it after commitment is started", async () => {});
+      await expect(commitment.setWhitelist(investors)).to.be.rejectedWith(EvmError);
+    });
+
+    it("should not be possible to set it after commitment is started", async () => {
+      const startingDate = closeFutureDate();
+      const { commitment, curve } = await deployAllContracts({
+        commitmentCfg: { startTimestamp: startingDate },
+      });
+      const investors = [accounts[0], accounts[1]];
+
+      setTimeTo(startingDate);
+
+      await expect(commitment.setWhitelist(investors)).to.be.rejectedWith(EvmError);
+    });
+  });
+
+  describe("set whitelist investor with fixed investors", () => {
+    it("should be possible to whitelist investors before fixed investors", async () => {
+      const { commitment } = await deployAllContracts();
+      const whitelistedInvestors = [accounts[0], accounts[1]];
+      const fixedInvestors = [accounts[2]];
+      const fixedTickets = [etherToWei(1)];
+
+      await commitment.setWhitelist(whitelistedInvestors);
+      await commitment.setFixed(fixedInvestors, fixedTickets);
+
+      expect(await commitment.whitelistedInvestors(0)).to.be.eq(whitelistedInvestors[0]);
+      expect(await commitment.whitelistedInvestors(1)).to.be.eq(whitelistedInvestors[1]);
+      await expect(commitment.whitelistedInvestors).to.blockchainArrayOfSize(2);
+
+      expect(await commitment.whitelisted(whitelistedInvestors[0])).to.be.bignumber.eq(1);
+      expect(await commitment.whitelisted(whitelistedInvestors[1])).to.be.bignumber.eq(1);
+      expect(await commitment.whitelisted(fixedInvestors[0])).to.be.bignumber.eq(1);
+
+      expect(await commitment.fixedCostInvestors(0)).to.be.eq(fixedInvestors[0]);
+      await expect(commitment.fixedCostInvestors).to.blockchainArrayOfSize(1);
+
+      expect(await commitment.fixedCost(fixedInvestors[0])).to.be.bignumber.eq(fixedTickets[0]);
+      expect(await commitment.fixedCost(whitelistedInvestors[0])).to.be.bignumber.eq(0);
+      expect(await commitment.fixedCost(whitelistedInvestors[1])).to.be.bignumber.eq(0);
+    });
+
+    it("should be possible to whitelist investors after fixed investors", async () => {
+      const { commitment } = await deployAllContracts();
+      const whitelistedInvestors = [accounts[0], accounts[1]];
+      const fixedInvestors = [accounts[2]];
+      const fixedTickets = [etherToWei(1)];
+
+      await commitment.setFixed(fixedInvestors, fixedTickets);
+      await commitment.setWhitelist(whitelistedInvestors);
+
+      expect(await commitment.whitelistedInvestors(0)).to.be.eq(whitelistedInvestors[0]);
+      expect(await commitment.whitelistedInvestors(1)).to.be.eq(whitelistedInvestors[1]);
+      await expect(commitment.whitelistedInvestors).to.blockchainArrayOfSize(2);
+
+      expect(await commitment.whitelisted(whitelistedInvestors[0])).to.be.bignumber.eq(1);
+      expect(await commitment.whitelisted(whitelistedInvestors[1])).to.be.bignumber.eq(1);
+      expect(await commitment.whitelisted(fixedInvestors[0])).to.be.bignumber.eq(1);
+
+      expect(await commitment.fixedCostInvestors(0)).to.be.eq(fixedInvestors[0]);
+      await expect(commitment.fixedCostInvestors).to.blockchainArrayOfSize(1);
+
+      expect(await commitment.fixedCost(fixedInvestors[0])).to.be.bignumber.eq(fixedTickets[0]);
+      expect(await commitment.fixedCost(whitelistedInvestors[0])).to.be.bignumber.eq(0);
+      expect(await commitment.fixedCost(whitelistedInvestors[1])).to.be.bignumber.eq(0);
+    });
   });
 });
