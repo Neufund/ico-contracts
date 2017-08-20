@@ -47,3 +47,5 @@ jspm_packages
 
 # Ignore jupyter / python notebooks
 .ipynb_checkpoints
+coverageEnv
+coverage.json

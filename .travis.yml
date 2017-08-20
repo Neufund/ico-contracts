@@ -12,3 +12,4 @@ script:
   - yarn lint
   - yarn testrpc > /dev/null &
   - yarn test
+  - yarn test:coverage
