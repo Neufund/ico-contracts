@@ -154,4 +154,102 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       expect(await commitment.fixedCost(whitelistedInvestors[1])).to.be.bignumber.eq(0);
     });
   });
+
+  describe("fixed size commitment", () => {
+    it("should work with ticket below declared", async () => {
+      const startingDate = closeFutureDate();
+      const investor1 = accounts[0];
+      const fixedInvestors = [investor1, accounts[1]];
+      const fixedDeclaredTickets = [etherToWei(2), etherToWei(3)];
+      const actualInvestor1Commitment = etherToWei(1);
+      const { commitment, curve, lockedAccount } = await deployAllContracts({
+        commitmentCfg: {
+          fixedInvestors,
+          fixedTickets: fixedDeclaredTickets,
+          startTimestamp: startingDate,
+        },
+      });
+      const expectedTicketsSum = fixedDeclaredTickets[0].add(fixedDeclaredTickets[1]);
+      const expectedTicketsSumInEur = await commitment.convertToEUR(expectedTicketsSum);
+      const expectedNeumarkAmmount = await curve.curve(expectedTicketsSumInEur);
+      const expectedInvestor1NeumarkShare = expectedNeumarkAmmount
+        .mul(actualInvestor1Commitment)
+        .div(expectedTicketsSum)
+        .div(2)
+        .round(0, 4);
+
+      await setTimeTo(startingDate);
+      await commitment.commit({ value: actualInvestor1Commitment, from: investor1 });
+
+      // @todo create chai assert from it
+      const investorBalance = await lockedAccount.balanceOf(investor1);
+      expect(investorBalance[0]).to.be.bignumber.equal(actualInvestor1Commitment);
+      expect(investorBalance[1]).to.be.bignumber.equal(expectedInvestor1NeumarkShare);
+    });
+
+    it("should work with ticket exactly the same as declared", async () => {
+      const startingDate = closeFutureDate();
+      const investor1 = accounts[0];
+      const fixedInvestors = [investor1, accounts[1]];
+      const fixedDeclaredTickets = [etherToWei(1.21981798), etherToWei(3)];
+      const actualInvestor1Commitment = etherToWei(1.21981798);
+      const { commitment, curve, lockedAccount } = await deployAllContracts({
+        commitmentCfg: {
+          fixedInvestors,
+          fixedTickets: fixedDeclaredTickets,
+          startTimestamp: startingDate,
+        },
+      });
+      const expectedTicketsSum = fixedDeclaredTickets[0].add(fixedDeclaredTickets[1]);
+      const expectedTicketsSumInEur = await commitment.convertToEUR(expectedTicketsSum);
+      const expectedNeumarkAmmount = await curve.curve(expectedTicketsSumInEur);
+      const expectedInvestor1NeumarkShare = expectedNeumarkAmmount
+        .mul(actualInvestor1Commitment)
+        .div(expectedTicketsSum)
+        .div(2)
+        .round(0, 4);
+
+      await setTimeTo(startingDate);
+      await commitment.commit({ value: actualInvestor1Commitment, from: investor1 });
+
+      const investorBalance = await lockedAccount.balanceOf(investor1);
+      expect(investorBalance[0]).to.be.bignumber.equal(actualInvestor1Commitment);
+      expect(investorBalance[1]).to.be.bignumber.equal(expectedInvestor1NeumarkShare);
+    });
+
+    it("should work with ticket bigger then declared", async () => {
+      const startingDate = closeFutureDate();
+      const investor1 = accounts[0];
+      const fixedInvestors = [investor1, accounts[1]];
+      const fixedDeclaredTickets = [etherToWei(1), etherToWei(3)];
+      const actualInvestor1Commitment = etherToWei(1.21981798);
+      const equalShareSize = fixedDeclaredTickets[0];
+      const curveShareSize = etherToWei(1.21981798).sub(equalShareSize);
+      const { commitment, curve, lockedAccount } = await deployAllContracts({
+        commitmentCfg: {
+          fixedInvestors,
+          fixedTickets: fixedDeclaredTickets,
+          startTimestamp: startingDate,
+        },
+      });
+      const expectedTicketsSum = fixedDeclaredTickets[0].add(fixedDeclaredTickets[1]);
+      const expectedTicketsSumInEur = await commitment.convertToEUR(expectedTicketsSum);
+      const expectedCurveShareInEur = await commitment.convertToEUR(expectedTicketsSum);
+      const expectedNeumarkAmmount = await curve.curve(expectedTicketsSumInEur);
+      const expectedNeumarkAmmountOnTheCurve = (await curve.curve(expectedTicketsSumInEur.add(expectedCurveShareInEur))).sub(expectedNeumarkAmmount);
+      const expectedInvestor1NeumarkShare = expectedNeumarkAmmount
+        .mul(equalShareSize)
+        .div(expectedTicketsSum)
+        .add(expectedNeumarkAmmountOnTheCurve)
+        .div(2)
+        .round(0, 4);
+
+      await setTimeTo(startingDate);
+      await commitment.commit({ value: actualInvestor1Commitment, from: investor1 });
+
+      const investorBalance = await lockedAccount.balanceOf(investor1);
+      expect(investorBalance[0]).to.be.bignumber.equal(actualInvestor1Commitment);
+      expect(investorBalance[1]).to.be.bignumber.equal(expectedInvestor1NeumarkShare);
+    });
+  });
 });

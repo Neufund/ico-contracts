@@ -1,3 +1,4 @@
+import invariant from "invariant";
 import { MONTH, closeFutureDate, furterFutureDate } from "./latestTime";
 import { etherToWei } from "./unitConverter";
 
@@ -21,6 +22,8 @@ export async function deployAllContracts({ lockedAccountCfg = {}, commitmentCfg 
     maxCommitment = etherToWei(1000),
     minTicket = etherToWei(1),
     eurEthRate = etherToWei(218.1192809),
+    fixedInvestors,
+    fixedTickets,
   } = commitmentCfg;
 
   const etherToken = await EtherToken.new();
@@ -50,6 +53,14 @@ export async function deployAllContracts({ lockedAccountCfg = {}, commitmentCfg 
     lockedAccount.address,
     curve.address
   );
+
+  if (fixedInvestors || fixedTickets) {
+    invariant(
+      fixedInvestors && fixedTickets,
+      "Both fixedInvestors and fixedTickets has to be provided"
+    );
+    await commitment.setFixed(fixedInvestors, fixedTickets);
+  }
 
   await lockedAccount.setController(commitment.address);
 
