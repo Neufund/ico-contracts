@@ -22,6 +22,7 @@ export async function deployAllContracts({ lockedAccountCfg = {}, commitmentCfg 
     maxCommitment = etherToWei(1000),
     minTicket = etherToWei(1),
     eurEthRate = etherToWei(218.1192809),
+    whitelistedInvestors,
     fixedInvestors,
     fixedTickets,
   } = commitmentCfg;
@@ -60,6 +61,10 @@ export async function deployAllContracts({ lockedAccountCfg = {}, commitmentCfg 
       "Both fixedInvestors and fixedTickets has to be provided"
     );
     await commitment.setFixed(fixedInvestors, fixedTickets);
+  }
+
+  if (whitelistedInvestors) {
+    await commitment.setWhitelist(whitelistedInvestors);
   }
 
   await lockedAccount.setController(commitment.address);

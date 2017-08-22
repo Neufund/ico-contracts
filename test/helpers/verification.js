@@ -1,4 +1,5 @@
 import { etherToWei, DIGITS } from "./unitConverter";
+import eventValue from "./eventValue";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
@@ -7,7 +8,7 @@ const NeumarkFactory = artifacts.require("NeumarkFactory");
 const Neumark = artifacts.require("Neumark");
 const Curve = artifacts.require("Curve");
 
-export async function deployCurve() {
+async function deployCurve() {
   const etherToken = await EtherToken.new();
   const neumarkFactory = await NeumarkFactory.new();
   const neumark = await Neumark.new(neumarkFactory.address);
@@ -16,6 +17,18 @@ export async function deployCurve() {
   const curve = await Curve.new(neumarkController.address);
 
   return curve;
+}
+
+export async function deployMutableCurve() {
+  const curve = await deployCurve();
+
+  return {
+    issueInEth: async ether => {
+      const euro = ethToEur(ether);
+      const tx = await curve.issue(euro);
+      return eventValue(tx, "NeumarksIssued", "neumarks");
+    },
+  };
 }
 
 let curve;
