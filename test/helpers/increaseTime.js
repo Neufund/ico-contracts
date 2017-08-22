@@ -10,7 +10,7 @@ export default function increaseTime(duration) {
         jsonrpc: "2.0",
         method: "evm_increaseTime",
         params: [duration.asSeconds()],
-        id: id,
+        id,
       },
       err1 => {
         if (err1) return reject(err1);
@@ -21,9 +21,7 @@ export default function increaseTime(duration) {
             method: "evm_mine",
             id: id + 1,
           },
-          (err2, res) => {
-            return err2 ? reject(err2) : resolve(res);
-          }
+          (err2, res) => (err2 ? reject(err2) : resolve(res))
         );
       }
     );

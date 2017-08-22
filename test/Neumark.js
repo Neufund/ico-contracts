@@ -42,6 +42,7 @@ contract("Neumark", accounts => {
       "10000 wasn't in the first account"
     );
   });
+
   it("should allow controller to burn tokens", async () => {
     assert(await controller.generateTokens(accounts[0], 10000, { from: accounts[0] }));
     assert(await controller.destroyTokens(accounts[0], 1000, { from: accounts[0] }));
