@@ -135,9 +135,11 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
 
   async function unlockEtherWithCallbackUnknownToken(investor, ticket, neumarkToBurn) {
     // ether token is not allowed to call unlock on LockedAccount
-    await expect(chain.etherToken
-      .approveAndCall(chain.lockedAccount.address, neumarkToBurn, "", { from: investor }))
-      .to.be.rejectedWith(EvmError);
+    await expect(
+      chain.etherToken.approveAndCall(chain.lockedAccount.address, neumarkToBurn, "", {
+        from: investor,
+      })
+    ).to.be.rejectedWith(EvmError);
   }
 
   async function expectPenaltyEvent(tx, investor, ticket) {

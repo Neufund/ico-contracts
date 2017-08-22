@@ -42,9 +42,9 @@ contract("TestLockedAccountMigrationTarget", ([owner, investor, investor2]) => {
     await migrationTarget.setMigrationSource(investor2);
     await migrationTarget.migrateInvestor(investor, 1, 1, startTimestamp, { from: investor2 });
     // this should not, only investor2 (which is source) can call migrate on target
-    await expect(migrationTarget
-      .migrateInvestor(investor, 1, 1, startTimestamp, { from: owner }))
-      .to.be.rejectedWith(EvmError);
+    await expect(
+      migrationTarget.migrateInvestor(investor, 1, 1, startTimestamp, { from: owner })
+    ).to.be.rejectedWith(EvmError);
   });
 
   it("target that returns false on migration should throw", async () => {
@@ -58,17 +58,16 @@ contract("TestLockedAccountMigrationTarget", ([owner, investor, investor2]) => {
     await migrationTarget.setMigrationSource(chain.lockedAccount.address);
     let tx = await chain.lockedAccount.enableMigration(migrationTarget.address);
     await migrationTarget.setShouldMigrationFail(true);
-    tx = await expect(chain.lockedAccount.migrate({ from: investor }))
-      .to.be.rejectedWith(EvmError);
+    tx = await expect(chain.lockedAccount.migrate({ from: investor })).to.be.rejectedWith(EvmError);
   });
 
   it("target with invalid source should throw", async () => {
     // we set invalid source here
     await migrationTarget.setMigrationSource(investor);
     // accepts only lockedAccount as source
-    await expect(chain.lockedAccount
-      .enableMigration(migrationTarget.address))
-      .to.be.rejectedWith(EvmError);
+    await expect(chain.lockedAccount.enableMigration(migrationTarget.address)).to.be.rejectedWith(
+      EvmError
+    );
   });
 
   async function migrateOne() {
@@ -131,8 +130,8 @@ contract("TestLockedAccountMigrationTarget", ([owner, investor, investor2]) => {
     await migrationTarget.setMigrationSource(chain.lockedAccount.address);
     await chain.lockedAccount.enableMigration(migrationTarget.address);
     // must throw
-    await expect(chain.lockedAccount
-      .enableMigration(migrationTarget.address))
-      .to.be.rejectedWith(EvmError);
+    await expect(chain.lockedAccount.enableMigration(migrationTarget.address)).to.be.rejectedWith(
+      EvmError
+    );
   });
 });
