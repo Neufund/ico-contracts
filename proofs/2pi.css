@@ -1,0 +1,271 @@
+@import url('https://fonts.googleapis.com/css?family=Source+Code+Pro:400,700|Source+Sans+Pro:300,400,400i,700&subset=greek,latin-ext');
+
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+}
+html {
+  min-height: 100%;
+  font: 400 12pt 'Source Sans Pro', sans-serif;
+  color: #3f3f3f;
+  background: #fcf9f5;
+}
+body {
+  max-width: 40em;
+  margin: 3em auto 7em;
+  padding: 0 3em;
+  border: solid 1px #eee;
+  border-radius: 0.2em;
+  background: #fff;
+  box-shadow: 0px 2px 2px 0px rgba(0, 0, 0, 0.07),
+    0px 3px 1px -2px rgba(0, 0, 0, 0.1), 0px 1px 5px 0px rgba(0, 0, 0, 0.06);
+}
+
+@media screen and (max-width: 40em) {
+  html {
+    overflow-x: hidden;
+  }
+  body {
+    margin: 0;
+    padding: 0 1em;
+  }
+}
+
+footer {
+  padding: 1em 0;
+}
+
+footer,
+footer p,
+footer a {
+  font-size: 8pt;
+  color: #aaa;
+}
+
+p,
+blockquote,
+ul,
+ol {
+  margin: 0 0 1em; /* Left aligned */
+}
+table {
+  margin: 0 auto 1em; /* Centered */
+}
+
+/* paragraphs, quotes, blockquotes */
+
+p {
+  line-height: 1.5;
+  text-align: justify;
+  -webkit-hyphens: auto;
+  -moz-hyphens: auto;
+  -ms-hyphens: auto;
+  hyphens: auto;
+}
+
+small {
+  font-size: 70%;
+  line-height: 90%;
+}
+
+div.sourceCode {
+  /* overflow-x: auto; NOTE: inlined by pandoc */
+
+  margin: 0 -4px 1em -4px; /* Left aligned, slight overhang */
+  padding: 2px 4px;
+}
+
+pre,
+code {
+  font: normal 400 10pt 'Source Code Pro', mono-space;
+  line-height: normal;
+}
+
+/*
+  padding: 2px 4px;
+  background: #eee;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+pre code {
+  padding: 0;
+}
+*/
+
+blockquote {
+  background: #eee;
+  border-left: .5em solid #ddd;
+  border-radius: 0 5px 5px 0;
+  padding: 1em 0 0 1em;
+  overflow: auto;
+}
+
+/* heading */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: #2e1f05;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-style: normal;
+  font-weight: 300;
+  margin: 1em 0;
+}
+
+h1 {
+  font-size: 300%;
+  text-align: center;
+  margin: 2em 0 1.5em;
+}
+
+h2 {
+  font-size: 180%;
+  max-width: 100%;
+}
+
+h3 {
+  font-size: 150%;
+}
+
+h4 {
+  font-size: 125%;
+}
+
+h5 {
+  font-size: 100%;
+}
+
+/* Thombstone and Asterism */
+article:after,
+h2:before {
+  display: block;
+  text-align: center;
+  content: "▢";
+  color: #eee;
+  font-weight: 400;
+  font-size: 20pt;
+}
+h2:before,
+/* TODO: :not(:first-child) */
+hr {
+  content: "⁂";
+  border: none;
+  border-bottom: dotted 1px #eee;
+  margin: 1em -1em;
+  padding: 0 1em;
+}
+
+/* links */
+
+a {
+  color: inherit;
+  text-decoration: underline blue;
+}
+
+a:hover {
+  color: blue;
+}
+
+/* Images */
+
+img {
+  max-width: 100%;
+}
+
+figcaption {
+  font-size: smaller;
+}
+
+/* Tables */
+table {
+  border-collapse: collapse;
+}
+th,
+td {
+  padding: 0 0 0 1em;
+}
+th:first-child,
+td:first-child {
+  padding: 0;
+}
+th {
+  font-weight: normal;
+  border-bottom: dotted 1px #ccc;
+}
+
+/* Lists */
+ol,
+ul {
+  padding: 0;
+  list-style: none;
+  counter-reset: o;
+}
+li ol,
+li ul {
+  margin: 0 0; /* Nested list */
+}
+
+ul li:before {
+  display: block;
+  content: "";
+  float: left;
+  width: .5em;
+  height: .5em;
+  border-radius: 50%;
+  margin: .5em 0 0 -1.5em;
+  padding: 0;
+  background: #ccc;
+}
+li {
+  margin: 0 0 0 1.5em;
+}
+ol li:before {
+  display: block;
+  counter-increment: o;
+  content: counter(o);
+  float: left;
+  color: #bbb;
+  font-weight: bold;
+  margin: 0 0 0 -1.5em;
+}
+
+/* Format  */
+
+.formats {
+  float: right;
+  margin-right: -2.5em;
+}
+.formats a {
+  color: #ccc;
+  text-decoration: none;
+  font-size: 90%;
+}
+
+/* Forms */
+
+input[type="text"] {
+  height: 1.5em;
+  width: 30em;
+  max-width: 100%;
+  border-radius: .75em;
+  padding: 1px .5em 1px .5em;
+  border: medium none;
+  box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.25) inset;
+}
+
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
