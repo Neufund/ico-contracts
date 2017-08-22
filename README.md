@@ -29,3 +29,8 @@ To run single test, use following syntax
 ```
 truffle test test/LockedAccount.js test/setup.js
 ```
+
+To run single test case from a test use following syntax
+```
+it.only('test case', ...
+```
