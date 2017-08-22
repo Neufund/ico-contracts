@@ -1,6 +1,6 @@
-pragma solidity ^0.4.11;
+pragma solidity 0.4.15;
 
-import 'minimetoken/contracts/MiniMeToken.sol';
+import './MiniMeToken.sol';
 
 contract NeumarkFactory is MiniMeTokenFactory {
 

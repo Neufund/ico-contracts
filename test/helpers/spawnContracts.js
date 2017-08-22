@@ -8,7 +8,6 @@ const Neumark = artifacts.require("Neumark");
 const Curve = artifacts.require("Curve");
 const TestCommitment = artifacts.require("TestCommitment");
 const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
-const FeeDistributionPool = artifacts.require("FeeDistributionPool");
 
 const BigNumber = web3.BigNumber;
 
@@ -19,7 +18,6 @@ export let lockedAccount;
 export let curve;
 export let commitment;
 export let feePool;
-// todo: take from universe
 export let operatorWallet = "0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c";
 
 export const days = 24 * 60 * 60;
@@ -41,9 +39,7 @@ export async function spawnLockedAccount(unlockDateMonths, unlockPenalty) {
     ether(1).mul(unlockPenalty).round()
   );
   // console.log(`\tLockedAccount took ${gasCost(lockedAccount)}.`);
-  feePool = await FeeDistributionPool.new(etherToken.address, neumark.address);
-  // console.log(`\FeeDistributionPool took ${gasCost(feePool)}.`);
-  await lockedAccount.setPenaltyDistribution(feePool.address);
+  await lockedAccount.setPenaltyDisbursal(operatorWallet);
 }
 
 export async function spawnPublicCommitment(
