@@ -17,6 +17,13 @@ Truffle is not able to track dependencies correctly and will not recompile files
 yarn lint:fix
 ```
 
+### Test coverage
+```
+yarn test:coverage
+```
+
+you will find coverage report in `coverage/index.html`.
+
 ### Testing
 To run single test, use following syntax
 ```

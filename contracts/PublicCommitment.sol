@@ -37,7 +37,7 @@ contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
     NeumarkController internal neumarkController;
     // wallet that keeps Platform Operator share of neumarks
     // todo: take from Universe
-    address internal platformOperatorWallet = address(0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c);
+    address internal platformOperatorWallet = address(0x55d7d863a155F75c5139E20DCBDA8d0075BA2A1c);
 
     function commit()
         payable
