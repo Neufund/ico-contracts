@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Report: Curve Derivation</title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="2pi.css">
+  <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML-full" type="text/javascript"></script>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header>
+<h1 class="title">Report: Curve Derivation</h1>
+</header>
+<nav id="TOC">
+<ul>
+<li><a href="#exponential-issuances-curves">Exponential issuances curves</a></li>
+<li><a href="#applying-the-binomial-theorem">Applying the binomial theorem</a></li>
+<li><a href="#integer-approximation">Integer approximation</a><ul>
+<li><a href="#stopping-the-sum-early">Stopping the sum early</a></li>
+<li><a href="#optimizations">Optimizations</a></li>
+<li><a href="#solidity">Solidity</a></li>
+</ul></li>
+<li><a href="#proof-of-correctness">Proof of correctness</a><ul>
+<li><a href="#lemma-0-the-terms-grow-monotonically-with-n.">Lemma 0: The terms grow monotonically with n.</a></li>
+<li><a href="#lemma-1-the-terms-are-smaller-than-.">Lemma 1: The terms are smaller than .</a></li>
+<li><a href="#lemma-1-there-is-no-overflow">Lemma 1: There is no overflow</a></li>
+<li><a href="#lemma-2-the-algorithm-always-stops">Lemma 2: The algorithm always stops</a></li>
+<li><a href="#lemma-3-the-function-is-monotonic">Lemma 3: The function is monotonic</a></li>
+</ul></li>
+</ul>
+</nav>
+<p><span class="math display">\[
+\newcommand{\e}{\mathrm{e}}
+\newcommand{\code}[1]{\mathtt{#1}}
+\newcommand{\par}[1]{\left( #1 \right)}
+\newcommand{\ceil}[1]{\left\lceil #1 \right\rceil}
+\newcommand{\floor}[1]{\left\lfloor #1 \right\rfloor}
+\newcommand{\mod}[2]{\left[ #1 \right]_{#2}}
+\newcommand{\exp}[1]{\mathrm{exp}\par{#1}}
+\newcommand{\ln}[1]{\mathrm{ln}\par{#1}}
+\]</span></p>
+<section id="exponential-issuances-curves" class="level2">
+<h2>Exponential issuances curves</h2>
+<p>A generic exponential issuance curve looks like</p>
+<p><span class="math display">\[
+\code{issued} =
+ \code{cap}·\par{
+  1 - \exp{
+    -\frac{\code{price}_0}{\code{cap}} · \code{invested} }
+}
+\]</span></p>
+<p>where <span class="math inline">\(\code{price}_0\)</span> is the initial token price, <span class="math inline">\(\code{cap}\)</span> is the maximum amount of tokens that will ever be issued. The derivative of this, the price, is:</p>
+<p><span class="math display">\[
+\code{price} = \code{price}_0·\exp{-\frac{\code{price}_0}{\code{cap}} · \code{invested} }
+\]</span></p>
+<p>It is easy to see that the the <span class="math inline">\(\code{price} = \code{price}_0\)</span> when <span class="math inline">\(\code{invested} = 0\)</span> as expected.</p>
+<p>As the cap is approached asymptotically, it will never be reached. We can instead compute when more than <span class="math inline">\(99\%\)</span> of the tokens are issued. For this we solve</p>
+<p><span class="math display">\[
+\exp{ -\frac{\code{price}_0}{\code{cap}} · \code{invested} } &lt; 0.01
+\]</span></p>
+<p>and the solution is</p>
+<p><span class="math display">\[
+\code{invested} &gt; -\frac{\code{cap}}{\code{price}_0} · \ln{0.01}
+\]</span></p>
+<p>where <span class="math inline">\(\ln{0.01} ≈ -4.6\)</span>.</p>
+<p>In Ethereum smart contract code token amounts are scaled to accomodate fractional amounts. The scaling is generally by large power of ten like <span class="math inline">\(10^{18}\)</span>. Let’s say the issued token is scaled by <span class="math inline">\(S_{\code{issued}}\)</span> and the invested token by <span class="math inline">\(S_{\code{invested}}\)</span>, then amount of issued tokens in the unit of least precision, <span class="math inline">\(\code{issued\_ulp}\)</span>, is</p>
+<p><span class="math display">\[
+S_{\code{issued}} · \code{cap}·\par{
+  1 - \exp{
+    -\frac{\code{price}_0}{\code{cap}} · \frac{\code{invested\_ulp} }{S_{\code{invested}}} }
+}
+\]</span></p>
+<p>where <span class="math inline">\(\code{invested\_ulp}\)</span> is the scaled invested token in units of least precision.</p>
+<p>In Neufund’s case, the invested token is the Euro token (or is converted to equivalent amount) and the issued token is the Neumark. The parameters for the issuance are:</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Parameter</th>
+<th style="text-align: left;">Value</th>
+<th style="text-align: left;">Units</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(\code{cap}\)</span></td>
+<td style="text-align: left;"><span class="math inline">\(1.5·10^9\)</span></td>
+<td style="text-align: left;">Neumark</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><span class="math inline">\(\code{price}_0\)</span></td>
+<td style="text-align: left;"><span class="math inline">\(6.5\)</span></td>
+<td style="text-align: left;">Neumark per Euro</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(S_\code{issued}\)</span></td>
+<td style="text-align: left;"><span class="math inline">\(10^{18}\)</span></td>
+<td style="text-align: left;">ULP per Neumark</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><span class="math inline">\(S_\code{invested}\)</span></td>
+<td style="text-align: left;"><span class="math inline">\(10^{18}\)</span></td>
+<td style="text-align: left;">ULP per Euro</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="applying-the-binomial-theorem" class="level2">
+<h2>Applying the binomial theorem</h2>
+<p>The Binomial theorem states that</p>
+<p><span class="math display">\[
+\par{a + b}^n = \sum_{i \in [0,n]} {n \choose i} · a^k · b^{n-i}
+\]</span></p>
+<p>where the Binomial coefficient <span class="math inline">\({n \choose i}\)</span> is <span class="math inline">\(\frac{n!}{i!·\par{n-i}!}\)</span>. To apply this, we first need to massage our exponential in the shape of</p>
+<p><span class="math display">\[
+\par{1 - \frac 1 D}^n
+\]</span></p>
+<p>where <span class="math inline">\(D\)</span> is a constants, and <span class="math inline">\(n = \code{invested\_ulp} ∈ ℕ\)</span>. By maninpulating the issuance curve we can find that</p>
+<p><span class="math display">\[
+D = \par{1 - \exp{-\frac{\code{price}_0}{\code{cap} · S_{\code{invested}}} }}^{-1}
+\mathrm{\,.}
+\]</span></p>
+<p>By further setting <span class="math inline">\(C = \code{cap} · S_{\code{issued}}\)</span> we can rewrite the full equation as</p>
+<p><span class="math display">\[
+\code{issued\_ulp} = C - C · \par{1 - \frac 1 D}^n
+\]</span></p>
+<p>Applying the Binomial theorem to the <span class="math inline">\(\par{1 - \frac 1 D}^n\)</span> term, we get</p>
+<p><span class="math display">\[
+\par{1 - \frac 1 D}^n
+= \sum_{i \in [0, n]} \frac{n!}{i!\par{n - i}!} \par{- \frac 1 D}^k
+\]</span></p>
+<p>The terms of this sum proceed as</p>
+<p><span class="math display">\[
+1
+- \frac{n}{D}
++ \frac{n\par{n - 1}}{2 · D^2}
+- \frac{n\par{n - 1}\par{n - 2}}{6 · D^3}
++ …
+\]</span></p>
+<p>The sum does not go on indefinitely, at some point we reach <span class="math inline">\(\par{n - n}\)</span> in the numerator and all future terms will be zero. At this point we can stop the summation.</p>
+<p>Let’s look at the individual terms in this sum, they satisfy a nice recurrence relation:</p>
+<p><span class="math display">\[
+\begin{align}
+\code{term}_0 &amp;= 1 &amp;
+\code{term}_{i+1} &amp;= \frac{n - i}{\par{i + 1} · D} · \code{term}_i \\
+\end{align}
+\]</span></p>
+<p>The sum itself also has a recurence relation,</p>
+<p><span class="math display">\[
+\begin{align}
+\code{sum}_0 &amp;= 1 &amp;
+\code{sum}_{i+1} &amp;= \code{sum}_i ∓ \code{term}_{i + 1} \\
+\end{align}
+\]</span></p>
+<p>We can optimize this further by realizing that <span class="math inline">\(\par{i + 1} · D\)</span> is simply the sequence <span class="math inline">\(D, 2D, 3D, …\)</span>. We can generate this sequence with a additional simple recurence, which will safe us a multiply operation:</p>
+<p><span class="math display">\[
+\begin{align}
+\code{term}_0 &amp;= 1 &amp;
+\code{term}_{i+1} &amp;= \code{term}_i · \frac{n - i}{\code{denom}_i}\\
+\code{sum}_0 &amp;= 1 &amp;
+\code{sum}_{i+1} &amp;= \code{sum}_i ∓ \code{term}_{i + 1} \\
+\code{denom}_0 &amp;= D &amp;
+\code{denom}_{i+1} &amp;= \code{denom}_i + D \\
+\end{align}
+\]</span></p>
+<p>We are not just interested in our exponent, but we would like the whole <span class="math inline">\(\code{issued\_ulp} = C - C · \code{sum}_n\)</span>. This equation can be folded into the initial conditions, like so</p>
+<p><span class="math display">\[
+\begin{align}
+\code{term}_0 &amp;= C &amp;
+\code{term}_{i+1} &amp;= \code{term}_i · \frac{n - i}{\code{denom}_i} \\
+\code{sum}_0 &amp;= 0 &amp;
+\code{sum}_{i+1} &amp;= \code{sum}_i ± \code{term}_{i + 1} \\
+\code{denom}_0 &amp;= D &amp;
+\code{denom}_{i+1} &amp;= \code{denom}_i + D \\
+\end{align}
+\]</span></p>
+<p>With these recurences, we can already build a simple algorithm in a language with floating points such as Python:</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="im">import</span> math
+C <span class="op">=</span> <span class="fl">1.5</span> <span class="op">*</span> <span class="dv">10</span><span class="op">**</span><span class="dv">9</span> <span class="op">*</span> <span class="dv">10</span><span class="op">**</span><span class="dv">18</span>
+D <span class="op">=</span> <span class="op">-</span><span class="dv">1</span> <span class="op">/</span> math.expm1(<span class="op">-</span><span class="fl">6.5</span> <span class="op">/</span> C)
+
+<span class="kw">def</span> issuance(n):
+    <span class="co">&#39;&#39;&#39;Computes C - C·(1 - 1/D)**n using the Binomial theorem&#39;&#39;&#39;</span>
+    <span class="kw">global</span> C, D
+    term <span class="op">=</span> C
+    <span class="bu">sum</span> <span class="op">=</span> <span class="dv">0</span>
+    denom <span class="op">=</span> D
+    i <span class="op">=</span> <span class="dv">0</span>
+    <span class="cf">while</span> <span class="va">True</span>:
+        term <span class="op">*=</span> (n <span class="op">-</span> i) <span class="op">/</span> denom<span class="op">;</span>
+        <span class="cf">if</span> term <span class="op">==</span> <span class="dv">0</span>:
+            <span class="cf">break</span>
+        <span class="bu">sum</span> <span class="op">+=</span> term <span class="cf">if</span> i <span class="op">%</span> <span class="dv">2</span> <span class="op">==</span> <span class="dv">0</span> <span class="cf">else</span> <span class="op">-</span>term
+        denom <span class="op">+=</span> D
+        i <span class="op">+=</span> <span class="dv">1</span>
+    <span class="cf">return</span> <span class="bu">sum</span></code></pre></div>
+</section>
+<section id="integer-approximation" class="level2">
+<h2>Integer approximation</h2>
+<p>To start let’s look at the size of the numbers we are working with. <span class="math inline">\(C\)</span> is exactly <span class="math inline">\(1.5·10^{27}\)</span> Neumark ULPs. This is already an integer and <span class="math inline">\(\log_2 C ≈ 90\)</span> so it fits comfortably in a 256 bit register. <span class="math inline">\(D\)</span>, rounded to the nearest integer, is</p>
+<p><span class="math display">\[
+D = 230\,769\,230\,769\,230\,769\,230\,769\,231 + O\par{½}
+\]</span></p>
+<p>which has <span class="math inline">\(\log_2 D ≈ 88\)</span> bits. This number is an approximation, and the error is <span class="math inline">\(≤ \frac 12\)</span> because of the rounding. On first look, this should give us about 88 bits, or 26 decimals, of precision. With <span class="math inline">\(n\)</span> up to 10 billion Euro, or <span class="math inline">\(10^{28}\)</span> Euro ULPs, this should can induce an error of <span class="math inline">\(100\)</span> Euro ULPs, or <span class="math inline">\(10^{-16}\)</span> Euros, a rather insignificant amount. In fact, assuming a 300 Euro screen with a lifetime of four years, the number is not even worth the pixels to display it.</p>
+<p>These numbers look great already, so we can probably use them as is. If it turns out that <span class="math inline">\(D\)</span> was too small, and we need more digits for precision, we could boost the precision by first scaling <span class="math inline">\(n\)</span> by a factor, like so:</p>
+<p><span class="math display">\[
+\par{1 - \frac 1 {D&#39;}}^{K · n}
+\]</span></p>
+<p>The resulting <span class="math inline">\(D&#39;\)</span> will be larger by about a factor <span class="math inline">\(K\)</span>. It is also notable that our <span class="math inline">\(D\)</span> approximation has a repeating pattern. This suggests a rational number. In this case, it appears that <span class="math inline">\(D\)</span> is very close to, <span class="math inline">\(\frac{3}{13}·10^{27}\)</span>. This is because, to a first approximation, <span class="math inline">\((1 - \e^{-x})^{-1}\)</span> is <span class="math inline">\(\frac 1 2 + \frac 1 x + O(x)\)</span> and the <span class="math inline">\(\frac 1 x\)</span> term dominates the others. We could use this fact if a simple fraction for <span class="math inline">\(D\)</span> is easier. In architectures where small multiplies can be implemented using shifts and adds, this is an advantages. Ethereum does not have shifts, so it does not matter here.</p>
+<p><span class="math display">\[
+\begin{align}
+\code{term}_0 &amp;= C &amp;
+\code{term}_{i+1} &amp;= \floor{\frac{\code{term}_i ·\par{n - i}}{\code{denom}_i}} \\
+\code{sum}_0 &amp;= 0 &amp;
+\code{sum}_{i+1} &amp;= \code{sum}_i ± \code{term}_{i + 1} \\
+\code{denom}_0 &amp;= D &amp;
+\code{denom}_{i+1} &amp;= \code{denom}_i + D \\
+\end{align}
+\]</span></p>
+<section id="stopping-the-sum-early" class="level3">
+<h3>Stopping the sum early</h3>
+<p>When <span class="math inline">\(\code{term}_i &lt; 1\)</span> it will be rounded down to zero and all further terms will be zero. This will happen after only a few terms, long before <span class="math inline">\(i\)</span> gets close to <span class="math inline">\(n\)</span>. <span class="math inline">\(\code{term}_i\)</span> starts at <span class="math inline">\(C\)</span> and at every step gets multiplied by at most <span class="math inline">\(n\)</span> and then divided by at least <span class="math inline">\(D\)</span>. We would therefore expect it to become insignificant before</p>
+<p><span class="math display">\[
+C · \par{\frac n D}^i &lt; 1
+\mathrm{\,,}
+\]</span></p>
+<p>which, solving for <span class="math inline">\(i\)</span>, gives</p>
+<p><span class="math display">\[
+i &lt; \frac{\log C}{\log D - \log n} ≈ - \frac{63}{61 - \log n}
+\mathrm{\,.}
+\]</span></p>
+<p>This is function initially grows extremely slow in <span class="math inline">\(n\)</span>, staying below <span class="math inline">\(2\)</span> for <span class="math inline">\(n\)</span> below <span class="math inline">\(10^{12}\)</span>, below <span class="math inline">\(10\)</span> for <span class="math inline">\(n &lt; 10^{23}\)</span>, but then it takes off to infinity when <span class="math inline">\(n = D ≈ 10^{26}\)</span>. This is not true however, in our approximation we have left out the <span class="math inline">\(i!\)</span> term in the divisor. Including this term will make an analytical solution very hard, even if we use the Stirling approximation.</p>
+<p>Empirically, we determine that only <span class="math inline">\(20\)</span> terms are significant when <span class="math inline">\(n = 10^{26}\)</span>. At <span class="math inline">\(n ≈ 10^{28}\)</span> this increases to <span class="math inline">\(168\)</span>. At this point, the <span class="math inline">\(\code{issued\_ulp}\)</span> is within <span class="math inline">\(10^{-9}\)</span> Neumark of the final value. We can thus stop the calculation and accept this insignificant error. After more experimentation, an more fine-tuned limit was established:</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Parameter</th>
+<th style="text-align: left;">Value</th>
+<th style="text-align: left;">Units</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(n_{\code{lim}}\)</span></td>
+<td style="text-align: left;"><span class="math inline">\(83·10^{26}\)</span></td>
+<td style="text-align: left;">Euro ULPs</td>
+</tr>
+</tbody>
+</table>
+<p>When <span class="math inline">\(n\)</span> is above this limit, we will immediately return the asymptotic value <span class="math inline">\(C\)</span>.</p>
+</section>
+<section id="optimizations" class="level3">
+<h3>Optimizations</h3>
+<p>We now know that <span class="math inline">\(i &lt; 168\)</span> and thus much less than <span class="math inline">\(n\)</span> for all interesting values of <span class="math inline">\(n\)</span>. From this the <span class="math inline">\(n - i\)</span> term can be approximated with just <span class="math inline">\(n\)</span>. We save a subtraction and no longer have to keep track of <span class="math inline">\(i\)</span>, saving more instructions. The recurence relation becomes</p>
+<p><span class="math display">\[
+\begin{align}
+\code{term}_0 &amp;= C &amp;
+\code{term}_{i+1} &amp;= \floor{\frac{\code{term}_i ·n}{\code{denom}_i}} \\
+\code{sum}_0 &amp;= 0 &amp;
+\code{sum}_{i+1} &amp;= \code{sum}_i ± \code{term}_{i + 1} \\
+\code{denom}_0 &amp;= D &amp;
+\code{denom}_{i+1} &amp;= \code{denom}_i + D
+\mathrm{\,.}
+\end{align}
+\]</span></p>
+<p>As a final optimization, we unroll the loop one time so we can inline the <span class="math inline">\(±\)</span> and save half of the loop overhead. Again in Python:</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python">C     <span class="op">=</span> <span class="dv">1500000000000000000000000000</span>
+D     <span class="op">=</span>  <span class="dv">230769230769230769230769231</span>
+n_lim <span class="op">=</span> <span class="dv">8300000000000000000000000000</span>
+
+<span class="kw">def</span> issuance(n):
+    <span class="co">&#39;&#39;&#39;Computes C - C·(1 - 1/D)**n using the Binomial theorem&#39;&#39;&#39;</span>
+    <span class="kw">global</span> C, D
+    <span class="cf">if</span> n <span class="op">&gt;=</span> n_lim:
+        <span class="cf">return</span> C
+    term  <span class="op">=</span> C
+    <span class="bu">sum</span>   <span class="op">=</span> <span class="dv">0</span>
+    denom <span class="op">=</span> D
+    <span class="cf">while</span> term <span class="op">!=</span> <span class="dv">0</span>:
+        term  <span class="op">*=</span> n
+        term <span class="op">//=</span> denom<span class="op">;</span>
+        <span class="bu">sum</span>   <span class="op">+=</span> term
+        denom <span class="op">+=</span> D
+        term  <span class="op">*=</span> n
+        term <span class="op">//=</span> denom<span class="op">;</span>
+        <span class="bu">sum</span>   <span class="op">-=</span> term
+        denom <span class="op">+=</span> D
+    <span class="cf">return</span> <span class="bu">sum</span></code></pre></div>
+<p>We could add an early exit in the middle for <code>term == 0</code>. After some experiments, it turns out to be disadvantageous. Evaluating the conditional over and over cost more gas then evaluating an extra term.</p>
+</section>
+<section id="solidity" class="level3">
+<h3>Solidity</h3>
+<p>We are now ready to implement the algorithm in Solidity. We use assembly for <code>div</code> because the the regular integer division (this <code>/</code> operator) includes a costly and uneccesary division-by-zero check.</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">function</span> <span class="at">curve</span>(uint256 n)
+    <span class="kw">public</span>
+    constant
+    <span class="at">returns</span>(uint256)
+<span class="op">{</span>
+    uint256 C     <span class="op">=</span> <span class="dv">1500000000000000000000000000</span><span class="op">;</span>
+    uint256 D     <span class="op">=</span>  <span class="dv">230769230769230769230769231</span><span class="op">;</span>
+    uint256 n_lim <span class="op">=</span> <span class="dv">8300000000000000000000000000</span><span class="op">;</span>
+    <span class="cf">if</span>(n <span class="op">&gt;=</span> n_lim) <span class="op">{</span>
+        <span class="cf">return</span> C<span class="op">;</span>
+    <span class="op">}</span>
+    uint256 term <span class="op">=</span> C<span class="op">;</span>
+    uint256 sum <span class="op">=</span> <span class="dv">0</span><span class="op">;</span>
+    uint256 denom <span class="op">=</span> D<span class="op">;</span>
+    assembly <span class="op">{</span>
+        <span class="dt">repeat</span><span class="op">:</span>
+            <span class="dt">term  </span><span class="op">:=</span> <span class="at">div</span>(<span class="at">mul</span>(term<span class="op">,</span> n)<span class="op">,</span> denom)
+            <span class="dt">sum   </span><span class="op">:=</span> <span class="at">add</span>(sum<span class="op">,</span> term)
+            <span class="dt">denom </span><span class="op">:=</span> <span class="at">add</span>(denom<span class="op">,</span> D)
+            <span class="dt">term  </span><span class="op">:=</span> <span class="at">div</span>(<span class="at">mul</span>(term<span class="op">,</span> n)<span class="op">,</span> denom)
+            <span class="dt">sum   </span><span class="op">:=</span> <span class="at">sub</span>(sum<span class="op">,</span> term)
+            <span class="dt">denom </span><span class="op">:=</span> <span class="at">add</span>(denom<span class="op">,</span> D)
+            <span class="at">jumpi</span> (repeat<span class="op">,</span> term)
+    <span class="op">}</span>
+    <span class="cf">return</span> sum<span class="op">;</span>
+<span class="op">}</span></code></pre></div>
+</section>
+</section>
+<section id="proof-of-correctness" class="level2">
+<h2>Proof of correctness</h2>
+<section id="lemma-0-the-terms-grow-monotonically-with-n." class="level3">
+<h3>Lemma 0: The terms grow monotonically with n.</h3>
+<p><span class="math display">\[
+\code{term}_i(n) ≤ \code{term}_i(n + 1)
+\]</span></p>
+</section>
+<section id="lemma-1-the-terms-are-smaller-than-." class="level3">
+<h3>Lemma 1: The terms are smaller than .</h3>
+<p><strong>Proof</strong>: We run <span class="math inline">\(\code{term}_i(n_\code{lim} - 1)\)</span></p>
+</section>
+<section id="lemma-1-there-is-no-overflow" class="level3">
+<h3>Lemma 1: There is no overflow</h3>
+<p><span class="math inline">\(\code{term}_{i}\)</span> has its maximum value when <span class="math inline">\(\frac n {i · D} = 1\)</span>, thus <span class="math inline">\(i = i_\code{max} = \floor{\frac n D}\)</span>. The value is</p>
+<p><span class="math display">\[
+\code{term}_{i_\code{max}}
+≤ C · \prod_{i ∈ [1, i_\code{max}]} \frac n {i · D}
+= C · \par{\frac n D}^{i_\code{max}} · \frac 1 {i_\code{max} !}
+\]</span></p>
+<p>The factorial has an upper bound from the <a href="https://en.wikipedia.org/wiki/Stirling%27s_approximation#Speed_of_convergence_and_error_estimates">Stirling approximation</a>:</p>
+<p><span class="math display">\[
+n! ≤ \e · n^{n + ½} · \e^{-n}
+\]</span></p>
+</section>
+<section id="lemma-2-the-algorithm-always-stops" class="level3">
+<h3>Lemma 2: The algorithm always stops</h3>
+</section>
+<section id="lemma-3-the-function-is-monotonic" class="level3">
+<h3>Lemma 3: The function is monotonic</h3>
+</section>
+</section>
+</body>
+</html>
