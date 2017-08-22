@@ -50,7 +50,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       const investors = [accounts[0], accounts[1]];
       const tickets = [etherToWei(1), etherToWei(2)];
 
-      setTimeTo(startingDate);
+      await setTimeTo(startingDate);
 
       await expect(commitment.setFixed(investors, tickets)).to.be.rejectedWith(EvmError);
     });
@@ -98,7 +98,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       });
       const investors = [accounts[0], accounts[1]];
 
-      setTimeTo(startingDate);
+      await setTimeTo(startingDate);
 
       await expect(commitment.setWhitelist(investors)).to.be.rejectedWith(EvmError);
     });
@@ -240,7 +240,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       const expectedNeumarksAmmount = [
         (await verificationCurve.issueInEth(ticketSizes[0])).div(2).round(0, 4),
         (await verificationCurve.issueInEth(ticketSizes[1])).div(2).round(0, 4),
-      ]
+      ];
 
       const { commitment, lockedAccount } = await deployAllContracts({
         commitmentCfg: {

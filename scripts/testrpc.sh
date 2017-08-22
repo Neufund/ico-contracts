@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-exec testrpc \
+exec ./node_modules/ethereumjs-testrpc/build/cli.node.js \
 --account="0x47be2b1589bb515b76b47c514be96b23cd60ee37e81d63c2ae9c92f7d7667e1a, 1000000000000000000000" \
 --account="0x72a4d3589099f14b31725dee59b186419bac41c42d2d02b2c70c1a8af2a2b6bb, 1000000000000000000000" \
 --account="0x1ff8271bf14ac9bef0b641cced40dc2a7ebd2e37d8e16d25b4aa1911364219af, 1000000000000000000000" \
