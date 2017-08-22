@@ -6,11 +6,9 @@ import eventValue from "./helpers/eventValue";
 import * as chain from "./helpers/spawnContracts";
 import increaseTime, { setTimeTo } from "./helpers/increaseTime";
 import latestTime, { latestTimestamp } from "./helpers/latestTime";
-import EVMThrow from "./helpers/EVMThrow";
+import EvmError from "./helpers/EVMThrow";
 
 const TestFeeDistributionPool = artifacts.require("TestFeeDistributionPool");
-
-const should = require("chai").should();
 
 contract("LockedAccount", ([owner, investor, investor2]) => {
   let startTimestamp;
@@ -77,7 +75,7 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
       // earliest date is preserved for repeated investor address
       unlockDate = parseInt(initialLockedBalance[2]);
     }
-    assert.equal(parseInt(investorBalance[2]), unlockDate, "18 months in future");
+    expect(parseInt(investorBalance[2]), "18 months in future").to.equal(unlockDate);
     expect(
       await chain.lockedAccount.totalLockedAmount(),
       "lock should own locked amount"
@@ -137,9 +135,9 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
 
   async function unlockEtherWithCallbackUnknownToken(investor, ticket, neumarkToBurn) {
     // ether token is not allowed to call unlock on LockedAccount
-    await chain.etherToken
-      .approveAndCall(chain.lockedAccount.address, neumarkToBurn, "", { from: investor })
-      .should.be.rejectedWith(EVMThrow);
+    await expect(chain.etherToken
+      .approveAndCall(chain.lockedAccount.address, neumarkToBurn, "", { from: investor }))
+      .to.be.rejectedWith(EvmError);
   }
 
   async function expectPenaltyEvent(tx, investor, ticket) {
