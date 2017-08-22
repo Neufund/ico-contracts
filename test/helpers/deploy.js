@@ -48,7 +48,7 @@ export async function deployAllContracts({ lockedAccountCfg = {}, commitmentCfg 
     minCommitment,
     maxCommitment,
     minTicket,
-    etherToWei(eurEthRate),
+    eurEthRate,
     etherToken.address,
     lockedAccount.address,
     curve.address

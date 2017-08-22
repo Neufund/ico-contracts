@@ -1,4 +1,4 @@
-import { etherToWei } from "./unitConverter";
+import { etherToWei, DIGITS } from "./unitConverter";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
@@ -28,12 +28,16 @@ export async function curveInEur(moneyInEur) {
   return curve.curve(moneyInEur);
 }
 
-export async function curveInEther(money, eurEtherRatio = etherToWei(218.1192809)) {
+export async function curveInEther(money, eurEtherRatio) {
   if (!curve) {
     curve = await deployCurve();
   }
 
-  const moneyInEur = money.mul(eurEtherRatio);
+  const moneyInEur = ethToEur(money, eurEtherRatio);
 
   return curve.curve(moneyInEur);
+}
+
+export function ethToEur(ether, eurEtherRatio = etherToWei(218.1192809)) {
+  return ether.mul(eurEtherRatio).div(DIGITS);
 }
