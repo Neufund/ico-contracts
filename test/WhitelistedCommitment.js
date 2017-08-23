@@ -4,7 +4,7 @@ import { closeFutureDate, furterFutureDate, HOUR, MONTH } from "./helpers/latest
 import { setTimeTo } from "./helpers/increaseTime";
 import { etherToWei, shanToWei } from "./helpers/unitConverter";
 import { deployAllContracts } from "./helpers/deploy";
-import { curveInEther, deployMutableCurve } from "./helpers/verification";
+import { curveInEther, deployMutableCurve, ethToEur } from "./helpers/verification";
 
 contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
   describe("set fixed investors", () => {
@@ -225,6 +225,8 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       await investorTicketBiggerThenDeclared(accounts, etherToWei(1), etherToWei(1).add(1));
     });
 
+    it("should allow fixed investor to make commitment in mulitple phases");
+
     it("should not allow whitelisted investor to take part in fixed ");
     it("should not work when youre not on the list");
     it("should not be possible to invest before ico");
@@ -357,7 +359,38 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
   });
 
   describe("successful comittment", () => {
-    it("should burn ");
+    it("should burn unused neumarks from fixed pool", async () => {
+      const startingDate = closeFutureDate();
+      const duration = MONTH;
+      const mutableCurve = await deployMutableCurve();
+      const investor1 = accounts[0];
+      const fixedInvestors = [investor1, accounts[1]];
+      const fixedDeclaredTickets = [etherToWei(1), etherToWei(3)];
+      const equalShareSize = fixedDeclaredTickets[0];
+      const expectedTicketsSum = fixedDeclaredTickets[0].add(fixedDeclaredTickets[1]);
+      const expectedNeumarkAmmountOnFixedRate = await mutableCurve.issueInEth(expectedTicketsSum);
+      const expectedError = new web3.BigNumber(309243939690474); // this is much, much less then 1 cent
+
+      const { commitment, lockedAccount, curve } = await deployAllContracts({
+        commitmentCfg: {
+          fixedInvestors,
+          fixedTickets: fixedDeclaredTickets,
+          startTimestamp: startingDate,
+          minCommitment: etherToWei(0.5),
+          duration,
+        },
+      });
+      expect(await curve.totalEuroUlps()).to.be.bignumber.eq(ethToEur(expectedTicketsSum)); // should secure all neumarks on fixed pool
+
+      await setTimeTo(startingDate);
+      await commitment.commit({ value: fixedDeclaredTickets[0], from: investor1 });
+
+      await setTimeTo(startingDate + duration + HOUR);
+      await commitment.finalize();
+
+      const difference = ethToEur(fixedDeclaredTickets[0]).sub(await curve.totalEuroUlps());
+      expect(difference).to.be.bignumber.eq(expectedError); // should burn unsed fixed pool neumarks
+    });
   });
 
   // it should not accept ether send without data

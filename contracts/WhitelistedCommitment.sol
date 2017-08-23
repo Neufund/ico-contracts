@@ -62,10 +62,15 @@ contract WhitelistedCommitment is PublicCommitment {
 
     /// called by finalize() so may be called by ANYONE
     /// intended to be overriden
-    function onCommitmentSuccesful()
+    function onCommitmentSuccessful()
         internal
     {
-        // do nothing as public commitment should continue this one
+        // enable Neumark trading in token controller
+        neumarkController.enableTransfers(true);
+        // enable escape hatch and end locking funds phase
+        lockedAccount.controllerSucceeded();
+        // rollback unspect neumarks from fixed pool
+        rollbackCurve();
     }
 
     /// allows to abort commitment process before it starts and rollback curve
