@@ -2,7 +2,7 @@ import { expect } from "chai";
 import EvmError from "./helpers/EVMThrow";
 import { closeFutureDate, furterFutureDate, HOUR, MONTH } from "./helpers/latestTime";
 import { setTimeTo } from "./helpers/increaseTime";
-import { etherToWei } from "./helpers/unitConverter";
+import { etherToWei, shanToWei } from "./helpers/unitConverter";
 import { deployAllContracts } from "./helpers/deploy";
 import { curveInEther, deployMutableCurve } from "./helpers/verification";
 
@@ -316,8 +316,58 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
     });
   });
 
+  describe("failed comittment", () => {
+    it("should unlock all accounts", async () => {
+      const startingDate = closeFutureDate();
+      const duration = MONTH;
+      const whitelistedInvestors = [accounts[0], accounts[1]];
+      const investor = whitelistedInvestors[0];
+      const ticketSize = etherToWei(1.5);
+      const initialAccountBalance = await web3.eth.getBalance(investor);
+      let accGas;
+
+      const { commitment, lockedAccount, etherToken } = await deployAllContracts({
+        commitmentCfg: {
+          whitelistedInvestors,
+          duration,
+          startTimestamp: startingDate,
+          startTimestamp: startingDate,
+        },
+      });
+      await setTimeTo(startingDate + HOUR);
+      accGas = accumulateGasPrice(
+        await commitment.commit({ value: ticketSize, from: investor }),
+        accGas
+      );
+      await setTimeTo(startingDate + MONTH + HOUR);
+      const gasPrice = shanToWei(100);
+
+      accGas = accumulateGasPrice(await commitment.finalize({ from: investor, gasPrice }), accGas);
+      accGas = accumulateGasPrice(await lockedAccount.unlock({ from: investor, gasPrice }), accGas);
+      accGas = accumulateGasPrice(
+        await etherToken.withdraw(ticketSize, { from: investor }),
+        accGas
+      );
+
+      const gasCost = accGas.mul(gasPrice);
+      const finalAccountBalance = await web3.eth.getBalance(investor);
+
+      expect(finalAccountBalance).to.be.bignumber.eq(initialAccountBalance.sub(gasCost));
+    });
+  });
+
+  describe("successful comittment", () => {
+    it("should burn ");
+  });
+
+  // it should not accept ether send without data
+
   // check all events
 });
+
+function accumulateGasPrice(tx, acc = new web3.BigNumber(0)) {
+  return new web3.BigNumber(tx.receipt.gasUsed).add(acc);
+}
 
 async function investorTicketBiggerThenDeclared(accounts, investorDeclared, investorTicket) {
   const startingDate = closeFutureDate();
