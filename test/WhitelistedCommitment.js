@@ -10,15 +10,17 @@ import { latestTime, latestTimestamp } from "./helpers/latestTime";
 const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-contract("WhitelistedCommitment", ([_, owner, investor, investor2]) => {
+contract("WhitelistedCommitment", ([_, lockAdmin, whitelistAdmin, investor, investor2]) => {
   // commitment starts in one day
   let startTimestamp;
 
   beforeEach(async () => {
-    await chain.spawnLockedAccount(18, 0.1);
+    await chain.spawnLockedAccount(lockAdmin, 18, 0.1);
     // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurrate
     startTimestamp = latestTimestamp() + chain.days;
     await chain.spawnWhitelistedCommitment(
+      lockAdmin,
+      whitelistAdmin,
       startTimestamp,
       chain.months,
       chain.ether(1),
