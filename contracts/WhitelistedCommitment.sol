@@ -62,10 +62,11 @@ contract WhitelistedCommitment is PublicCommitment {
 
     /// called by finalize() so may be called by ANYONE
     /// intended to be overriden
-    function onCommitmentSuccesful()
+    function onCommitmentSuccessful()
         internal
     {
-        // do nothing as public commitment should continue this one
+        // rollback unspect neumarks from fixed pool
+        rollbackCurve();
     }
 
     /// allows to abort commitment process before it starts and rollback curve

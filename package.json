@@ -28,6 +28,7 @@
     "eslint-plugin-prettier": "^2.2.0",
     "eslint-plugin-react": "^7.0.1",
     "ethereumjs-testrpc": "^4.0.0",
+    "invariant": "^2.2.2",
     "istanbul": "next",
     "mocha": "^3.3.0",
     "moment": "^2.18.1",
@@ -42,10 +43,10 @@
     "lint:fix": "yarn format",
     "lint:prettier": "prettier --list-different \"{,!(node_modules|coverage)/**/}*.js\"",
     "format": "eslint --ignore-path .gitignore . --fix",
-    "testrpc": "testrpc --deterministic",
+    "testrpc": "./scripts/testrpc.sh",
     "test": "truffle compile && truffle test",
     "test:coverage": "solidity-coverage && codecov",
-    "build": "truffle compile",
+    "build": "rm -rf ./build && truffle compile --all",
     "deploy": "truffle migrate --reset --compile-all"
   },
   "devDependencies": {
