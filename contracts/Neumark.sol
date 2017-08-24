@@ -1,6 +1,6 @@
 pragma solidity 0.4.15;
 
-import 'snapshottoken/contracts/SnapshotToken.sol';
+import './SnapshotToken/SnapshotToken.sol';
 
 // NOTE: SnapshotToken inherits Controler, which is like Ownable, except with
 //       different names.

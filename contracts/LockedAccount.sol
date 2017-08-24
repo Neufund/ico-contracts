@@ -1,6 +1,6 @@
 pragma solidity 0.4.15;
 
-import 'snapshottoken/contracts/IsContract.sol';
+import './SnapshotToken/IsContract.sol';
 import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import './ReturnsErrors.sol';
 import './TimeSource.sol';

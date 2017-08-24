@@ -1,7 +1,7 @@
 pragma solidity ^0.4.11;
 
-import 'snapshottoken/contracts/Snapshot/Snapshot.sol';
-import 'snapshottoken/contracts/Snapshot/DailyAndSnapshotable.sol';
+import '../SnapshotToken/Snapshot/Snapshot.sol';
+import '../SnapshotToken/Snapshot/DailyAndSnapshotable.sol';
 
 contract SnapshotTest is
     Snapshot,
