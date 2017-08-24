@@ -18,16 +18,6 @@ contract Allowance is
     mapping (address => mapping (address => uint256)) allowed;
 
 ////////////////
-// Events
-////////////////
-
-    event Approval(
-        address indexed _owner,
-        address indexed _spender,
-        uint256 _amount
-        );
-
-////////////////
 // Constructor
 ////////////////
 

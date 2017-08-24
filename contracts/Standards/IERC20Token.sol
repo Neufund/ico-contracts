@@ -7,7 +7,15 @@ contract IERC20Token {
 // Events
 ////////////////
 
-    event Transfer(address indexed _from, address indexed _to, uint256 _amount);
+    event Transfer(
+        address indexed from,
+        address indexed to,
+        uint256 amount);
+
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 amount);
 
 ///////////////////
 // ERC20 Basic Methods
