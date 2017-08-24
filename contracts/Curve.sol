@@ -1,6 +1,6 @@
 pragma solidity ^0.4.11;
 
-import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
+import './Zeppelin/Ownable.sol';
 import './NeumarkController.sol';
 
 contract Curve is Ownable {

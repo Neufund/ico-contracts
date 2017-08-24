@@ -1,7 +1,7 @@
 pragma solidity 0.4.15;
 
-import 'zeppelin-solidity/contracts/token/ERC20.sol';
 import '../Standards/IERC667Callback.sol';
+import '../Zeppelin/ERC20.sol';
 
 contract TestFeeDistributionPool is IERC667Callback {
 

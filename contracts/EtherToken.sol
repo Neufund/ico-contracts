@@ -1,6 +1,6 @@
 pragma solidity 0.4.15;
 
-import 'zeppelin-solidity/contracts/token/StandardToken.sol';
+import './Zeppelin/StandardToken.sol';
 import './Math.sol';
 import './Standards/ITokenWithDeposit.sol';
 import './Standards/IERC667Callback.sol';
