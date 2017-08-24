@@ -187,6 +187,37 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       });
     });
 
+    it("should send all funds in case of rounding errors", async () => {
+      const startingDate = closeFutureDate();
+      const investor1 = accounts[0];
+      const fixedInvestors = [investor1];
+      const fixedDeclaredTickets = [etherToWei(2)];
+      const actualInvestor1Commitment1 = etherToWei(1.9);
+      const actualInvestor1Commitment2 = etherToWei(0.1);
+
+      const expectedTicketsSum = fixedDeclaredTickets[0];
+      const expectedNeumarkAmmount = await curveInEther(expectedTicketsSum);
+      const expectedInvestor1NeumarkShare = expectedNeumarkAmmount.div(2).round(0, 4).add(1); // for rounding error
+
+      const { commitment, lockedAccount, neumark } = await deployAllContracts({
+        commitmentCfg: {
+          fixedInvestors,
+          fixedTickets: fixedDeclaredTickets,
+          startTimestamp: startingDate,
+          minTicket: etherToWei(0.01),
+        },
+      });
+      await setTimeTo(startingDate);
+      await commitment.commit({ value: actualInvestor1Commitment1, from: investor1 });
+      await commitment.commit({ value: actualInvestor1Commitment2, from: investor1 });
+
+      expect(await lockedAccount.balanceOf(investor1)).to.be.balanceWith({
+        ether: actualInvestor1Commitment1.add(actualInvestor1Commitment2),
+        neumarks: expectedInvestor1NeumarkShare,
+      });
+      expect(await neumark.balanceOf(commitment.address)).to.be.bignumber.eq(new web3.BigNumber(0));
+    });
+
     it("should work with ticket exactly the same as declared", async () => {
       const startingDate = closeFutureDate();
       const investor1 = accounts[0];
