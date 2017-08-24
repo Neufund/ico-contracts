@@ -8,7 +8,9 @@ import increaseTime, { setTimeTo } from "./helpers/increaseTime";
 import latestTime, { latestTimestamp } from "./helpers/latestTime";
 import EvmError from "./helpers/EVMThrow";
 
-const TestLockedAccountMigrationTarget = artifacts.require("TestLockedAccountMigrationTarget");
+const TestLockedAccountMigrationTarget = artifacts.require(
+  "TestLockedAccountMigrationTarget"
+);
 
 contract("TestLockedAccountMigrationTarget", ([owner, investor, investor2]) => {
   let startTimestamp;
@@ -40,10 +42,14 @@ contract("TestLockedAccountMigrationTarget", ([owner, investor, investor2]) => {
     // this dummy setting should pass
     console.log(investor);
     await migrationTarget.setMigrationSource(investor2);
-    await migrationTarget.migrateInvestor(investor, 1, 1, startTimestamp, { from: investor2 });
+    await migrationTarget.migrateInvestor(investor, 1, 1, startTimestamp, {
+      from: investor2
+    });
     // this should not, only investor2 (which is source) can call migrate on target
     await expect(
-      migrationTarget.migrateInvestor(investor, 1, 1, startTimestamp, { from: owner })
+      migrationTarget.migrateInvestor(investor, 1, 1, startTimestamp, {
+        from: owner
+      })
     ).to.be.rejectedWith(EvmError);
   });
 
@@ -53,21 +59,23 @@ contract("TestLockedAccountMigrationTarget", ([owner, investor, investor2]) => {
     // lock investor
     await chain.commitment._investFor(investor, ticket, neumarks, {
       value: ticket,
-      from: investor,
+      from: investor
     });
     await migrationTarget.setMigrationSource(chain.lockedAccount.address);
     let tx = await chain.lockedAccount.enableMigration(migrationTarget.address);
     await migrationTarget.setShouldMigrationFail(true);
-    tx = await expect(chain.lockedAccount.migrate({ from: investor })).to.be.rejectedWith(EvmError);
+    tx = await expect(
+      chain.lockedAccount.migrate({ from: investor })
+    ).to.be.rejectedWith(EvmError);
   });
 
   it("target with invalid source should throw", async () => {
     // we set invalid source here
     await migrationTarget.setMigrationSource(investor);
     // accepts only lockedAccount as source
-    await expect(chain.lockedAccount.enableMigration(migrationTarget.address)).to.be.rejectedWith(
-      EvmError
-    );
+    await expect(
+      chain.lockedAccount.enableMigration(migrationTarget.address)
+    ).to.be.rejectedWith(EvmError);
   });
 
   async function migrateOne() {
@@ -76,7 +84,7 @@ contract("TestLockedAccountMigrationTarget", ([owner, investor, investor2]) => {
     // lock investor
     await chain.commitment._investFor(investor, ticket, neumarks, {
       value: ticket,
-      from: investor,
+      from: investor
     });
     let investorBalance = await chain.lockedAccount.balanceOf(investor);
     await migrationTarget.setMigrationSource(chain.lockedAccount.address);
@@ -98,14 +106,21 @@ contract("TestLockedAccountMigrationTarget", ([owner, investor, investor2]) => {
     expect(event.args.neumarks).to.be.bignumber.equal(neumarks);
     expect(event.args.unlockDate).to.be.bignumber.equal(investorBalance[2]);
     // check invariants
-    expect(await chain.lockedAccount.totalLockedAmount()).to.be.bignumber.equal(0);
-    expect(await migrationTarget.totalLockedAmount()).to.be.bignumber.equal(ticket);
+    expect(await chain.lockedAccount.totalLockedAmount()).to.be.bignumber.equal(
+      0
+    );
+    expect(await migrationTarget.totalLockedAmount()).to.be.bignumber.equal(
+      ticket
+    );
     expect(await chain.lockedAccount.totalInvestors()).to.be.bignumber.equal(0);
     expect(await migrationTarget.totalInvestors()).to.be.bignumber.equal(1);
     // check balance on old - no investor
     investorBalance = await chain.lockedAccount.balanceOf(investor);
     // unlockDate == 0: does not exit
-    expect(investorBalance[2], "unlockDate zeroed == no account").to.be.bignumber.equal(0);
+    expect(
+      investorBalance[2],
+      "unlockDate zeroed == no account"
+    ).to.be.bignumber.equal(0);
   }
 
   it("should migrate investor", async () => {
@@ -114,15 +129,15 @@ contract("TestLockedAccountMigrationTarget", ([owner, investor, investor2]) => {
 
   it("migrate same investor twice should do nothing", async () => {
     await migrateOne();
-    let tx = await chain.lockedAccount.migrate({ from: investor });
-    let event = eventValue(tx, "InvestorMigrated");
+    const tx = await chain.lockedAccount.migrate({ from: investor });
+    const event = eventValue(tx, "InvestorMigrated");
     expect(event).to.not.exist;
   });
 
   it("migrate non existing investor should do nothing", async () => {
     await migrateOne();
-    let tx = await chain.lockedAccount.migrate({ from: investor2 });
-    let event = eventValue(tx, "InvestorMigrated");
+    const tx = await chain.lockedAccount.migrate({ from: investor2 });
+    const event = eventValue(tx, "InvestorMigrated");
     expect(event).to.not.exist;
   });
 
@@ -130,8 +145,8 @@ contract("TestLockedAccountMigrationTarget", ([owner, investor, investor2]) => {
     await migrationTarget.setMigrationSource(chain.lockedAccount.address);
     await chain.lockedAccount.enableMigration(migrationTarget.address);
     // must throw
-    await expect(chain.lockedAccount.enableMigration(migrationTarget.address)).to.be.rejectedWith(
-      EvmError
-    );
+    await expect(
+      chain.lockedAccount.enableMigration(migrationTarget.address)
+    ).to.be.rejectedWith(EvmError);
   });
 });
