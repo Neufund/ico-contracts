@@ -8,14 +8,14 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
     bool public shouldMigrationFail;
 
     function setMigrationSource(LockedAccount source)
-        onlyOwner
+        only(ROLE_LOCKED_ACCOUNT_ADMIN)
         public
     {
         migrationSource = source;
     }
 
     function setShouldMigrationFail(bool shouldFail)
-        onlyOwner
+        only(ROLE_LOCKED_ACCOUNT_ADMIN)
         public
     {
         shouldMigrationFail = shouldFail;
@@ -51,9 +51,9 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
         return true;
     }
 
-    function TestLockedAccountMigrationTarget(ERC23 _assetToken, Curve _neumarkCurve,
+    function TestLockedAccountMigrationTarget(ERC23 _assetToken, Curve _neumarkCurve, IAccessPolicy _policy,
         uint _lockPeriod, uint _penaltyFraction)
-        LockedAccount(_assetToken, _neumarkCurve, _lockPeriod, _penaltyFraction)
+        LockedAccount(_assetToken, _neumarkCurve, _policy, _lockPeriod, _penaltyFraction)
     {
     }
 
