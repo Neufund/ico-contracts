@@ -93,49 +93,36 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
         // constant // NOTE: Solidity does not allow subtyping interfaces
         returns (bool)
     {
-        // Try local access first
-        TriState localAccess = access[subject][role][object];
-        if (localAccess != TriState.Unset) {
-            bool grantedLocal = localAccess == TriState.Allow;
+        bool set = false;
+        bool allow = false;
+        TriState value = TriState.Unset;
 
-            // Log and return
-            Access(subject, role, object, verb, grantedLocal);
-            return grantedLocal;
+        // Cascade local, global, everyone local, everyone global
+        value = access[subject][role][object];
+        set = value != TriState.Unset;
+        allow = value == TriState.Allow;
+        if (!set) {
+            value = access[subject][role][GLOBAL];
+            set = value != TriState.Unset;
+            allow = value == TriState.Allow;
         }
-
-        // Try global state
-        TriState globalAccess = access[subject][role][GLOBAL];
-        if (globalAccess != TriState.Unset) {
-            bool grantedGlobal = globalAccess == TriState.Allow;
-
-            // Log and return
-            Access(subject, role, object, verb, grantedGlobal);
-            return grantedGlobal;
+        if (!set) {
+            value = access[EVERYONE][role][object];
+            set = value != TriState.Unset;
+            allow = value == TriState.Allow;
         }
-
-        // Try local everyone access first
-        TriState everyLocalAccess = access[EVERYONE][role][object];
-        if (everyLocalAccess != TriState.Unset) {
-            bool everyGrantedLocal = everyLocalAccess == TriState.Allow;
-
-            // Log and return
-            Access(subject, role, object, verb, everyGrantedLocal);
-            return everyGrantedLocal;
+        if (!set) {
+            value = access[EVERYONE][role][GLOBAL];
+            set = value != TriState.Unset;
+            allow = value == TriState.Allow;
         }
-
-        // Try global everyone state
-        TriState everyGlobalAccess = access[EVERYONE][role][GLOBAL];
-        if (everyGlobalAccess != TriState.Unset) {
-            bool everyGrantedGlobal = everyGlobalAccess == TriState.Allow;
-
-            // Log and return
-            Access(subject, role, object, verb, everyGrantedGlobal);
-            return everyGrantedGlobal;
+        if (!set) {
+            allow = false;
         }
 
         // Log and return
-        Access(subject, role, object, verb, false);
-        return false;
+        Access(subject, role, object, verb, allow);
+        return allow;
     }
 
     // Assign a role to a user globally
