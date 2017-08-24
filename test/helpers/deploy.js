@@ -11,7 +11,9 @@ const TestCommitment = artifacts.require("TestCommitment");
 const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
 const FeeDistributionPool = artifacts.require("FeeDistributionPool");
 
-export async function deployAllContracts({ lockedAccountCfg = {}, commitmentCfg = {} } = {}) {
+export async function deployAllContracts(
+  { lockedAccountCfg = {}, commitmentCfg = {} } = {}
+) {
   const { unlockDateMonths = 18, unlockPenalty = 0.1 } = lockedAccountCfg;
 
   const {
@@ -23,7 +25,7 @@ export async function deployAllContracts({ lockedAccountCfg = {}, commitmentCfg 
     eurEthRate = etherToWei(218.1192809),
     whitelistedInvestors,
     fixedInvestors,
-    fixedTickets,
+    fixedTickets
   } = commitmentCfg;
 
   const etherToken = await EtherToken.new();
@@ -38,7 +40,10 @@ export async function deployAllContracts({ lockedAccountCfg = {}, commitmentCfg 
     unlockDateMonths * MONTH,
     etherToWei(1).mul(unlockPenalty).round()
   );
-  const feePool = await FeeDistributionPool.new(etherToken.address, neumark.address);
+  const feePool = await FeeDistributionPool.new(
+    etherToken.address,
+    neumark.address
+  );
 
   const commitment = await WhitelistedCommitment.new(
     startTimestamp,
@@ -72,6 +77,6 @@ export async function deployAllContracts({ lockedAccountCfg = {}, commitmentCfg 
     neumarkController,
     curve,
     lockedAccount,
-    commitment,
+    commitment
   };
 }

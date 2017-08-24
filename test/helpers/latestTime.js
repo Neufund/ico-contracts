@@ -13,7 +13,7 @@ export function latestTimestamp() {
     web3.currentProvider.send({
       jsonrpc: "2.0",
       method: "evm_mine",
-      id: 12345,
+      id: 12345
     });
     firstTimeRequestedTime = false;
   }

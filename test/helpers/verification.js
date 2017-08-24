@@ -25,7 +25,7 @@ export async function deployMutableCurve() {
       const euro = ethToEur(ether);
       const tx = await curve.issue(euro);
       return eventValue(tx, "NeumarksIssued", "neumarks");
-    },
+    }
   };
 }
 
