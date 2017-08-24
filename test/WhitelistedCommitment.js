@@ -218,17 +218,24 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
     });
 
     it("should work with ticket much bigger then declared", async () => {
-      await investorTicketBiggerThenDeclared(accounts, etherToWei(1), etherToWei(1.2345));
+      await investorTicketBiggerThenDeclared(
+        accounts.slice(0, 2),
+        [etherToWei(1), etherToWei(3)],
+        etherToWei(1.2345)
+      );
     });
 
     it("should work with ticket a little bit bigger then declared", async () => {
-      await investorTicketBiggerThenDeclared(accounts, etherToWei(1), etherToWei(1).add(1));
+      await investorTicketBiggerThenDeclared(
+        accounts.slice(0, 1),
+        [etherToWei(1)],
+        etherToWei(1).add(1)
+      );
     });
 
-    it("should allow fixed investor to make commitment in mulitple phases");
-
+    it("should allow fixed investor to make commitment in mulitple tickets");
     it("should not allow whitelisted investor to take part in fixed ");
-    it("should not work when youre not on the list");
+    it("should not work when investor is not on the list");
     it("should not be possible to invest before ico");
   });
 
@@ -322,10 +329,11 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
     it("should unlock all accounts", async () => {
       const startingDate = closeFutureDate();
       const duration = MONTH;
-      const whitelistedInvestors = [accounts[0], accounts[1]];
+      const whitelistedInvestors = [accounts[4], accounts[5]];
       const investor = whitelistedInvestors[0];
       const ticketSize = etherToWei(1.5);
       const initialAccountBalance = await web3.eth.getBalance(investor);
+      const gasPrice = 1;
       let accGas;
 
       const { commitment, lockedAccount, etherToken } = await deployAllContracts({
@@ -338,16 +346,15 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       });
       await setTimeTo(startingDate + HOUR);
       accGas = accumulateGasPrice(
-        await commitment.commit({ value: ticketSize, from: investor }),
+        await commitment.commit({ value: ticketSize, from: investor, gasPrice }),
         accGas
       );
       await setTimeTo(startingDate + MONTH + HOUR);
-      const gasPrice = shanToWei(100);
 
       accGas = accumulateGasPrice(await commitment.finalize({ from: investor, gasPrice }), accGas);
       accGas = accumulateGasPrice(await lockedAccount.unlock({ from: investor, gasPrice }), accGas);
       accGas = accumulateGasPrice(
-        await etherToken.withdraw(ticketSize, { from: investor }),
+        await etherToken.withdraw(ticketSize, { from: investor, gasPrice }),
         accGas
       );
 
@@ -402,15 +409,16 @@ function accumulateGasPrice(tx, acc = new web3.BigNumber(0)) {
   return new web3.BigNumber(tx.receipt.gasUsed).add(acc);
 }
 
-async function investorTicketBiggerThenDeclared(accounts, investorDeclared, investorTicket) {
+async function investorTicketBiggerThenDeclared(
+  investorAccounts,
+  investorDeclaration,
+  firstInvestorTicket
+) {
   const startingDate = closeFutureDate();
   const mutableCurve = await deployMutableCurve();
-  const investor1 = accounts[0];
-  const fixedInvestors = [investor1, accounts[1]];
-  const fixedDeclaredTickets = [investorDeclared, etherToWei(3)];
-  const equalShareSize = fixedDeclaredTickets[0];
-  const curveShareSize = investorTicket.sub(equalShareSize);
-  const expectedTicketsSum = fixedDeclaredTickets[0].add(fixedDeclaredTickets[1]);
+  const equalShareSize = investorDeclaration[0];
+  const curveShareSize = firstInvestorTicket.sub(equalShareSize);
+  const expectedTicketsSum = investorDeclaration.reduce((a, x) => a.add(x), new web3.BigNumber(0));
   const expectedNeumarkAmmountOnFixedRate = await mutableCurve.issueInEth(expectedTicketsSum);
   const expectedNeumarkAmmountOnTheCurve = await mutableCurve.issueInEth(curveShareSize);
   const expectedInvestor1NeumarkShare = expectedNeumarkAmmountOnFixedRate
@@ -422,16 +430,16 @@ async function investorTicketBiggerThenDeclared(accounts, investorDeclared, inve
 
   const { commitment, lockedAccount } = await deployAllContracts({
     commitmentCfg: {
-      fixedInvestors,
-      fixedTickets: fixedDeclaredTickets,
+      fixedInvestors: investorAccounts,
+      fixedTickets: investorDeclaration,
       startTimestamp: startingDate,
     },
   });
   await setTimeTo(startingDate);
-  await commitment.commit({ value: investorTicket, from: investor1 });
+  await commitment.commit({ value: firstInvestorTicket, from: investorAccounts[0] });
 
-  expect(await lockedAccount.balanceOf(investor1)).to.be.balanceWith({
-    ether: investorTicket,
+  expect(await lockedAccount.balanceOf(investorAccounts[0])).to.be.balanceWith({
+    ether: firstInvestorTicket,
     neumarks: expectedInvestor1NeumarkShare,
   });
 }

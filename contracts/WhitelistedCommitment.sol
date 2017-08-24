@@ -65,10 +65,6 @@ contract WhitelistedCommitment is PublicCommitment {
     function onCommitmentSuccessful()
         internal
     {
-        // enable Neumark trading in token controller
-        neumarkController.enableTransfers(true);
-        // enable escape hatch and end locking funds phase
-        lockedAccount.controllerSucceeded();
         // rollback unspect neumarks from fixed pool
         rollbackCurve();
     }
