@@ -58,7 +58,7 @@ export async function deployAllContracts(
     lockAdminAccount,
     lockedAccountAdminRole,
     lockedAccount.address,
-    TriState.Allowed
+    TriState.Allow
   );
   await lockedAccount.setPenaltyDisbursal(operatorWallet, {
     from: lockAdminAccount
@@ -83,7 +83,7 @@ export async function deployAllContracts(
     whitelistAdminAccount,
     whitelistAdminRole,
     commitment.address,
-    TriState.Allowed
+    TriState.Allow
   );
 
   if (fixedInvestors || fixedTickets) {

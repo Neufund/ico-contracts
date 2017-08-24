@@ -13,8 +13,8 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
     // Łukasiewicz logic values
     enum TriState {
         Unset,
-        True,
-        False
+        Allow,
+        Deny
     }
 
     ////////////////
@@ -64,7 +64,7 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
         AccessControlled(this) // We are our own policy. This is immutable.
     {
         // Issue the glboal AccessContoler role to creator
-        access[msg.sender][ROLE_ACCESS_CONTROLER][GLOBAL] = TriState.True;
+        access[msg.sender][ROLE_ACCESS_CONTROLER][GLOBAL] = TriState.Allow;
     }
 
     ////////////////
@@ -96,7 +96,7 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
         // Try local access first
         TriState localAccess = access[subject][role][object];
         if (localAccess != TriState.Unset) {
-            bool grantedLocal = localAccess == TriState.True;
+            bool grantedLocal = localAccess == TriState.Allow;
 
             // Log and return
             Access(subject, role, object, verb, grantedLocal);
@@ -106,7 +106,7 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
         // Try global state
         TriState globalAccess = access[subject][role][GLOBAL];
         if (globalAccess != TriState.Unset) {
-            bool grantedGlobal = globalAccess == TriState.True;
+            bool grantedGlobal = globalAccess == TriState.Allow;
 
             // Log and return
             Access(subject, role, object, verb, grantedGlobal);
@@ -116,7 +116,7 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
         // Try local everyone access first
         TriState everyLocalAccess = access[EVERYONE][role][object];
         if (everyLocalAccess != TriState.Unset) {
-            bool everyGrantedLocal = everyLocalAccess == TriState.True;
+            bool everyGrantedLocal = everyLocalAccess == TriState.Allow;
 
             // Log and return
             Access(subject, role, object, verb, everyGrantedLocal);
@@ -126,7 +126,7 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
         // Try global everyone state
         TriState everyGlobalAccess = access[EVERYONE][role][GLOBAL];
         if (everyGlobalAccess != TriState.Unset) {
-            bool everyGrantedGlobal = everyGlobalAccess == TriState.True;
+            bool everyGrantedGlobal = everyGlobalAccess == TriState.Allow;
 
             // Log and return
             Access(subject, role, object, verb, everyGrantedGlobal);
