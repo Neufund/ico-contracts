@@ -3,6 +3,7 @@ import gasCost from "./helpers/gasCost";
 import eventValue from "./helpers/eventValue";
 
 const Curve = artifacts.require("./Curve.sol");
+const CurveGas = artifacts.require("./test/CurveGas.sol");
 const NeumarkFactory = artifacts.require("./NeumarkFactory.sol");
 const Neumark = artifacts.require("./Neumark.sol");
 const NeumarkController = artifacts.require("./NeumarkController.sol");
@@ -13,6 +14,7 @@ const NMK_DECIMALS = new BigNumber(10).toPower(18);
 
 contract("Curve", accounts => {
   let curve;
+  let curveGas;
   let neumark;
   let factory;
   let controller;
@@ -23,14 +25,17 @@ contract("Curve", accounts => {
     controller = await NeumarkController.new(neumark.address);
     await neumark.changeController(controller.address);
     curve = await Curve.new(controller.address);
+    curveGas = await CurveGas.new(controller.address);
   });
 
   it("should deploy", async () => {
     console.log(`\tCurve took ${gasCost(curve)}.`);
   });
+
   it("should start at zero", async () => {
     assert.equal(await curve.totalEuroUlps.call(), 0);
   });
+
   it("should compute exactly over the whole range", async () => {
     const correct = [
       [0, 0],
@@ -132,6 +137,8 @@ contract("Curve", accounts => {
       [6000000000, 1499999999],
       [7000000000, 1499999999],
       [8000000000, 1499999999],
+      [8299999999, 1499999999],
+      [8300000000, 1500000000],
       [9000000000, 1500000000],
       [10000000000, 1500000000],
       [20000000000, 1500000000],
@@ -143,13 +150,18 @@ contract("Curve", accounts => {
       [80000000000, 1500000000],
       [90000000000, 1500000000],
     ];
-    await Promise.all(
+    const gas = await Promise.all(
       correct.map(async ([i, v]) => {
-        const r = (await curve.curve.call(EUR_DECIMALS.mul(i))).div(NMK_DECIMALS).floor().valueOf();
-        assert.equal(r, v, `Curve compute failed for value ${i}`);
+        const [neumarkUlps, gas] = await curveGas.curveGas.call(EUR_DECIMALS.mul(i));
+        const neumarks = 0 | neumarkUlps.div(NMK_DECIMALS).floor().valueOf();
+        assert.equal(neumarks, v, `Curve compute failed for value ${i}`);
+        return [i, 0 | gas.valueOf()];
       })
     );
+    const totalGas = gas.reduce((t, [_, gas]) => t + gas, 0);
+    console.log(`\t${correct.length} evaluations took ${gasCost(totalGas)}.`);
   });
+
   it("should issue Neumarks", async () => {
     assert.equal((await curve.totalEuroUlps.call()).valueOf(), 0);
     assert.equal((await neumark.totalSupply.call()).valueOf(), 0);
@@ -172,6 +184,7 @@ contract("Curve", accounts => {
       5849
     );
   });
+
   it("should issue and then burn Neumarks", async () => {
     // Issue Neumarks for 1 mln Euros
     const euroUlps = EUR_DECIMALS.mul(1000000);
@@ -190,6 +203,7 @@ contract("Curve", accounts => {
       neumarks - toBurn
     );
   });
+
   it("should issue same amount in multiple issuances", async () => {
     // 1 ether + 100 wei in eur
     const eurRate = 218.1192809;
