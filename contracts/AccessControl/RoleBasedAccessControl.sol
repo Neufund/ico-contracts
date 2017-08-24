@@ -63,7 +63,8 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
     function RoleBasedAccessControl()
         AccessControlled(this) // We are our own policy. This is immutable.
     {
-        // Issue the glboal AccessContoler role to creator
+        // Issue the local and global AccessContoler role to creator
+        access[msg.sender][ROLE_ACCESS_CONTROLER][this] = TriState.Allow;
         access[msg.sender][ROLE_ACCESS_CONTROLER][GLOBAL] = TriState.Allow;
     }
 
@@ -191,6 +192,14 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
     )
         private
     {
+        // An access controler is not allowed to revoke his own right on this
+        // contract. This prevents access controlers from locking themselves
+        // out. We also require the current contract to be its own policy for
+        // this to work. This is enforced elsewhere.
+        require(role != ROLE_ACCESS_CONTROLER
+            || subject != msg.sender
+            || object != this);
+
         // Fetch old value and short-circuit no-ops
         TriState oldValue = access[subject][role][object];
         if(oldValue == newValue) {
@@ -213,14 +222,6 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
                     list.length -= 1;
                 }
             }
-        }
-
-        // An access controler is not allowed to revoke his own right on this
-        // contract. This prevents access controlers from locking themselves
-        // out. We also require the current contract to be its own policy for
-        // this to work. This is enforced elsewhere.
-        if(subject == msg.sender && role == ROLE_ACCESS_CONTROLER) {
-            require(allowed(subject, ROLE_ACCESS_CONTROLER, this, msg.sig));
         }
 
         // Log
