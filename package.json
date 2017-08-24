@@ -28,7 +28,6 @@
     "ethereumjs-testrpc": "^4.0.0",
     "invariant": "^2.2.2",
     "istanbul": "next",
-    "minimetoken": "^0.1.4",
     "mocha": "^3.3.0",
     "moment": "^2.18.1",
     "swarm-js": "^0.1.35",

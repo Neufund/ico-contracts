@@ -1,8 +1,8 @@
-pragma solidity ^0.4.11;
+pragma solidity 0.4.15;
 
-import 'zeppelin-solidity/contracts/token/ERC20.sol';
+import './ERC23.sol';
 
-contract TokenWithDeposit is ERC20 {
+contract TokenWithDeposit is ERC23 {
 
     function deposit(address to, uint256 amount) payable returns (bool);
     function withdraw(uint256 amount);

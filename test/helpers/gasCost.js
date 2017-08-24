@@ -11,4 +11,5 @@ export const txGasCost = tx => gasCost(tx.receipt.gasUsed);
 export const contractGasCost = contract =>
   gasCost(web3.eth.getTransactionReceipt(contract.transactionHash).gasUsed);
 
-export default obj => (obj.receipt ? txGasCost(obj) : contractGasCost(obj));
+export default obj =>
+  Number.isInteger(obj) ? gasCost(obj) : obj.receipt ? txGasCost(obj) : contractGasCost(obj);

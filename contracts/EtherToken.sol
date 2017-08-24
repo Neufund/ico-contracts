@@ -1,8 +1,9 @@
-pragma solidity ^0.4.11;
+pragma solidity 0.4.15;
 
 import 'zeppelin-solidity/contracts/token/StandardToken.sol';
 import './Math.sol';
 import './TokenWithDeposit.sol';
+import './ApproveAndCallCallback.sol';
 
 contract EtherToken is StandardToken, TokenWithDeposit, Math {
 
@@ -13,6 +14,21 @@ contract EtherToken is StandardToken, TokenWithDeposit, Math {
 
     // disable default function
     function() { revert(); }
+
+    function approveAndCall(address _spender, uint256 _amount, bytes _extraData)
+        returns (bool success)
+    {
+        require(approve(_spender, _amount));
+
+        success = ApproveAndCallFallBack(_spender).receiveApproval(
+            msg.sender,
+            _amount,
+            this,
+            _extraData
+        );
+
+        return success;
+    }
 
     /// deposit 'amount' of Ether to account 'to'
     function deposit(address to, uint256 amount)

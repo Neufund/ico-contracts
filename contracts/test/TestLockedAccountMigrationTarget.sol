@@ -51,9 +51,9 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
         return true;
     }
 
-    function TestLockedAccountMigrationTarget(ERC20 _ownedToken, Curve _neumarkCurve,
+    function TestLockedAccountMigrationTarget(ERC23 _assetToken, Curve _neumarkCurve,
         uint _lockPeriod, uint _penaltyFraction)
-        LockedAccount(_ownedToken, _neumarkCurve, _lockPeriod, _penaltyFraction)
+        LockedAccount(_assetToken, _neumarkCurve, _lockPeriod, _penaltyFraction)
     {
     }
 
