@@ -270,4 +270,5 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
   // it -> fee disbursal to contract
   // it -> fee disbursal to contract that has no callback function
   // it -> tries to burn not enough neumarks with unlock and receiveApproval
+  // it -> ACL control for methods: enableMigration, setController, setPenaltyDisbursal
 });
