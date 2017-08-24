@@ -29,7 +29,6 @@
     "istanbul": "next",
     "mocha": "^3.3.0",
     "moment": "^2.18.1",
-    "snapshottoken": "^0.1.2",
     "swarm-js": "^0.1.35",
     "truffle": "3.4.9",
     "web3": "0.20.1",
