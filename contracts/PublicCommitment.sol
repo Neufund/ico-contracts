@@ -1,8 +1,5 @@
 pragma solidity ^0.4.11;
 
-import 'zeppelin-solidity/contracts/token/MintableToken.sol';
-import 'zeppelin-solidity/contracts/math/SafeMath.sol';
-import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import './EtherToken.sol';
 import './LockedAccount.sol';
 import './TimeSource.sol';
@@ -12,7 +9,7 @@ import './TokenWithDeposit.sol';
 import './TokenOffering.sol';
 
 /// public capital commitment for general public
-contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
+contract PublicCommitment is TimeSource, Math, TokenOffering {
 
     // locks investors capital
     LockedAccount public lockedAccount;

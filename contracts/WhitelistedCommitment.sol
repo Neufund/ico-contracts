@@ -1,8 +1,9 @@
 pragma solidity ^0.4.11;
 
+import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import './PublicCommitment.sol';
 
-contract WhitelistedCommitment is PublicCommitment {
+contract WhitelistedCommitment is Ownable, PublicCommitment {
 
     // mapping of addresses allowed to participate, ticket value is ignored
     mapping (address => uint256) public whitelisted;
