@@ -7,6 +7,8 @@ const Neumark = artifacts.require("Neumark");
 const Curve = artifacts.require("Curve");
 const TestCommitment = artifacts.require("TestCommitment");
 const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
+const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
+const AccessRoles = artifacts.require("AccessRoles");
 
 const BigNumber = web3.BigNumber;
 
@@ -17,13 +19,17 @@ export let lockedAccount;
 export let curve;
 export let commitment;
 export let feePool;
+export let accessControl;
+export let accessRoles;
 export const operatorWallet = "0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c";
 
 export const days = 24 * 60 * 60;
 export const months = 30 * 24 * 60 * 60;
 export const ether = wei => new BigNumber(wei).mul(10 ** 18);
 
-export async function spawnLockedAccount(unlockDateMonths, unlockPenalty) {
+export async function spawnLockedAccount(lockAdminAccount, unlockDateMonths, unlockPenalty) {
+  accessControl = await RoleBasedAccessControl.new();
+  accessRoles = await AccessRoles.new();
   etherToken = await EtherToken.new();
   // console.log(`\tEtherToken took ${gasCost(etherToken)}.`);
   neumark = await Neumark.new();
@@ -33,14 +39,17 @@ export async function spawnLockedAccount(unlockDateMonths, unlockPenalty) {
   lockedAccount = await LockedAccount.new(
     etherToken.address,
     curve.address,
+    accessControl.address,
     unlockDateMonths * months,
     ether(1).mul(unlockPenalty).round()
   );
-  // console.log(`\tLockedAccount took ${gasCost(lockedAccount)}.`);
-  await lockedAccount.setPenaltyDisbursal(operatorWallet);
+  const lockedAccountAdminRole = await accessRoles.ROLE_LOCKED_ACCOUNT_ADMIN();
+  await accessControl.setUserRole(lockAdminAccount, lockedAccountAdminRole, lockedAccount.address, 1);
+  await lockedAccount.setPenaltyDisbursal(operatorWallet, {from: lockAdminAccount});
 }
 
 export async function spawnPublicCommitment(
+  lockAdminAccount,
   startTimestamp,
   duration,
   minCommitment,
@@ -60,10 +69,12 @@ export async function spawnPublicCommitment(
     curve.address
   );
   // console.log(lockedAccount.setController);
-  await lockedAccount.setController(commitment.address);
+  await lockedAccount.setController(commitment.address, {from: lockAdminAccount});
 }
 
 export async function spawnWhitelistedCommitment(
+  lockAdminAccount,
+  whitelistAdmiAccount,
   startTimestamp,
   duration,
   minCommitment,
@@ -83,5 +94,8 @@ export async function spawnWhitelistedCommitment(
     curve.address
   );
   // console.log(lockedAccount.setController);
-  await lockedAccount.setController(commitment.address);
+  const whitelistAdminRole = await accessRoles.ROLE_WHITELIST_ADMIN();
+  await accessControl.setUserRole(whitelistAdmiAccount, whitelistAdminRole, lockedAccount.address, 1);
+  await lockedAccount.setController(commitment.address, {from: lockAdminAccount});
+
 }
