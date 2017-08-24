@@ -23,6 +23,8 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
 
     IAccessControlled public constant GLOBAL = IAccessControlled(0x0);
 
+    address public constant EVERYONE = 0x0;
+
     ////////////////
     // State
     ////////////////
@@ -103,11 +105,37 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
 
         // Try global state
         TriState globalAccess = access[subject][role][GLOBAL];
-        bool granted = globalAccess == TriState.True;
+        if (globalAccess != TriState.Unset) {
+            bool grantedGlobal = globalAccess == TriState.True;
+
+            // Log and return
+            Access(subject, role, object, verb, grantedGlobal);
+            return grantedGlobal;
+        }
+
+        // Try local everyone access first
+        TriState everyLocalAccess = access[EVERYONE][role][object];
+        if (everyLocalAccess != TriState.Unset) {
+            bool everyGrantedLocal = everyLocalAccess == TriState.True;
+
+            // Log and return
+            Access(subject, role, object, verb, everyGrantedLocal);
+            return everyGrantedLocal;
+        }
+
+        // Try global everyone state
+        TriState everyGlobalAccess = access[EVERYONE][role][GLOBAL];
+        if (everyGlobalAccess != TriState.Unset) {
+            bool everyGrantedGlobal = everyGlobalAccess == TriState.True;
+
+            // Log and return
+            Access(subject, role, object, verb, everyGrantedGlobal);
+            return everyGrantedGlobal;
+        }
 
         // Log and return
-        Access(subject, role, object, verb, granted);
-        return granted;
+        Access(subject, role, object, verb, false);
+        return false;
     }
 
     // Assign a role to a user globally
