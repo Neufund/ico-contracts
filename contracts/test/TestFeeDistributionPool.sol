@@ -2,19 +2,19 @@ pragma solidity ^0.4.11;
 
 import 'zeppelin-solidity/contracts/token/ERC20.sol';
 import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
-import '../MiniMeToken.sol';
+import 'snapshottoken/contracts/Standards/ISnapshotToken.sol';
 import '../Math.sol';
 import '../TimeSource.sol';
 
 // this contract allows distibution of fees in form of a token balance (feeToken)
-// to token holders of token providing checkpointed interface (like MiniMeToken)
+// to token holders of token providing checkpointed interface (like ISnapshotToken)
 // should provide any payment scheme via library (tranches, all out, exponentially dimnishing)
 // created for each feeToken <-> distributionToken pair
 contract FeeDistributionPool is Math, TimeSource {
 
     ERC20 public feeToken;
     uint256 public lastDay;
-    MiniMeToken public distributionToken;
+    ISnapshotToken public distributionToken;
     mapping (uint256 => uint256) public payouts;
 
     mapping (uint256 => mapping (address => bool)) private withdrawals;
@@ -90,7 +90,7 @@ contract FeeDistributionPool is Math, TimeSource {
         return claimAmount;
     }
 
-    function FeeDistributionPool(ERC20 _feeToken, MiniMeToken _distributionToken) {
+    function FeeDistributionPool(ERC20 _feeToken, ISnapshotToken _distributionToken) {
         feeToken = _feeToken;
         distributionToken = _distributionToken;
     }

@@ -1,5 +1,6 @@
 pragma solidity 0.4.15;
 
+import 'snapshottoken/contracts/IsContract.sol';
 import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import './ReturnsErrors.sol';
 import './TimeSource.sol';
@@ -7,7 +8,6 @@ import './EtherToken.sol';
 import './Curve.sol';
 import './TokenOffering.sol';
 import './LockedAccountMigration.sol';
-import './IsContract.sol';
 import './ERC23.sol';
 
 contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math, IsContract, ApproveAndCallFallBack {

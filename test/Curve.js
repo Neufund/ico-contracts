@@ -4,7 +4,6 @@ import eventValue from "./helpers/eventValue";
 
 const Curve = artifacts.require("./Curve.sol");
 const CurveGas = artifacts.require("./test/CurveGas.sol");
-const NeumarkFactory = artifacts.require("./NeumarkFactory.sol");
 const Neumark = artifacts.require("./Neumark.sol");
 const NeumarkController = artifacts.require("./NeumarkController.sol");
 
@@ -16,12 +15,10 @@ contract("Curve", accounts => {
   let curve;
   let curveGas;
   let neumark;
-  let factory;
   let controller;
 
   beforeEach(async () => {
-    factory = await NeumarkFactory.new();
-    neumark = await Neumark.new(factory.address);
+    neumark = await Neumark.new();
     controller = await NeumarkController.new(neumark.address);
     await neumark.changeController(controller.address);
     curve = await Curve.new(controller.address);

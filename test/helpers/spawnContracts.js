@@ -3,7 +3,6 @@ import gasCost from "./gasCost";
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
 const NeumarkController = artifacts.require("NeumarkController");
-const NeumarkFactory = artifacts.require("NeumarkFactory");
 const Neumark = artifacts.require("Neumark");
 const Curve = artifacts.require("Curve");
 const TestCommitment = artifacts.require("TestCommitment");
@@ -18,7 +17,7 @@ export let lockedAccount;
 export let curve;
 export let commitment;
 export let feePool;
-export let operatorWallet = "0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c";
+export const operatorWallet = "0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c";
 
 export const days = 24 * 60 * 60;
 export const months = 30 * 24 * 60 * 60;
@@ -27,8 +26,7 @@ export const ether = wei => new BigNumber(wei).mul(10 ** 18);
 export async function spawnLockedAccount(unlockDateMonths, unlockPenalty) {
   etherToken = await EtherToken.new();
   // console.log(`\tEtherToken took ${gasCost(etherToken)}.`);
-  const neumarkFactory = await NeumarkFactory.new();
-  neumark = await Neumark.new(neumarkFactory.address);
+  neumark = await Neumark.new();
   neumarkController = await NeumarkController.new(neumark.address);
   await neumark.changeController(neumarkController.address);
   curve = await Curve.new(neumarkController.address);

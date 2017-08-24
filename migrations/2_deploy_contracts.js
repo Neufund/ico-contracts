@@ -1,6 +1,5 @@
 require("babel-register");
 
-const NeumarkFactory = artifacts.require("./NeumarkFactory.sol");
 const NeumarkController = artifacts.require("./NeumarkController.sol");
 const Neumark = artifacts.require("./Neumark.sol");
 const LockedAccount = artifacts.require("LockedAccount");
@@ -21,8 +20,7 @@ const startDate = Date.now.getTime() / 1000; */
 module.exports = deployer =>
   deployer.then(async () => {
     console.log("Neumark deploying...");
-    await deployer.deploy(NeumarkFactory);
-    await deployer.deploy(Neumark, NeumarkFactory.address);
+    await deployer.deploy(Neumark);
     await deployer.deploy(NeumarkController, Neumark.address);
     const neumark = await Neumark.deployed();
     await neumark.changeController(NeumarkController.address);
