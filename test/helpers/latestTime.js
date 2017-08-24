@@ -27,10 +27,10 @@ export const MONTH = HOUR * 24 * 31;
 
 // useful for spawning time sensitive contracts
 export function closeFutureDate() {
-  return latestTimestamp() + MONTH + MONTH;
+  return latestTimestamp() + DAY;
 }
 
 // useful for spawning time sensitive contracts
-export function furterFutureDate() {
+export function furtherFutureDate() {
   return latestTimestamp() + MONTH;
 }

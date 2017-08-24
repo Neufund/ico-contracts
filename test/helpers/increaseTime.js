@@ -1,7 +1,7 @@
 import moment from "moment";
 import { latestTimestamp } from "./latestTime";
 // Increases testrpc time by the passed duration (a moment.js instance)
-export default function increaseTime(duration) {
+async function increaseTime(duration) {
   const id = Date.now();
 
   return new Promise((resolve, reject) => {
@@ -27,6 +27,8 @@ export default function increaseTime(duration) {
     );
   });
 }
+// need to be split into separate statements https://github.com/babel/babel/issues/3786
+export default increaseTime;
 
 // sets time to given timestamp based on current block time
 export async function setTimeTo(timestamp) {

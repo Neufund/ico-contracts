@@ -2,7 +2,7 @@ import { expect } from "chai";
 import EvmError from "./helpers/EVMThrow";
 import {
   closeFutureDate,
-  furterFutureDate,
+  furtherFutureDate,
   HOUR,
   MONTH
 } from "./helpers/latestTime";
@@ -18,15 +18,12 @@ import {
 contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
   describe("set fixed investors", () => {
     it("should work", async () => {
-      const { commitment, curve } = await deployAllContracts();
       const investors = [accounts[0], accounts[1]];
       const tickets = [etherToWei(1), etherToWei(2)];
       const expectedTicketsSum = tickets[0].add(tickets[1]);
-      const expectedTicketsSumInEur = await commitment.convertToEUR(
-        expectedTicketsSum
-      );
-      const expectedNeumarkAmmount = await curve.curve(expectedTicketsSumInEur);
+      const expectedNeumarkAmmount = await curveInEther(expectedTicketsSum);
 
+      const { commitment, curve } = await deployAllContracts();
       await commitment.setFixed(investors, tickets);
 
       expect(await commitment.fixedCostInvestors(0)).to.be.eq(investors[0]);

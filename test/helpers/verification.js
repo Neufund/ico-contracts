@@ -31,12 +31,12 @@ export async function deployMutableCurve() {
 
 let curve;
 
-export async function curveInEur(moneyInEur) {
+export async function curveInEur(moneyInEurULP) {
   if (!curve) {
     curve = await deployCurve();
   }
 
-  return curve.curve(moneyInEur);
+  return curve.curve(moneyInEurULP);
 }
 
 export async function curveInEther(money, eurEtherRatio) {
@@ -44,9 +44,9 @@ export async function curveInEther(money, eurEtherRatio) {
     curve = await deployCurve();
   }
 
-  const moneyInEur = ethToEur(money, eurEtherRatio);
+  const moneyInEurULP = ethToEur(money, eurEtherRatio);
 
-  return curve.curve(moneyInEur);
+  return curve.curve(moneyInEurULP);
 }
 
 export function ethToEur(ether, eurEtherRatio = etherToWei(218.1192809)) {
