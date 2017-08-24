@@ -2,7 +2,7 @@ pragma solidity 0.4.15;
 
 import 'snapshottoken/contracts/IsContract.sol';
 import './AccessControl/AccessControlled.sol';
-import './Roles.sol';
+import './AccessRoles.sol';
 import './ReturnsErrors.sol';
 import './TimeSource.sol';
 import './EtherToken.sol';
@@ -247,8 +247,7 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
     }
 
     // _assetToken - token contract with resource locked by LockedAccount, where LockedAccount is allowed to make deposits
-    // _neumarkToken - neumark token contract where LockedAccount is allowed to burn tokens and add revenue
-    // _controller - typically ICO contract: can lock, release all locks, enable escape hatch
+    //
     function LockedAccount(ERC23 _assetToken, Curve _neumarkCurve, IAccessPolicy _policy,
         uint _lockPeriod, uint _penaltyFraction)
         AccessControlled(_policy)
