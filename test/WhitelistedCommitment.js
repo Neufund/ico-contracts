@@ -44,9 +44,10 @@ contract("WhitelistedCommitment", ([_, owner, investor, investor2]) => {
     const nmkForTicket = await chain.curve.cumulative(ticketEUR);
     await chain.commitment.setFixed([investor], [ticket]);
     assert.equal(await chain.commitment.fixedCostInvestors(0), investor);
-    expect(await chain.commitment.fixedCost(investor), "ticket allowed").to.be.bignumber.equal(
-      ticket
-    );
+    expect(
+      await chain.commitment.fixedCost(investor),
+      "ticket allowed"
+    ).to.be.bignumber.equal(ticket);
     expect(
       await chain.commitment.totalFixedCostAmount(),
       "all allowed must be ticket amount"
@@ -66,7 +67,7 @@ contract("WhitelistedCommitment", ([_, owner, investor, investor2]) => {
     const nmkForTicket = await chain.curve.cumulative(ticketEUR);
     await chain.commitment.setFixed([investor], [declared]);
     await setTimeTo(startTimestamp);
-    let tx = await chain.commitment.commit({ value: ticket, from: investor });
+    const tx = await chain.commitment.commit({ value: ticket, from: investor });
     const investorBalance = await chain.lockedAccount.balanceOf(investor);
     expect(
       investorBalance[1].valueOf(),
@@ -79,17 +80,24 @@ contract("WhitelistedCommitment", ([_, owner, investor, investor2]) => {
     await setTimeTo(startTimestamp);
   }
 
-  //it -> commit fixed and verify numbers (alt cases: below ticket, ticket, above ticket, and all of those but with many commits)
+  // it -> commit fixed and verify numbers (alt cases: below ticket, ticket, above ticket, and all of those but with many commits)
   it("should commit below declared ticket on fixed cost", async () => {
     const declaredSize = chain.ether(5000.2909);
     const ticketSize = chain.ether(1.2);
     await setupFixedCostCase(declaredSize, ticketSize);
 
-    let tx = await chain.commitment.commit({ value: ticketSize, from: investor });
+    const tx = await chain.commitment.commit({
+      value: ticketSize,
+      from: investor
+    });
 
     const ticketInEur = await chain.commitment.convertToEUR(declaredSize);
     const totalSecuredNeumarks = await chain.curve.curve(ticketInEur);
-    const expected = totalSecuredNeumarks.mul(ticketSize).div(declaredSize).div(2).round(0, 4);
+    const expected = totalSecuredNeumarks
+      .mul(ticketSize)
+      .div(declaredSize)
+      .div(2)
+      .round(0, 4);
     const investorBalance = await chain.lockedAccount.balanceOf(investor);
     expect(
       investorBalance[1].valueOf(),
@@ -116,7 +124,7 @@ contract("WhitelistedCommitment", ([_, owner, investor, investor2]) => {
     await chain.commitment.setWhitelist([investor]);
     // move to commitment start date
     await setTimeTo(startTimestamp);
-    let tx = await chain.commitment.commit({ value: ticket, from: investor });
+    const tx = await chain.commitment.commit({ value: ticket, from: investor });
     // check event
     const event = eventValue(tx, "FundsInvested");
     expect(event).to.exist;
@@ -131,8 +139,13 @@ contract("WhitelistedCommitment", ([_, owner, investor, investor2]) => {
       await await chain.etherToken.totalSupply(),
       "ticket must be in etherToken"
     ).to.be.bignumber.equal(ticket);
-    const lockBalance = await chain.etherToken.balanceOf(chain.lockedAccount.address);
-    expect(lockBalance, "balance of lock contract must equal ticket").to.be.bignumber.equal(ticket);
+    const lockBalance = await chain.etherToken.balanceOf(
+      chain.lockedAccount.address
+    );
+    expect(
+      lockBalance,
+      "balance of lock contract must equal ticket"
+    ).to.be.bignumber.equal(ticket);
     const investorBalance = await chain.lockedAccount.balanceOf(investor);
     const neumarkBalance = await chain.neumark.balanceOf.call(investor);
     // console.log(`investor ${investorBalance[1].valueOf()} total nmk ${neumarkBalance.valueOf()}`)
