@@ -1,12 +1,12 @@
 pragma solidity ^0.4.13;
 
-import '../Standards/IERC20Allowance.sol';
-import '../Standards/IApproveAndCallFallback.sol';
+import '../../Standards/IERC667Token.sol';
+import '../../Standards/IERC667Callback.sol';
 import './MAllowance.sol';
 
 // Consumes the MAllowance mixin
 contract Allowance is
-    IERC20Allowance,
+    IERC667Token,
     MAllowance
 {
 
@@ -81,14 +81,20 @@ contract Allowance is
     /// @param _spender The address of the contract able to transfer the tokens
     /// @param _amount The amount of tokens to be approved for transfer
     /// @return True if the function call was successful
-    function approveAndCall(address _spender, uint256 _amount, bytes _extraData
-    ) returns (bool success) {
+    function approveAndCall(
+        address _spender,
+        uint256 _amount,
+        bytes _extraData
+    )
+        public
+        returns (bool success)
+    {
         require(approve(_spender, _amount));
 
-        IApproveAndCallFallback(_spender).receiveApproval(
+        IERC667Callback(_spender).receiveApproval(
             msg.sender,
             _amount,
-            IERC20Token(this),
+            this,
             _extraData
         );
 

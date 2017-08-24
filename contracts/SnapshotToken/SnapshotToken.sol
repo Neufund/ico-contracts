@@ -1,18 +1,19 @@
 pragma solidity ^0.4.13;
 
+import '../IsContract.sol';
+import '../Snapshot/DailyAndSnapshotable.sol';
+import '../Standards/IERC667Token.sol';
+import '../Standards/IERC667Callback.sol';
+import '../Standards/IERC20Token.sol';
+import '../Standards/ISnapshotToken.sol';
+import '../Standards/ISnapshotTokenParent.sol';
 import './Controlled.sol';
 import './ControllerClaims.sol';
 import './Helpers/Allowance.sol';
+import './Helpers/BasicSnapshotToken.sol';
 import './Helpers/MMint.sol';
 import './Helpers/TokenInfo.sol';
-import './IsContract.sol';
 import './ITokenController.sol';
-import './Snapshot/DailyAndSnapshotable.sol';
-import './Standards/IApproveAndCallFallback.sol';
-import './Standards/IERC20Token.sol';
-import './Standards/ISnapshotToken.sol';
-import './Standards/ISnapshotTokenParent.sol';
-import { SnapshotToken as SnapshotTokenBase } from './Helpers/SnapshotToken.sol';
 
 /*
     Copyright 2016, Remco Bloemen, Jordi Baylina
@@ -47,9 +48,10 @@ import { SnapshotToken as SnapshotTokenBase } from './Helpers/SnapshotToken.sol'
 // Consumes the MMint mixin from SnapshotToken
 contract SnapshotToken is
     IERC20Token,
+    IERC667Token,
     ISnapshotToken,
     MMint,
-    SnapshotTokenBase,
+    BasicSnapshotToken,
     DailyAndSnapshotable,
     Allowance,
     TokenInfo,
@@ -85,7 +87,7 @@ contract SnapshotToken is
         string tokenSymbol,
         bool _transfersEnabled
     )
-        SnapshotTokenBase(parentToken, parentSnapshot)
+        BasicSnapshotToken(parentToken, parentSnapshot)
         DailyAndSnapshotable()
         Allowance()
         TokenInfo(tokenName, decimalUnits, tokenSymbol, VERSION)
@@ -161,7 +163,7 @@ contract SnapshotToken is
     {
         require(approve(_spender, _amount));
 
-        IApproveAndCallFallback(_spender).receiveApproval(
+        IERC667Callback(_spender).receiveApproval(
             msg.sender,
             _amount,
             this,
@@ -197,7 +199,7 @@ contract SnapshotToken is
         onlyController
         returns (bool)
     {
-        return SnapshotTokenBase.mGenerateTokens(_owner, _amount);
+        return BasicSnapshotToken.mGenerateTokens(_owner, _amount);
     }
 
     /// @notice Burns `_amount` tokens from `_owner`
@@ -209,7 +211,7 @@ contract SnapshotToken is
         onlyController
         returns (bool)
     {
-        return SnapshotTokenBase.mDestroyTokens(_owner, _amount);
+        return BasicSnapshotToken.mDestroyTokens(_owner, _amount);
     }
 
 ////////////////

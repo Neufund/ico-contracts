@@ -1,15 +1,14 @@
 pragma solidity ^0.4.13;
 
-import './IERC20Token.sol';
-
-contract IApproveAndCallFallback {
+contract IERC667Callback {
 
     function receiveApproval(
         address from,
         uint256 amount,
-        IERC20Token token,
+        address token, // IERC667Token
         bytes data
     )
-        public;
+        public
+        returns (bool success);
 
 }

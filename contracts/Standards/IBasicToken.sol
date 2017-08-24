@@ -10,7 +10,7 @@ contract IBasicToken {
     event Transfer(address indexed _from, address indexed _to, uint256 _amount);
 
 ///////////////////
-// ERC20 Basic Methods
+// Methods
 ///////////////////
 
     /// @dev This function makes it easy to get the total number of tokens

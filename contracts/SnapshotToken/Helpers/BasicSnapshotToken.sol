@@ -1,11 +1,11 @@
 pragma solidity ^0.4.13;
 
-import '../Snapshot/Snapshot.sol';
-import '../Standards/ISnapshotToken.sol';
-import '../Standards/ISnapshotTokenParent.sol';
+import '../../Snapshot/Snapshot.sol';
+import '../../Standards/ISnapshotToken.sol';
+import '../../Standards/ISnapshotTokenParent.sol';
 import './MMint.sol';
 
-contract SnapshotToken is
+contract BasicSnapshotToken is
     ISnapshotToken,
     ISnapshotTokenParent,
     MMint,
@@ -41,7 +41,7 @@ contract SnapshotToken is
     /// @notice Constructor to create a MiniMeToken
     /// @param _parentToken Address of the parent token, set to 0x0 if it is a
     ///  new token
-    function SnapshotToken(
+    function BasicSnapshotToken(
         ISnapshotTokenParent _parentToken,
         uint256 _parentSnapshot
     )

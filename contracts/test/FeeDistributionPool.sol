@@ -1,9 +1,9 @@
 pragma solidity ^0.4.11;
 
 import 'zeppelin-solidity/contracts/token/ERC20.sol';
-import '../ApproveAndCallCallback.sol';
+import '../Standards/IERC667Callback.sol';
 
-contract TestFeeDistributionPool is ApproveAndCallFallBack {
+contract TestFeeDistributionPool is IERC667Callback {
 
     event TEST_receiveApproval(address from, uint256 amount);
     function receiveApproval(address from, uint256 _amount, address _token, bytes _data)

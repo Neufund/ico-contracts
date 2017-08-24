@@ -1,6 +1,6 @@
 pragma solidity ^0.4.13;
 
-import '../Standards/ISnapshotToken.sol';
+import '../../Standards/ISnapshotToken.sol';
 
 // https://en.wikipedia.org/wiki/Comparison_of_electoral_systems
 

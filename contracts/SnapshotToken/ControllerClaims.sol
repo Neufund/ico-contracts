@@ -1,7 +1,7 @@
 pragma solidity ^0.4.13;
 
 import './Controlled.sol';
-import './Standards/IBasicToken.sol';
+import '../Standards/IBasicToken.sol';
 
 contract ControllerClaims is Controlled {
 

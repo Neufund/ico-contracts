@@ -1,9 +1,9 @@
 pragma solidity ^0.4.13;
 
-import '../Standards/ISnapshotToken.sol';
-import '../Standards/IBasicToken.sol';
-import '../Standards/IERC20Token.sol';
-import '../Standards/IApproveAndCallFallback.sol';
+import '../../Standards/ISnapshotToken.sol';
+import '../../Standards/IBasicToken.sol';
+import '../../Standards/IERC20Token.sol';
+import '../../Standards/IERC667Callback.sol';
 
 // TODO: Anyone can create a token and disburse it, but then everyone
 //       needs to pay extra gas for claim(). It is not possible to skip
@@ -11,7 +11,7 @@ import '../Standards/IApproveAndCallFallback.sol';
 //        * Limit the people who can disburse to a trusted set
 //        * Allow claims in any order
 
-contract Disbursal is IApproveAndCallFallback {
+contract Disbursal is IERC667Callback {
 
 ////////////////
 // Types
@@ -187,12 +187,18 @@ contract Disbursal is IApproveAndCallFallback {
         disburse(IBasicToken(token), amount);
     }
 
-    // ERC20 receiver
-    function receiveApproval(address from, uint256 amount, IERC20Token token, bytes data)
+    // IERC667Callback receiver
+    function receiveApproval(
+        address from,
+        uint256 amount,
+        address token,
+        bytes data
+    )
         public
+        returns (bool)
     {
         require(data.length == 0);
-        disburseAllowance(token, from, amount);
+        disburseAllowance(IERC20Token(token), from, amount);
     }
 
     // TODO: ERC223 style receiver

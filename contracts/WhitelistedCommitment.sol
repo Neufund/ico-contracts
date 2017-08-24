@@ -132,7 +132,7 @@ contract WhitelistedCommitment is PublicCommitment {
     }
 
     function WhitelistedCommitment(uint256 _startDate, uint256 _endDate, uint256 _minCommitment, uint256 _maxCommitment,
-        uint256 _minTicket, uint256 _ethEurFraction, TokenWithDeposit _ethToken, LockedAccount _lockedAccount, Curve _curve)
+        uint256 _minTicket, uint256 _ethEurFraction, ITokenWithDeposit _ethToken, LockedAccount _lockedAccount, Curve _curve)
          PublicCommitment(_startDate, _endDate, _minCommitment, _maxCommitment, _minTicket, _ethEurFraction,
              _ethToken, _lockedAccount, _curve)
     {
