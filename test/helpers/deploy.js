@@ -41,7 +41,6 @@ export async function deployAllContracts({ lockedAccountCfg = {}, commitmentCfg 
     etherToWei(1).mul(unlockPenalty).round()
   );
   const feePool = await FeeDistributionPool.new(etherToken.address, neumark.address);
-  await lockedAccount.setPenaltyDistribution(feePool.address);
 
   const commitment = await WhitelistedCommitment.new(
     startTimestamp,
