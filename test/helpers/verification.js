@@ -4,14 +4,12 @@ import eventValue from "./eventValue";
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
 const NeumarkController = artifacts.require("NeumarkController");
-const NeumarkFactory = artifacts.require("NeumarkFactory");
 const Neumark = artifacts.require("Neumark");
 const Curve = artifacts.require("Curve");
 
 async function deployCurve() {
   const etherToken = await EtherToken.new();
-  const neumarkFactory = await NeumarkFactory.new();
-  const neumark = await Neumark.new(neumarkFactory.address);
+  const neumark = await Neumark.new();
   const neumarkController = await NeumarkController.new(neumark.address);
   await neumark.changeController(neumarkController.address);
   const curve = await Curve.new(neumarkController.address);

@@ -44,7 +44,7 @@
     "testrpc": "./scripts/testrpc.sh",
     "test": "truffle compile && truffle test",
     "test:coverage": "solidity-coverage && codecov",
-    "build": "truffle compile --all",
+    "build": "rm -rf ./build && truffle compile --all",
     "deploy": "truffle migrate --reset --compile-all"
   },
   "devDependencies": {
