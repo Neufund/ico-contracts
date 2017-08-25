@@ -37,18 +37,27 @@ contract("TestLockedAccountMigrationTarget", ([admin, investor, investor2]) => {
       chain.ether(1).mul(0.1).round()
     );
     const lockedAccountAdminRole = await chain.accessRoles.ROLE_LOCKED_ACCOUNT_ADMIN();
-    await chain.accessControl.setUserRole(admin, lockedAccountAdminRole, migrationTarget.address, 1);
+    await chain.accessControl.setUserRole(
+      admin,
+      lockedAccountAdminRole,
+      migrationTarget.address,
+      1
+    );
   });
 
   // it -> check in invalid states in enableMigration
 
   it("call migrate not from source should throw", async () => {
     // this dummy setting should pass
-    await migrationTarget.setMigrationSource(investor2, {from: admin});
-    await migrationTarget.migrateInvestor(investor, 1, 1, startTimestamp, { from: investor2 });
+    await migrationTarget.setMigrationSource(investor2, { from: admin });
+    await migrationTarget.migrateInvestor(investor, 1, 1, startTimestamp, {
+      from: investor2
+    });
     // this should not, only investor2 (which is source) can call migrate on target
     await expect(
-      migrationTarget.migrateInvestor(investor, 1, 1, startTimestamp, { from: investor })
+      migrationTarget.migrateInvestor(investor, 1, 1, startTimestamp, {
+        from: investor
+      })
     ).to.be.rejectedWith(EvmError);
   });
 
@@ -60,15 +69,22 @@ contract("TestLockedAccountMigrationTarget", ([admin, investor, investor2]) => {
       value: ticket,
       from: investor
     });
-    await migrationTarget.setMigrationSource(chain.lockedAccount.address, {from: admin});
-    let tx = await chain.lockedAccount.enableMigration(migrationTarget.address, {from: admin});
-    await migrationTarget.setShouldMigrationFail(true, {from: admin});
-    tx = await expect(chain.lockedAccount.migrate({ from: investor })).to.be.rejectedWith(EvmError);
+    await migrationTarget.setMigrationSource(chain.lockedAccount.address, {
+      from: admin
+    });
+    let tx = await chain.lockedAccount.enableMigration(
+      migrationTarget.address,
+      { from: admin }
+    );
+    await migrationTarget.setShouldMigrationFail(true, { from: admin });
+    tx = await expect(
+      chain.lockedAccount.migrate({ from: investor })
+    ).to.be.rejectedWith(EvmError);
   });
 
   it("target with invalid source should throw", async () => {
     // we set invalid source here
-    await migrationTarget.setMigrationSource(investor, {from: admin});
+    await migrationTarget.setMigrationSource(investor, { from: admin });
     // accepts only lockedAccount as source
     await expect(
       chain.lockedAccount.enableMigration(migrationTarget.address)
@@ -84,13 +100,18 @@ contract("TestLockedAccountMigrationTarget", ([admin, investor, investor2]) => {
       from: investor
     });
     let investorBalance = await chain.lockedAccount.balanceOf(investor);
-    await migrationTarget.setMigrationSource(chain.lockedAccount.address, {from: admin});
+    await migrationTarget.setMigrationSource(chain.lockedAccount.address, {
+      from: admin
+    });
     assert.equal(
       await migrationTarget.getMigrationFrom(),
       chain.lockedAccount.address,
       "correct migration source set"
     );
-    let tx = await chain.lockedAccount.enableMigration(migrationTarget.address, {from: admin});
+    let tx = await chain.lockedAccount.enableMigration(
+      migrationTarget.address,
+      { from: admin }
+    );
     let event = eventValue(tx, "MigrationEnabled");
     expect(event).to.exist;
     expect(event.args.target).to.be.equal(migrationTarget.address);
@@ -139,8 +160,12 @@ contract("TestLockedAccountMigrationTarget", ([admin, investor, investor2]) => {
   });
 
   it("enabling migration for a second time should throw", async () => {
-    await migrationTarget.setMigrationSource(chain.lockedAccount.address, {from: admin});
-    await chain.lockedAccount.enableMigration(migrationTarget.address, {from: admin});
+    await migrationTarget.setMigrationSource(chain.lockedAccount.address, {
+      from: admin
+    });
+    await chain.lockedAccount.enableMigration(migrationTarget.address, {
+      from: admin
+    });
     // must throw
     await expect(
       chain.lockedAccount.enableMigration(migrationTarget.address)

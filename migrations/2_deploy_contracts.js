@@ -60,15 +60,23 @@ module.exports = function(deployer, network, accounts) {
     console.log("Seting permissions");
     await deployer.deploy(AccessRoles);
     const accessRoles = await AccessRoles.deployed();
-    await accessControl.setUserRole(accounts[1], await accessRoles.ROLE_LOCKED_ACCOUNT_ADMIN(),
-      lock.address, 1); // 1 is True
-    await lock.setController(publicCommitment.address, {from: accounts[1]});
-    await accessControl.setUserRole(accounts[2], await accessRoles.ROLE_WHITELIST_ADMIN(),
-      PublicCommitment.address, 1);
+    await accessControl.setUserRole(
+      accounts[1],
+      await accessRoles.ROLE_LOCKED_ACCOUNT_ADMIN(),
+      lock.address,
+      1
+    ); // 1 is True
+    await lock.setController(publicCommitment.address, { from: accounts[1] });
+    await accessControl.setUserRole(
+      accounts[2],
+      await accessRoles.ROLE_WHITELIST_ADMIN(),
+      PublicCommitment.address,
+      1
+    );
     console.log("Contracts deployed!");
 
     console.log("----------------------------------");
     console.log(`ICO contract: ${publicCommitment.address}`);
     console.log("----------------------------------");
   });
-}
+};

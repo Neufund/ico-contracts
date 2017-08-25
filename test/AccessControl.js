@@ -3,7 +3,9 @@ import EvmError from "./helpers/EVMThrow";
 import eventValue from "./helpers/eventValue";
 
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
-const TestAccessControlTruffleMixin = artifacts.require("TestAccessControlTruffleMixin");
+const TestAccessControlTruffleMixin = artifacts.require(
+  "TestAccessControlTruffleMixin"
+);
 
 contract("AccessControl", ([accessController, owner1, owner2]) => {
   let accessControl;
@@ -12,12 +14,21 @@ contract("AccessControl", ([accessController, owner1, owner2]) => {
 
   beforeEach(async () => {
     accessControl = await RoleBasedAccessControl.new();
-    accessControlled = await TestAccessControlTruffleMixin.new(accessControl.address);
+    accessControlled = await TestAccessControlTruffleMixin.new(
+      accessControl.address
+    );
 
     exampleRole = await accessControlled.ROLE_EXAMPLE();
   });
 
-  function expectAccessChangedEvent(tx, subject, role, object, oldValue, newValue) {
+  function expectAccessChangedEvent(
+    tx,
+    subject,
+    role,
+    object,
+    oldValue,
+    newValue
+  ) {
     const event = eventValue(tx, "AccessChanged");
     expect(event).to.exist;
     expect(event.args.controller).to.equal(accessController);
@@ -37,22 +48,62 @@ contract("AccessControl", ([accessController, owner1, owner2]) => {
   }
 
   it("should allow owner1", async () => {
-    let tx = await accessControl.setUserRole(owner1, exampleRole, accessControlled.address, 1);
-    expectAccessChangedEvent(tx, owner1, exampleRole, accessControlled.address, 0, 1);
-    tx = await accessControlled.someFunction({from: owner1});
+    let tx = await accessControl.setUserRole(
+      owner1,
+      exampleRole,
+      accessControlled.address,
+      1
+    );
+    expectAccessChangedEvent(
+      tx,
+      owner1,
+      exampleRole,
+      accessControlled.address,
+      0,
+      1
+    );
+    tx = await accessControlled.someFunction({ from: owner1 });
     // tx = await expect().to.be.ok;
     expectAccessEvent(tx, owner1, exampleRole, accessControlled.address);
   });
 
   it("should disallow owner2", async () => {
-    let tx = await accessControl.setUserRole(owner1, exampleRole, accessControlled.address, 1);
-    expectAccessChangedEvent(tx, owner1, exampleRole, accessControlled.address, 0, 1);
-    await expect(accessControlled.someFunction({from: owner2})).to.be.rejectedWith(EvmError);
+    const tx = await accessControl.setUserRole(
+      owner1,
+      exampleRole,
+      accessControlled.address,
+      1
+    );
+    expectAccessChangedEvent(
+      tx,
+      owner1,
+      exampleRole,
+      accessControlled.address,
+      0,
+      1
+    );
+    await expect(
+      accessControlled.someFunction({ from: owner2 })
+    ).to.be.rejectedWith(EvmError);
   });
 
   it("should explicitly disallow owner2", async () => {
-    let tx = await accessControl.setUserRole(owner2, exampleRole, accessControlled.address, 2);
-    expectAccessChangedEvent(tx, owner2, exampleRole, accessControlled.address, 0, 2);
-    await expect(accessControlled.someFunction({from: owner2})).to.be.rejectedWith(EvmError);
+    const tx = await accessControl.setUserRole(
+      owner2,
+      exampleRole,
+      accessControlled.address,
+      2
+    );
+    expectAccessChangedEvent(
+      tx,
+      owner2,
+      exampleRole,
+      accessControlled.address,
+      0,
+      2
+    );
+    await expect(
+      accessControlled.someFunction({ from: owner2 })
+    ).to.be.rejectedWith(EvmError);
   });
-})
+});

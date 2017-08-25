@@ -27,7 +27,11 @@ export const days = 24 * 60 * 60;
 export const months = 30 * 24 * 60 * 60;
 export const ether = wei => new BigNumber(wei).mul(10 ** 18);
 
-export async function spawnLockedAccount(lockAdminAccount, unlockDateMonths, unlockPenalty) {
+export async function spawnLockedAccount(
+  lockAdminAccount,
+  unlockDateMonths,
+  unlockPenalty
+) {
   accessControl = await RoleBasedAccessControl.new();
   accessRoles = await AccessRoles.new();
   etherToken = await EtherToken.new();
@@ -44,8 +48,15 @@ export async function spawnLockedAccount(lockAdminAccount, unlockDateMonths, unl
     ether(1).mul(unlockPenalty).round()
   );
   const lockedAccountAdminRole = await accessRoles.ROLE_LOCKED_ACCOUNT_ADMIN();
-  await accessControl.setUserRole(lockAdminAccount, lockedAccountAdminRole, lockedAccount.address, 1);
-  await lockedAccount.setPenaltyDisbursal(operatorWallet, {from: lockAdminAccount});
+  await accessControl.setUserRole(
+    lockAdminAccount,
+    lockedAccountAdminRole,
+    lockedAccount.address,
+    1
+  );
+  await lockedAccount.setPenaltyDisbursal(operatorWallet, {
+    from: lockAdminAccount
+  });
 }
 
 export async function spawnPublicCommitment(
@@ -69,7 +80,9 @@ export async function spawnPublicCommitment(
     curve.address
   );
   // console.log(lockedAccount.setController);
-  await lockedAccount.setController(commitment.address, {from: lockAdminAccount});
+  await lockedAccount.setController(commitment.address, {
+    from: lockAdminAccount
+  });
 }
 
 export async function spawnWhitelistedCommitment(
@@ -96,7 +109,13 @@ export async function spawnWhitelistedCommitment(
   );
   // console.log(lockedAccount.setController);
   const whitelistAdminRole = await accessRoles.ROLE_WHITELIST_ADMIN();
-  await accessControl.setUserRole(whitelistAdminAccount, whitelistAdminRole, commitment.address, 1);
-  await lockedAccount.setController(commitment.address, {from: lockAdminAccount});
-
+  await accessControl.setUserRole(
+    whitelistAdminAccount,
+    whitelistAdminRole,
+    commitment.address,
+    1
+  );
+  await lockedAccount.setController(commitment.address, {
+    from: lockAdminAccount
+  });
 }
