@@ -1,6 +1,6 @@
 import invariant from "invariant";
 import { MONTH, closeFutureDate, furtherFutureDate } from "./latestTime";
-import { etherToWei } from "./unitConverter";
+import { etherToWei, DIGITS } from "./unitConverter";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");

@@ -53,3 +53,7 @@ export async function curveInEther(money, eurEtherRatio) {
 export function ethToEur(ether, eurEtherRatio = etherToWei(218.1192809)) {
   return ether.mul(eurEtherRatio).div(DIGITS);
 }
+
+export function eurUlpToEth(eur, eurEtherRatio = 218.1192809) {
+  return eur.div(eurEtherRatio);
+}

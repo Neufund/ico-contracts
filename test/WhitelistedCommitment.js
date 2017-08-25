@@ -14,11 +14,12 @@ import { deployAllContracts } from "./helpers/deploy";
 import {
   curveInEther,
   deployMutableCurve,
-  ethToEur
+  ethToEur,
+  eurUlpToEth
 } from "./helpers/verification";
 
 contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
-  describe("set fixed investors", () => {
+  describe("set ordered whitelist", () => {
     it("should work", async () => {
       const mutableCurve = await deployMutableCurve();
       const investors = [accounts[0], accounts[1]];
@@ -222,7 +223,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
     });
   });
 
-  describe("fixed size commitment", () => {
+  describe("ordered whitelist commitment", () => {
     it("should work with tickets below declared", async () => {
       const startingDate = closeFutureDate();
       const mutableCurve = await deployMutableCurve();
@@ -317,6 +318,54 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       expect(await neumark.balanceOf(commitment.address)).to.be.bignumber.eq(
         new web3.BigNumber(0)
       );
+    });
+
+    it("should send all neumarks and zero ticket when neumarks remainder below threshold", async () => {
+      const startingDate = closeFutureDate();
+      const investor1 = accounts[0];
+      const fixedInvestors = [investor1];
+      const fixedDeclaredTickets = [etherToWei(2)];
+
+      const { commitment, lockedAccount, neumark, curve } = await deployAllContracts({
+        commitmentCfg: {
+          fixedInvestors,
+          fixedTickets: fixedDeclaredTickets,
+          startTimestamp: startingDate,
+          minTicket: etherToWei(0),
+          eurEthRate: etherToWei(0.1) // sets up a rate allowing for rounding errors
+        }
+      });
+
+      const expectedNeumarkAmmount = await curveInEther(fixedDeclaredTickets[0], await commitment.ethEURFraction());
+      const expectedInvestor1NeumarkShare = expectedNeumarkAmmount
+        .div(2)
+        .round(0, 4)
+      // use curve inverse to get weis producing less than 9000 neumarks which is
+      // send out as remainder
+      const etherDeclarationDiff = eurUlpToEth(await curve.rewindInverse(5), 0.1).round(0);
+      console.log(etherDeclarationDiff);
+      const actualInvestor1Commitment = fixedDeclaredTickets[0].sub(etherDeclarationDiff);
+
+      await setTimeTo(startingDate);
+      await commitment.commit({
+        value: actualInvestor1Commitment,
+        from: investor1
+      });
+      expect(await lockedAccount.balanceOf(investor1)).to.be.balanceWith({
+        ether: actualInvestor1Commitment,
+        neumarks: expectedInvestor1NeumarkShare
+      });
+      expect(await neumark.balanceOf(commitment.address)).to.be.bignumber.eq(
+        new web3.BigNumber(0)
+      );
+      expect(await commitment.fixedCostTickets(investor1)).to.be.bignumber.equal(0);
+      // if not zeroed investor1 can steal a small number of additional neumarks
+      /* await commitment.commit({
+        value: etherDeclarationDiff,
+        from: investor1
+      });*/
+      // what's worse next investor will not be able to get all his neumarks as
+      // those go from a general pool held by commitment contract
     });
 
     it("should work with ticket exactly the same as declared", async () => {
