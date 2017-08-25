@@ -1,9 +1,8 @@
-pragma solidity ^0.4.11;
+pragma solidity 0.4.15;
 
-import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import './PublicCommitment.sol';
 
-contract WhitelistedCommitment is Ownable, PublicCommitment {
+contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitment {
 
     // mapping of addresses allowed to participate, ticket value is ignored
     mapping (address => uint256) public whitelisted;
@@ -19,7 +18,7 @@ contract WhitelistedCommitment is Ownable, PublicCommitment {
 
     function setFixed(address[] addresses, uint256[] ticketsETH)
         public
-        onlyOwner
+        only(ROLE_WHITELIST_ADMIN)
     {
         // can be set only once
         require(fixedCostInvestors.length == 0);
@@ -47,7 +46,7 @@ contract WhitelistedCommitment is Ownable, PublicCommitment {
 
     function setWhitelist(address[] addresses)
         public
-        onlyOwner
+        only(ROLE_WHITELIST_ADMIN)
     {
         // can be set only once
         require(whitelistedInvestors.length == 0);
@@ -67,17 +66,18 @@ contract WhitelistedCommitment is Ownable, PublicCommitment {
         internal
     {
         // do nothing as public commitment should continue this one
+        // mind that overriden function should not be called
     }
 
     /// allows to abort commitment process before it starts and rollback curve
     // @remco this is a small breach of trust as we can invalidate terms any moment
     function abortCommitment()
         public
-        onlyOwner
+        only(ROLE_WHITELIST_ADMIN)
     {
         require(currentTime()<startDate);
         rollbackCurve();
-        selfdestruct(owner);
+        selfdestruct(address(0));
     }
 
     /// burns all neumarks in commitment contract possesions
@@ -133,9 +133,11 @@ contract WhitelistedCommitment is Ownable, PublicCommitment {
     }
 
     function WhitelistedCommitment(uint256 _startDate, uint256 _endDate, uint256 _minCommitment, uint256 _maxCommitment,
-        uint256 _minTicket, uint256 _ethEurFraction, TokenWithDeposit _ethToken, LockedAccount _lockedAccount, Curve _curve)
+        uint256 _minTicket, uint256 _ethEurFraction, TokenWithDeposit _ethToken, LockedAccount _lockedAccount,
+        Curve _curve, IAccessPolicy _policy)
          PublicCommitment(_startDate, _endDate, _minCommitment, _maxCommitment, _minTicket, _ethEurFraction,
              _ethToken, _lockedAccount, _curve)
+        AccessControlled(_policy)
     {
     }
 }
