@@ -1,6 +1,7 @@
 import invariant from "invariant";
 import { MONTH, closeFutureDate, furtherFutureDate } from "./latestTime";
 import { etherToWei } from "./unitConverter";
+import { TriState } from "./triState.js"
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
@@ -53,7 +54,7 @@ export async function deployAllContracts(
     lockAdminAccount,
     lockedAccountAdminRole,
     lockedAccount.address,
-    1
+    TriState.Allowed
   );
   await lockedAccount.setPenaltyDisbursal(operatorWallet, {
     from: lockAdminAccount
@@ -78,7 +79,7 @@ export async function deployAllContracts(
     whitelistAdminAccount,
     whitelistAdminRole,
     commitment.address,
-    1
+    TriState.Allowed
   );
 
   if (fixedInvestors || fixedTickets) {

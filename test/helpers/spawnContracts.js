@@ -1,4 +1,5 @@
 import gasCost from "./gasCost";
+import { TriState } from "./triState.js"
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
@@ -52,7 +53,7 @@ export async function spawnLockedAccount(
     lockAdminAccount,
     lockedAccountAdminRole,
     lockedAccount.address,
-    1
+    TriState.Allowed
   );
   await lockedAccount.setPenaltyDisbursal(operatorWallet, {
     from: lockAdminAccount
@@ -117,7 +118,7 @@ export async function spawnWhitelistedCommitment(
     whitelistAdminAccount,
     whitelistAdminRole,
     commitment.address,
-    1
+    TriState.Allowed
   );
   await lockedAccount.setController(commitment.address, {
     from: lockAdminAccount
