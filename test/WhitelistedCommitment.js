@@ -1,5 +1,7 @@
 import { expect } from "chai";
+import { last } from "lodash";
 import EvmError from "./helpers/EVMThrow";
+import { sequence } from "./helpers/promiseUtils";
 import {
   closeFutureDate,
   furtherFutureDate,
@@ -18,10 +20,13 @@ import {
 contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
   describe("set fixed investors", () => {
     it("should work", async () => {
+      const mutableCurve = await deployMutableCurve();
       const investors = [accounts[0], accounts[1]];
       const tickets = [etherToWei(1), etherToWei(2)];
-      const expectedTicketsSum = tickets[0].add(tickets[1]);
-      const expectedNeumarkAmmount = await curveInEther(expectedTicketsSum);
+      const expectedNeumarks = [
+        await mutableCurve.issueInEth(tickets[0]),
+        await mutableCurve.issueInEth(tickets[1])
+      ];
 
       const { commitment, curve } = await deployAllContracts();
       await commitment.setFixed(investors, tickets);
@@ -30,22 +35,22 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       expect(await commitment.fixedCostInvestors(1)).to.be.eq(investors[1]);
       await expect(commitment.fixedCostInvestors).to.blockchainArrayOfSize(2);
 
-      expect(await commitment.fixedCost(investors[0])).to.be.bignumber.eq(
-        tickets[0]
-      );
-      expect(await commitment.fixedCost(investors[1])).to.be.bignumber.eq(
-        tickets[1]
-      );
+      expect(
+        await commitment.fixedCostTickets(investors[0])
+      ).to.be.bignumber.eq(tickets[0]);
+      expect(
+        await commitment.fixedCostTickets(investors[1])
+      ).to.be.bignumber.eq(tickets[1]);
+
+      expect(
+        await commitment.fixedCostNeumarks(investors[0])
+      ).to.be.bignumber.eq(expectedNeumarks[0]);
+      expect(
+        await commitment.fixedCostNeumarks(investors[1])
+      ).to.be.bignumber.eq(expectedNeumarks[1]);
 
       expect(await commitment.whitelisted(investors[0])).to.be.bignumber.eq(1);
       expect(await commitment.whitelisted(investors[1])).to.be.bignumber.eq(1);
-
-      expect(await commitment.totalFixedCostAmount()).to.be.bignumber.eq(
-        expectedTicketsSum
-      );
-      expect(await commitment.totalFixedCostNeumarks()).to.be.bignumber.eq(
-        expectedNeumarkAmmount
-      );
     });
 
     it("should not be possible to set it twice", async () => {
@@ -100,8 +105,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       expect(await commitment.whitelisted(investors[0])).to.be.bignumber.eq(1);
       expect(await commitment.whitelisted(investors[1])).to.be.bignumber.eq(1);
 
-      expect(await commitment.totalFixedCostAmount()).to.be.bignumber.eq(0);
-      expect(await commitment.totalFixedCostNeumarks()).to.be.bignumber.eq(0);
+      await expect(commitment.fixedCostInvestors).to.blockchainArrayOfSize(0);
     });
 
     it("should not be possible to set it twice", async () => {
@@ -163,14 +167,14 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       );
       await expect(commitment.fixedCostInvestors).to.blockchainArrayOfSize(1);
 
-      expect(await commitment.fixedCost(fixedInvestors[0])).to.be.bignumber.eq(
-        fixedTickets[0]
-      );
       expect(
-        await commitment.fixedCost(whitelistedInvestors[0])
+        await commitment.fixedCostTickets(fixedInvestors[0])
+      ).to.be.bignumber.eq(fixedTickets[0]);
+      expect(
+        await commitment.fixedCostTickets(whitelistedInvestors[0])
       ).to.be.bignumber.eq(0);
       expect(
-        await commitment.fixedCost(whitelistedInvestors[1])
+        await commitment.fixedCostTickets(whitelistedInvestors[1])
       ).to.be.bignumber.eq(0);
     });
 
@@ -206,34 +210,41 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       );
       await expect(commitment.fixedCostInvestors).to.blockchainArrayOfSize(1);
 
-      expect(await commitment.fixedCost(fixedInvestors[0])).to.be.bignumber.eq(
-        fixedTickets[0]
-      );
       expect(
-        await commitment.fixedCost(whitelistedInvestors[0])
+        await commitment.fixedCostTickets(fixedInvestors[0])
+      ).to.be.bignumber.eq(fixedTickets[0]);
+      expect(
+        await commitment.fixedCostTickets(whitelistedInvestors[0])
       ).to.be.bignumber.eq(0);
       expect(
-        await commitment.fixedCost(whitelistedInvestors[1])
+        await commitment.fixedCostTickets(whitelistedInvestors[1])
       ).to.be.bignumber.eq(0);
     });
   });
 
   describe("fixed size commitment", () => {
-    it("should work with ticket below declared", async () => {
+    it("should work with tickets below declared", async () => {
       const startingDate = closeFutureDate();
-      const investor1 = accounts[0];
-      const fixedInvestors = [investor1, accounts[1]];
+      const mutableCurve = await deployMutableCurve();
+      const fixedInvestors = [accounts[0], accounts[1]];
       const fixedDeclaredTickets = [etherToWei(2), etherToWei(3)];
-      const actualInvestor1Commitment = etherToWei(1);
-      const expectedTicketsSum = fixedDeclaredTickets[0].add(
-        fixedDeclaredTickets[1]
-      );
-      const expectedNeumarkAmmount = await curveInEther(expectedTicketsSum);
-      const expectedInvestor1NeumarkShare = expectedNeumarkAmmount
-        .mul(actualInvestor1Commitment)
-        .div(expectedTicketsSum)
-        .div(2)
-        .round(0, 4);
+      const actualInvestorsCommitments = [etherToWei(1), etherToWei(2)];
+      const expectedNeumarkAmmountForDeclaredTickets = [
+        await mutableCurve.issueInEth(fixedDeclaredTickets[0]),
+        await mutableCurve.issueInEth(fixedDeclaredTickets[1])
+      ];
+      const expectedInvestorsNeumarkShares = [
+        expectedNeumarkAmmountForDeclaredTickets[0]
+          .mul(actualInvestorsCommitments[0])
+          .div(fixedDeclaredTickets[0])
+          .div(2)
+          .round(0, 4),
+        expectedNeumarkAmmountForDeclaredTickets[1]
+          .mul(actualInvestorsCommitments[1])
+          .div(fixedDeclaredTickets[1])
+          .div(2)
+          .round(0, 4)
+      ];
 
       const { commitment, lockedAccount } = await deployAllContracts({
         commitmentCfg: {
@@ -244,13 +255,25 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       });
       await setTimeTo(startingDate);
       await commitment.commit({
-        value: actualInvestor1Commitment,
-        from: investor1
+        value: actualInvestorsCommitments[0],
+        from: fixedInvestors[0]
+      });
+      await commitment.commit({
+        value: actualInvestorsCommitments[1],
+        from: fixedInvestors[1]
       });
 
-      expect(await lockedAccount.balanceOf(investor1)).to.be.balanceWith({
-        ether: actualInvestor1Commitment,
-        neumarks: expectedInvestor1NeumarkShare
+      expect(
+        await lockedAccount.balanceOf(fixedInvestors[0])
+      ).to.be.balanceWith({
+        ether: actualInvestorsCommitments[0],
+        neumarks: expectedInvestorsNeumarkShares[0]
+      });
+      expect(
+        await lockedAccount.balanceOf(fixedInvestors[1])
+      ).to.be.balanceWith({
+        ether: actualInvestorsCommitments[1],
+        neumarks: expectedInvestorsNeumarkShares[1]
       });
     });
 
@@ -298,17 +321,14 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
 
     it("should work with ticket exactly the same as declared", async () => {
       const startingDate = closeFutureDate();
+      const mutableCurve = await deployMutableCurve();
       const investor1 = accounts[0];
       const fixedInvestors = [investor1, accounts[1]];
       const fixedDeclaredTickets = [etherToWei(1.21981798), etherToWei(3)];
       const actualInvestor1Commitment = etherToWei(1.21981798);
-      const expectedTicketsSum = fixedDeclaredTickets[0].add(
-        fixedDeclaredTickets[1]
-      );
-      const expectedNeumarkAmmount = await curveInEther(expectedTicketsSum);
-      const expectedInvestor1NeumarkShare = expectedNeumarkAmmount
-        .mul(actualInvestor1Commitment)
-        .div(expectedTicketsSum)
+      const expectedNeumarkAmmount = (await mutableCurve.issueInEth(
+        actualInvestor1Commitment
+      ))
         .div(2)
         .round(0, 4);
 
@@ -327,7 +347,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
 
       expect(await lockedAccount.balanceOf(investor1)).to.be.balanceWith({
         ether: actualInvestor1Commitment,
-        neumarks: expectedInvestor1NeumarkShare
+        neumarks: expectedNeumarkAmmount
       });
     });
 
@@ -526,7 +546,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       const expectedNeumarkAmmountOnFixedRate = await mutableCurve.issueInEth(
         expectedTicketsSum
       );
-      const expectedError = new web3.BigNumber(309243939690474); // this is much, much less then 1 cent
+      const expectedError = new web3.BigNumber(0);
 
       const { commitment, lockedAccount, curve } = await deployAllContracts({
         commitmentCfg: {
@@ -579,16 +599,13 @@ async function investorTicketBiggerThenDeclared(
     (a, x) => a.add(x),
     new web3.BigNumber(0)
   );
-  const expectedNeumarkAmmountOnFixedRate = await mutableCurve.issueInEth(
-    expectedTicketsSum
-  );
-  const expectedNeumarkAmmountOnTheCurve = await mutableCurve.issueInEth(
-    curveShareSize
-  );
-  const expectedInvestor1NeumarkShare = expectedNeumarkAmmountOnFixedRate
-    .mul(equalShareSize)
-    .div(expectedTicketsSum)
-    .add(expectedNeumarkAmmountOnTheCurve)
+  const expectedNeumarkAmmountIssuance = [
+    ...(await sequence(investorDeclaration, mutableCurve.issueInEth)),
+    await mutableCurve.issueInEth(curveShareSize)
+  ];
+  const expectedInvestor1NeumarkShare = new web3.BigNumber(0)
+    .add(expectedNeumarkAmmountIssuance[0]) // fixed part
+    .add(last(expectedNeumarkAmmountIssuance)) // curve part
     .div(2)
     .round(0, 4);
 

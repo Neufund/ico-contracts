@@ -3,19 +3,15 @@ pragma solidity ^0.4.11;
 import './PublicCommitment.sol';
 
 contract WhitelistedCommitment is PublicCommitment {
-
     // mapping of addresses allowed to participate, ticket value is ignored
     mapping (address => uint256) public whitelisted;
     address[] public whitelistedInvestors;
     // mapping of addresses allowed to participate for fixed Neumark cost
-    mapping (address => uint256) public fixedCost;
+    mapping (address => uint256) public fixedCostTickets;
+    mapping (address => uint256) public fixedCostNeumarks;
     address[] public fixedCostInvestors;
 
-    uint256 public totalFixedCostAmount;
-
-    uint256 public totalFixedCostNeumarks;
-
-
+    // order of investors matter! first will get better terms on neumarks
     function setFixed(address[] addresses, uint256[] ticketsETH)
         public
         onlyOwner
@@ -31,15 +27,16 @@ contract WhitelistedCommitment is PublicCommitment {
             // tickets of size 0 will not be accepted
             require(ticket > 0);
             // allow to invest up to ticket on fixed cost
-            fixedCost[addresses[idx]] = ticket;
+            fixedCostTickets[addresses[idx]] = ticket;
+
+            // issue neumarks for given investor
+            uint256 euros = convertToEUR(ticket);
+            fixedCostNeumarks[addresses[idx]] = curve.issue(euros);
+
             // also allow to invest from whitelist along the curve
             whitelisted[addresses[idx]] = 1;
-            totalFixedCostAmount = add(totalFixedCostAmount, ticket);
         }
-        // issue neumarks for fixed price investors
-        uint256 euros = convertToEUR(totalFixedCostAmount);
-        // stored in this smart contract balance
-        totalFixedCostNeumarks = curve.issue(euros);
+
         // leave array for easy enumeration
         fixedCostInvestors = addresses;
     }
@@ -89,15 +86,15 @@ contract WhitelistedCommitment is PublicCommitment {
             curve.burnNeumark(neumarks);
         }
     }
-    event Debug(uint256 value);
+
     /// overrides base class to compute neumark reward for fixed price investors
     function giveNeumarks(address investor, uint256 eth, uint256 euros)
         internal
         returns (uint256)
     {
-        uint256 fixedTicket = fixedCost[investor]; // returns 0 in case of investor not in mapping
-        Debug(fixedTicket);
-        Debug(eth);
+        uint256 fixedTicket = fixedCostTickets[investor]; // returns 0 in case of investor not in mapping
+        uint256 fixedNeumarks = fixedCostNeumarks[investor]; // returns 0 in case of investor not in mapping
+
         // what is above limit for fixed price should be rewarded from curve
         uint256 reward = 0;
         if ( eth > fixedTicket ) {
@@ -106,18 +103,23 @@ contract WhitelistedCommitment is PublicCommitment {
             reward = curve.issue(euros); // PublicCommitment.giveNeumarks(investor, eth - fixedTicket, euros);
             eth = fixedTicket;
         }
-        Debug(eth);
+
         // get pro rata neumark reward for any eth left
         uint256 fixedreward = 0;
         if (eth > 0) {
-            fixedreward = proportion(totalFixedCostNeumarks, eth, totalFixedCostAmount);
+            fixedreward = proportion(fixedNeumarks, eth, fixedTicket);
             // rounding errors, send out remainders
             // @remco review
             uint256 remainingBalance = neumarkToken.balanceOf(address(this));
             if (absDiff(fixedreward, remainingBalance) < 1000)
                 fixedreward = remainingBalance; // send all
-            // decrease ticket size
-            fixedCost[investor] -= eth;
+            // decrease ticket size and neumarks left
+            fixedCostTickets[investor] -= eth;
+            if (fixedreward >= 0) {
+                fixedCostNeumarks[investor] -= fixedreward;
+            } else {
+                fixedCostNeumarks[investor] = 0;
+            }
         }
         // distribute to investor and platform operator
         return distributeNeumarks(investor, reward + fixedreward);
@@ -129,7 +131,8 @@ contract WhitelistedCommitment is PublicCommitment {
         constant
         returns (bool)
     {
-        return (whitelisted[msg.sender] > 0 || fixedCost[msg.sender] > 0);
+        // @todo i think the latter part of this condition is not needed because we whitelist every fixed cost investor
+        return (whitelisted[msg.sender] > 0 || fixedCostTickets[msg.sender] > 0);
     }
 
     function WhitelistedCommitment(uint256 _startDate, uint256 _endDate, uint256 _minCommitment, uint256 _maxCommitment,

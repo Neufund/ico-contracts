@@ -17,6 +17,7 @@ async function deployCurve() {
   return curve;
 }
 
+// deploys separate curve instance for verification of issuance
 export async function deployMutableCurve() {
   const curve = await deployCurve();
 
