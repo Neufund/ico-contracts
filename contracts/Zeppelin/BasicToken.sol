@@ -16,6 +16,16 @@ contract BasicToken is IBasicToken {
 
   uint256 public totalSupply;
 
+  /// @dev This function makes it easy to get the total number of tokens
+  /// @return The total number of tokens
+  function totalSupply()
+      public
+      constant
+      returns (uint256)
+  {
+      return totalSupply;
+  }
+
   /**
   * @dev transfer token for a specified address
   * @param _to The address to transfer to.
