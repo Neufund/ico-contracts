@@ -1,16 +1,17 @@
 pragma solidity 0.4.15;
 
-import './AccessControlled.sol';
+import '../AccessControl/AccessControlled.sol';
+import '../AccessControl/RoleBasedAccessControl.sol';
 
-contract ExampleRoles {
+contract TestAccessControlExampleRoles {
 
     bytes32 public constant ROLE_EXAMPLE = keccak256("Owner");
 
 }
 
-contract Example is AccessControlled, ExampleRoles {
+contract TestAccessControl is AccessControlled, TestAccessControlExampleRoles {
 
-    function Example(IAccessPolicy policy)
+    function TestAccessControl(IAccessPolicy policy)
         AccessControlled(policy)
     {
     }
@@ -18,6 +19,16 @@ contract Example is AccessControlled, ExampleRoles {
     function someFunction()
         public
         only(ROLE_EXAMPLE)
+    {
+    }
+}
+
+// derives from RoleBasedAccessControl just to have events ABIs as truffle will not handle
+// events from internal transactions to other contracts
+// do not change derivation order, RoleBasedAccessControl must be first for tests to pass
+contract TestAccessControlTruffleMixin is RoleBasedAccessControl, TestAccessControl {
+    function TestAccessControlTruffleMixin(IAccessPolicy policy)
+        TestAccessControl(policy)
     {
     }
 }
