@@ -1,6 +1,7 @@
 import invariant from "invariant";
 import { MONTH, closeFutureDate, furtherFutureDate } from "./latestTime";
 import { etherToWei } from "./unitConverter";
+import { TriState } from "./triState.js";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
@@ -9,11 +10,18 @@ const Neumark = artifacts.require("Neumark");
 const Curve = artifacts.require("Curve");
 const TestCommitment = artifacts.require("TestCommitment");
 const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
-const FeeDistributionPool = artifacts.require("FeeDistributionPool");
+const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
+const AccessRoles = artifacts.require("AccessRoles");
 
 export async function deployAllContracts(
+  lockAdminAccount,
+  whitelistAdminAccount,
   { lockedAccountCfg = {}, commitmentCfg = {} } = {}
 ) {
+  invariant(
+    lockAdminAccount && whitelistAdminAccount,
+    "Both lockAdminAccount and whitelistAdminAccount have to be provided"
+  );
   const { unlockDateMonths = 18, unlockPenalty = 0.1 } = lockedAccountCfg;
 
   const {
@@ -28,6 +36,10 @@ export async function deployAllContracts(
     fixedTickets
   } = commitmentCfg;
 
+  const operatorWallet = "0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c";
+
+  const accessControl = await RoleBasedAccessControl.new();
+  const accessRoles = await AccessRoles.new();
   const etherToken = await EtherToken.new();
   const neumark = await Neumark.new();
   const neumarkController = await NeumarkController.new(neumark.address);
@@ -35,26 +47,43 @@ export async function deployAllContracts(
   const curve = await Curve.new(neumarkController.address);
 
   const lockedAccount = await LockedAccount.new(
+    accessControl.address,
     etherToken.address,
     curve.address,
     unlockDateMonths * MONTH,
     etherToWei(1).mul(unlockPenalty).round()
   );
-  const feePool = await FeeDistributionPool.new(
-    etherToken.address,
-    neumark.address
+  const lockedAccountAdminRole = await accessRoles.ROLE_LOCKED_ACCOUNT_ADMIN();
+  await accessControl.setUserRole(
+    lockAdminAccount,
+    lockedAccountAdminRole,
+    lockedAccount.address,
+    TriState.Allowed
   );
+  await lockedAccount.setPenaltyDisbursal(operatorWallet, {
+    from: lockAdminAccount
+  });
 
   const commitment = await WhitelistedCommitment.new(
+    accessControl.address,
+    etherToken.address,
+    lockedAccount.address,
+    curve.address
+  );
+  await commitment.setCommitmentTerms(
     startTimestamp,
     startTimestamp + duration,
     minCommitment,
     maxCommitment,
     minTicket,
-    eurEthRate,
-    etherToken.address,
-    lockedAccount.address,
-    curve.address
+    eurEthRate
+  );
+  const whitelistAdminRole = await accessRoles.ROLE_WHITELIST_ADMIN();
+  await accessControl.setUserRole(
+    whitelistAdminAccount,
+    whitelistAdminRole,
+    commitment.address,
+    TriState.Allowed
   );
 
   if (fixedInvestors || fixedTickets) {
@@ -62,14 +91,20 @@ export async function deployAllContracts(
       fixedInvestors && fixedTickets,
       "Both fixedInvestors and fixedTickets has to be provided"
     );
-    await commitment.setFixed(fixedInvestors, fixedTickets);
+    await commitment.setFixed(fixedInvestors, fixedTickets, {
+      from: whitelistAdminAccount
+    });
   }
 
   if (whitelistedInvestors) {
-    await commitment.setWhitelist(whitelistedInvestors);
+    await commitment.setWhitelist(whitelistedInvestors, {
+      from: whitelistAdminAccount
+    });
   }
 
-  await lockedAccount.setController(commitment.address);
+  await lockedAccount.setController(commitment.address, {
+    from: lockAdminAccount
+  });
 
   return {
     etherToken,

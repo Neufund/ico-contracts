@@ -38,18 +38,18 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
     ////////////////
 
     event AccessChanged(
-        address controler,
-        address subject,
+        address controller,
+        address indexed subject,
         bytes32 role,
-        IAccessControlled object,
+        IAccessControlled indexed object,
         TriState oldValue,
         TriState newValue
     );
 
     event Access(
-        address subject,
+        address indexed subject,
         bytes32 role,
-        IAccessControlled object,
+        IAccessControlled indexed object,
         bytes4 verb,
         bool granted
     );

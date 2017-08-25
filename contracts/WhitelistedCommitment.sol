@@ -1,8 +1,8 @@
-pragma solidity ^0.4.11;
+pragma solidity 0.4.15;
 
 import './PublicCommitment.sol';
 
-contract WhitelistedCommitment is PublicCommitment {
+contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitment {
 
     // mapping of addresses allowed to participate, ticket value is ignored
     mapping (address => uint256) public whitelisted;
@@ -18,7 +18,7 @@ contract WhitelistedCommitment is PublicCommitment {
 
     function setFixed(address[] addresses, uint256[] ticketsETH)
         public
-        onlyOwner
+        only(ROLE_WHITELIST_ADMIN)
     {
         // can be set only once
         require(fixedCostInvestors.length == 0);
@@ -46,7 +46,7 @@ contract WhitelistedCommitment is PublicCommitment {
 
     function setWhitelist(address[] addresses)
         public
-        onlyOwner
+        only(ROLE_WHITELIST_ADMIN)
     {
         // can be set only once
         require(whitelistedInvestors.length == 0);
@@ -73,11 +73,11 @@ contract WhitelistedCommitment is PublicCommitment {
     // @remco this is a small breach of trust as we can invalidate terms any moment
     function abortCommitment()
         public
-        onlyOwner
+        only(ROLE_WHITELIST_ADMIN)
     {
         require(currentTime()<startDate);
         rollbackCurve();
-        selfdestruct(owner);
+        selfdestruct(address(0));
     }
 
     /// burns all neumarks in commitment contract possesions
@@ -132,10 +132,10 @@ contract WhitelistedCommitment is PublicCommitment {
         return (whitelisted[msg.sender] > 0 || fixedCost[msg.sender] > 0);
     }
 
-    function WhitelistedCommitment(uint256 _startDate, uint256 _endDate, uint256 _minCommitment, uint256 _maxCommitment,
-        uint256 _minTicket, uint256 _ethEurFraction, ITokenWithDeposit _ethToken, LockedAccount _lockedAccount, Curve _curve)
-         PublicCommitment(_startDate, _endDate, _minCommitment, _maxCommitment, _minTicket, _ethEurFraction,
-             _ethToken, _lockedAccount, _curve)
+    function WhitelistedCommitment(IAccessPolicy _policy, EtherToken _ethToken,
+        LockedAccount _lockedAccount, Curve _curve)
+         PublicCommitment(_ethToken, _lockedAccount, _curve)
+         AccessControlled(_policy)
     {
     }
 }

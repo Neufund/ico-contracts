@@ -10,14 +10,15 @@ import EvmError from "./helpers/EVMThrow";
 
 const TestFeeDistributionPool = artifacts.require("TestFeeDistributionPool");
 
-contract("LockedAccount", ([owner, investor, investor2]) => {
+contract("LockedAccount", ([admin, investor, investor2]) => {
   let startTimestamp;
 
   beforeEach(async () => {
-    await chain.spawnLockedAccount(18, 0.1);
+    await chain.spawnLockedAccount(admin, 18, 0.1);
     // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurrate
     startTimestamp = latestTimestamp();
     await chain.spawnPublicCommitment(
+      admin,
       startTimestamp,
       chain.months,
       chain.ether(1),
@@ -311,4 +312,5 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
   // it -> fee disbursal to contract
   // it -> fee disbursal to contract that has no callback function
   // it -> tries to burn not enough neumarks with unlock and receiveApproval
+  // it -> ACL control for methods: enableMigration, setController, setPenaltyDisbursal
 });

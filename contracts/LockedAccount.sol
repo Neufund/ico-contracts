@@ -1,7 +1,8 @@
 pragma solidity 0.4.15;
 
 import './IsContract.sol';
-import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
+import './AccessControl/AccessControlled.sol';
+import './AccessRoles.sol';
 import './ReturnsErrors.sol';
 import './TimeSource.sol';
 import './EtherToken.sol';
@@ -11,7 +12,7 @@ import './LockedAccountMigration.sol';
 import './Standards/IERC667Token.sol';
 import './Standards/IERC667Callback.sol';
 
-contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math, IsContract, IERC667Callback {
+contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErrors, Math, IsContract, IERC667Callback {
     // lock state
     enum LockState {Uncontrolled, AcceptingLocks, AcceptingUnlocks, ReleaseAll }
 
@@ -196,7 +197,7 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math, IsContract, 
     /// may be set in AcceptingLocks state (in unlikely event that controller fails we let investors out)
     /// and AcceptingUnlocks - which is normal operational mode
     function enableMigration(LockedAccountMigration _migration)
-        onlyOwner
+        only(ROLE_LOCKED_ACCOUNT_ADMIN)
         onlyStates(LockState.AcceptingLocks, LockState.AcceptingUnlocks)
         public
     {
@@ -223,9 +224,8 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math, IsContract, 
         }
     }
 
-    // owner can always change the controller
     function setController(TokenOffering _controller)
-        onlyOwner
+        only(ROLE_LOCKED_ACCOUNT_ADMIN)
         onlyStates(LockState.Uncontrolled, LockState.AcceptingLocks)
         public
     {
@@ -240,7 +240,7 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math, IsContract, 
     /// both simple addresses and contracts are allowed
     /// contract needs to implement ApproveAndCallCallback interface
     function setPenaltyDisbursal(address _penaltyDisbursalAddress)
-        onlyOwner
+        only(ROLE_LOCKED_ACCOUNT_ADMIN)
         public
     {
         // can be changed at any moment by owner
@@ -248,10 +248,10 @@ contract LockedAccount is Ownable, TimeSource, ReturnsErrors, Math, IsContract, 
     }
 
     // _assetToken - token contract with resource locked by LockedAccount, where LockedAccount is allowed to make deposits
-    // _neumarkToken - neumark token contract where LockedAccount is allowed to burn tokens and add revenue
-    // _controller - typically ICO contract: can lock, release all locks, enable escape hatch
-    function LockedAccount(IERC667Token _assetToken, Curve _neumarkCurve,
+    //
+    function LockedAccount(IAccessPolicy _policy, IERC667Token _assetToken, Curve _neumarkCurve,
         uint _lockPeriod, uint _penaltyFraction)
+        AccessControlled(_policy)
     {
         assetToken = _assetToken;
         neumarkCurve = _neumarkCurve;

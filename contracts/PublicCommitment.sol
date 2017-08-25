@@ -1,8 +1,5 @@
 pragma solidity ^0.4.11;
 
-import 'zeppelin-solidity/contracts/token/MintableToken.sol';
-import 'zeppelin-solidity/contracts/math/SafeMath.sol';
-import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import './EtherToken.sol';
 import './LockedAccount.sol';
 import './TimeSource.sol';
@@ -12,7 +9,7 @@ import './Standards/ITokenWithDeposit.sol';
 import './TokenOffering.sol';
 
 /// public capital commitment for general public
-contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
+contract PublicCommitment is TimeSource, Math, TokenOffering {
 
     // locks investors capital
     LockedAccount public lockedAccount;
@@ -38,6 +35,26 @@ contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
     // wallet that keeps Platform Operator share of neumarks
     // todo: take from Universe
     address internal platformOperatorWallet = address(0x55d7d863a155F75c5139E20DCBDA8d0075BA2A1c);
+
+    function setCommitmentTerms(uint256 _startDate, uint256 _endDate, uint256 _minCommitment, uint256 _maxCommitment,
+        uint256 _minTicket, uint256 _ethEurFraction)
+        public
+    {
+        // set only once
+        require(endDate == 0);
+        require(_startDate > 0);
+        require(_endDate >= _startDate);
+        require(_minCommitment >= 0);
+        require(_maxCommitment >= _minCommitment);
+        ethEURFraction = _ethEurFraction;
+        minTicket = _minTicket;
+
+        startDate = _startDate;
+        endDate = _endDate;
+
+        minCommitment = _minCommitment;
+        maxCommitment = _maxCommitment;
+    }
 
     function commit()
         payable
@@ -209,32 +226,16 @@ contract PublicCommitment is Ownable, TimeSource, Math, TokenOffering {
     /// store funds in _ethToken and lock funds in _lockedAccount while issuing Neumarks along _curve
     /// commitments can be serialized via long lived _lockedAccount and _curve
     function PublicCommitment(
-        uint256 _startDate,
-        uint256 _endDate,
-        uint256 _minCommitment,
-        uint256 _maxCommitment,
-        uint256 _minTicket,
-        uint256 _ethEurFraction,
-        ITokenWithDeposit _ethToken,
+        EtherToken _ethToken,
         LockedAccount _lockedAccount,
         Curve _curve
-    ) {
-        require(_endDate >= _startDate);
-        require(_minCommitment >= 0);
-        require(_maxCommitment >= _minCommitment);
-
+    )
+    {
+        require(address(_ethToken) == address(_lockedAccount.assetToken()));
         lockedAccount = _lockedAccount;
         curve = _curve;
         neumarkController = _curve.NEUMARK_CONTROLLER();
         neumarkToken = neumarkController.TOKEN();
         paymentToken = _ethToken;
-        ethEURFraction = _ethEurFraction;
-        minTicket = _minTicket;
-
-        startDate = _startDate;
-        endDate = _endDate;
-
-        minCommitment = _minCommitment;
-        maxCommitment = _maxCommitment;
     }
 }
