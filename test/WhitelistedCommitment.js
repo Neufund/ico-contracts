@@ -33,7 +33,7 @@ contract("WhitelistedCommitment", ([_, lockAdmin, whitelistAdmin, investor, inve
   function generateWhitelist(num, minTicket, maxTicket) {}
 
   it("should set whitelist", async () => {
-    await chain.commitment.setWhitelist([investor]);
+    await chain.commitment.setWhitelist([investor], {from: whitelistAdmin});
     assert.equal(await chain.commitment.whitelistedInvestors(0), investor);
     assert.equal(await chain.commitment.whitelisted(investor), 1);
     // not on list
@@ -44,7 +44,7 @@ contract("WhitelistedCommitment", ([_, lockAdmin, whitelistAdmin, investor, inve
     const ticket = chain.ether(100000);
     const ticketEUR = await chain.commitment.convertToEUR(ticket);
     const nmkForTicket = await chain.curve.cumulative(ticketEUR);
-    await chain.commitment.setFixed([investor], [ticket]);
+    await chain.commitment.setFixed([investor], [ticket], {from: whitelistAdmin});
     assert.equal(await chain.commitment.fixedCostInvestors(0), investor);
     expect(await chain.commitment.fixedCost(investor), "ticket allowed").to.be.bignumber.equal(
       ticket
@@ -66,7 +66,7 @@ contract("WhitelistedCommitment", ([_, lockAdmin, whitelistAdmin, investor, inve
     const ticketEUR = await chain.commitment.convertToEUR(ticket);
     // get neumarks from curve
     const nmkForTicket = await chain.curve.cumulative(ticketEUR);
-    await chain.commitment.setFixed([investor], [declared]);
+    await chain.commitment.setFixed([investor], [declared], {from: whitelistAdmin});
     await setTimeTo(startTimestamp);
     let tx = await chain.commitment.commit({ value: ticket, from: investor });
     const investorBalance = await chain.lockedAccount.balanceOf(investor);
@@ -77,7 +77,7 @@ contract("WhitelistedCommitment", ([_, lockAdmin, whitelistAdmin, investor, inve
   }
 
   async function setupFixedCostCase(declared, ticket) {
-    await chain.commitment.setFixed([investor], [declared]);
+    await chain.commitment.setFixed([investor], [declared], {from: whitelistAdmin});
     await setTimeTo(startTimestamp);
   }
 
@@ -115,7 +115,7 @@ contract("WhitelistedCommitment", ([_, lockAdmin, whitelistAdmin, investor, inve
 
   it("should commit 1 ether from whitelist", async () => {
     const ticket = chain.ether(1);
-    await chain.commitment.setWhitelist([investor]);
+    await chain.commitment.setWhitelist([investor], {from: whitelistAdmin});
     // move to commitment start date
     await setTimeTo(startTimestamp);
     let tx = await chain.commitment.commit({ value: ticket, from: investor });
@@ -165,6 +165,8 @@ contract("WhitelistedCommitment", ([_, lockAdmin, whitelistAdmin, investor, inve
 // it -> commit whitelisted then fixed, verify numbers (alt case: vice versa - should not make any impact)
 // it -> all neumarks rollbacked on commitment fail
 // it -> remaining neumarks rollbacked on commitment success (not taken fixed tickets)
+// it -> should abort before starts (abortCommitment)
+// it -> permissions tests
 
 // separate test set for whitelisted -> public commitment
 // it -> whitelisted ends ok -> public ends ok (check state of lock and neumark token)

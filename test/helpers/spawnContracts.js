@@ -74,7 +74,7 @@ export async function spawnPublicCommitment(
 
 export async function spawnWhitelistedCommitment(
   lockAdminAccount,
-  whitelistAdmiAccount,
+  whitelistAdminAccount,
   startTimestamp,
   duration,
   minCommitment,
@@ -91,11 +91,12 @@ export async function spawnWhitelistedCommitment(
     ether(eurEthRate),
     etherToken.address,
     lockedAccount.address,
-    curve.address
+    curve.address,
+    accessControl.address
   );
   // console.log(lockedAccount.setController);
   const whitelistAdminRole = await accessRoles.ROLE_WHITELIST_ADMIN();
-  await accessControl.setUserRole(whitelistAdmiAccount, whitelistAdminRole, lockedAccount.address, 1);
+  await accessControl.setUserRole(whitelistAdminAccount, whitelistAdminRole, commitment.address, 1);
   await lockedAccount.setController(commitment.address, {from: lockAdminAccount});
 
 }
