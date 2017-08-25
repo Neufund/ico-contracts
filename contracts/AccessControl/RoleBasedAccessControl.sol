@@ -97,7 +97,7 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
             bool grantedLocal = localAccess == TriState.True;
 
             // Log and return
-            Access(subject, role, object, verb, granted);
+            Access(subject, role, object, verb, grantedLocal);
             return grantedLocal;
         }
 
