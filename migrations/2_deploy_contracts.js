@@ -35,9 +35,9 @@ module.exports = function(deployer, network, accounts) {
     await deployer.deploy(Curve, NeumarkController.address);
     await deployer.deploy(
       LockedAccount,
+      accessControl.address,
       etherToken.address,
       Curve.address,
-      accessControl.address,
       18 * months,
       Math.round(0.1 * ether(1)) // fractions are in 10**18
     );

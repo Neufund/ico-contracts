@@ -42,9 +42,9 @@ export async function deployAllContracts(
   const curve = await Curve.new(neumarkController.address);
 
   const lockedAccount = await LockedAccount.new(
+    accessControl.address,
     etherToken.address,
     curve.address,
-    accessControl.address,
     unlockDateMonths * MONTH,
     etherToWei(1).mul(unlockPenalty).round()
   );

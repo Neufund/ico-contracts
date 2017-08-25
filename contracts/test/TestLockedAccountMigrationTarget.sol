@@ -52,9 +52,9 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
         return true;
     }
 
-    function TestLockedAccountMigrationTarget(IERC667Token _assetToken, Curve _neumarkCurve, IAccessPolicy _policy,
+    function TestLockedAccountMigrationTarget(IAccessPolicy _policy, IERC667Token _assetToken, Curve _neumarkCurve,
         uint _lockPeriod, uint _penaltyFraction)
-        LockedAccount(_assetToken, _neumarkCurve, _policy, _lockPeriod, _penaltyFraction)
+        LockedAccount(_policy, _assetToken, _neumarkCurve, _lockPeriod, _penaltyFraction)
     {
     }
 

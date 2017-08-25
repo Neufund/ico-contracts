@@ -41,9 +41,9 @@ export async function spawnLockedAccount(
   await neumark.changeController(neumarkController.address);
   curve = await Curve.new(neumarkController.address);
   lockedAccount = await LockedAccount.new(
+    accessControl.address,
     etherToken.address,
     curve.address,
-    accessControl.address,
     unlockDateMonths * months,
     ether(1).mul(unlockPenalty).round()
   );

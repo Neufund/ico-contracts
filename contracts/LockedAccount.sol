@@ -249,7 +249,7 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
 
     // _assetToken - token contract with resource locked by LockedAccount, where LockedAccount is allowed to make deposits
     //
-    function LockedAccount(IERC667Token _assetToken, Curve _neumarkCurve, IAccessPolicy _policy,
+    function LockedAccount(IAccessPolicy _policy, IERC667Token _assetToken, Curve _neumarkCurve,
         uint _lockPeriod, uint _penaltyFraction)
         AccessControlled(_policy)
     {
