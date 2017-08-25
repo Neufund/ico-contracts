@@ -2,10 +2,10 @@ pragma solidity 0.4.15;
 
 import 'zeppelin-solidity/contracts/token/StandardToken.sol';
 import './Math.sol';
-import './TokenWithDeposit.sol';
-import './ApproveAndCallCallback.sol';
+import './Standards/ITokenWithDeposit.sol';
+import './Standards/IERC667Callback.sol';
 
-contract EtherToken is StandardToken, TokenWithDeposit, Math {
+contract EtherToken is StandardToken, ITokenWithDeposit, Math {
 
     // Constant token specific fields
     string public constant name = "Ether Token";
@@ -20,7 +20,7 @@ contract EtherToken is StandardToken, TokenWithDeposit, Math {
     {
         require(approve(_spender, _amount));
 
-        success = ApproveAndCallFallBack(_spender).receiveApproval(
+        success = IERC667Callback(_spender).receiveApproval(
             msg.sender,
             _amount,
             this,

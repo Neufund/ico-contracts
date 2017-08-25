@@ -2,6 +2,7 @@ pragma solidity ^0.4.11;
 
 import "../LockedAccount.sol";
 import "../LockedAccountMigration.sol";
+import '../Standards/IERC667Token.sol';
 
 contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigration {
     LockedAccount public migrationSource;
@@ -51,7 +52,7 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
         return true;
     }
 
-    function TestLockedAccountMigrationTarget(ERC23 _assetToken, Curve _neumarkCurve,
+    function TestLockedAccountMigrationTarget(IERC667Token _assetToken, Curve _neumarkCurve,
         uint _lockPeriod, uint _penaltyFraction)
         LockedAccount(_assetToken, _neumarkCurve, _lockPeriod, _penaltyFraction)
     {
