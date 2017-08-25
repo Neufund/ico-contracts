@@ -2,15 +2,14 @@ pragma solidity 0.4.15;
 
 
 import '../Standards/IBasicToken.sol';
-import './SafeMath.sol';
+import '../Math.sol';
 
 
 /**
  * @title Basic token
  * @dev Basic version of StandardToken, with no allowances.
  */
-contract BasicToken is IBasicToken {
-  using SafeMath for uint256;
+contract BasicToken is IBasicToken, Math {
 
   mapping(address => uint256) balances;
 
@@ -32,8 +31,8 @@ contract BasicToken is IBasicToken {
   * @param _value The amount to be transferred.
   */
   function transfer(address _to, uint256 _value) returns (bool) {
-    balances[msg.sender] = balances[msg.sender].sub(_value);
-    balances[_to] = balances[_to].add(_value);
+    balances[msg.sender] = sub(balances[msg.sender], _value);
+    balances[_to] = add(balances[_to], _value);
     Transfer(msg.sender, _to, _value);
     return true;
   }

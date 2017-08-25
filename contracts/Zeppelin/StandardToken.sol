@@ -29,9 +29,9 @@ contract StandardToken is IERC20Token, BasicToken {
     // Check is not needed because sub(_allowance, _value) will already throw if this condition is not met
     // require (_value <= _allowance);
 
-    balances[_to] = balances[_to].add(_value);
-    balances[_from] = balances[_from].sub(_value);
-    allowed[_from][msg.sender] = _allowance.sub(_value);
+    balances[_to] = add(balances[_to], _value);
+    balances[_from] = sub(balances[_from], _value);
+    allowed[_from][msg.sender] = sub(_allowance, _value);
     Transfer(_from, _to, _value);
     return true;
   }
