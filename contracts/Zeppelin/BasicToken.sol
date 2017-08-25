@@ -14,6 +14,8 @@ contract BasicToken is IBasicToken {
 
   mapping(address => uint256) balances;
 
+  uint256 public totalSupply;
+
   /**
   * @dev transfer token for a specified address
   * @param _to The address to transfer to.

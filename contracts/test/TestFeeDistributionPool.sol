@@ -2,6 +2,10 @@ pragma solidity 0.4.15;
 
 import '../Standards/IERC667Callback.sol';
 import '../Zeppelin/ERC20.sol';
+import '../Standards/ISnapshotToken.sol';
+import '../Standards/IERC20Token.sol';
+import '../Math.sol';
+import '../TimeSource.sol';
 
 contract TestFeeDistributionPool is IERC667Callback {
 
