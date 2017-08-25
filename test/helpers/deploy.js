@@ -1,7 +1,7 @@
 import invariant from "invariant";
 import { MONTH, closeFutureDate, furtherFutureDate } from "./latestTime";
 import { etherToWei } from "./unitConverter";
-import { TriState } from "./triState.js"
+import { TriState } from "./triState.js";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
@@ -18,6 +18,10 @@ export async function deployAllContracts(
   whitelistAdminAccount,
   { lockedAccountCfg = {}, commitmentCfg = {} } = {}
 ) {
+  invariant(
+    lockAdminAccount && whitelistAdminAccount,
+    "Both lockAdminAccount and whitelistAdminAccount have to be provided"
+  );
   const { unlockDateMonths = 18, unlockPenalty = 0.1 } = lockedAccountCfg;
 
   const {
