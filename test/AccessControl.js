@@ -2,6 +2,7 @@ import { expect } from "chai";
 import EvmError from "./helpers/EVMThrow";
 import eventValue from "./helpers/eventValue";
 
+const TriState = { Unset:0, Allowed: 1, Denied: 2};
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const TestAccessControlTruffleMixin = artifacts.require(
   "TestAccessControlTruffleMixin"
@@ -39,12 +40,13 @@ contract("AccessControl", ([accessController, owner1, owner2]) => {
     expect(event.args.newValue).to.be.bignumber.equal(newValue);
   }
 
-  function expectAccessEvent(tx, subject, role, object) {
+  function expectAccessEvent(tx, subject, role, object, granted) {
     const event = eventValue(tx, "Access");
     expect(event).to.exist;
     expect(event.args.subject).to.equal(subject);
     expect(event.args.role).to.equal(role);
     expect(event.args.object).to.equal(object);
+    expect(event.args.granted).to.equal(granted);
   }
 
   it("should allow owner1", async () => {
@@ -52,19 +54,19 @@ contract("AccessControl", ([accessController, owner1, owner2]) => {
       owner1,
       exampleRole,
       accessControlled.address,
-      1
+      TriState.Allowed
     );
     expectAccessChangedEvent(
       tx,
       owner1,
       exampleRole,
       accessControlled.address,
-      0,
-      1
+      TriState.Unset,
+      TriState.Allowed
     );
     tx = await accessControlled.someFunction({ from: owner1 });
     // tx = await expect().to.be.ok;
-    expectAccessEvent(tx, owner1, exampleRole, accessControlled.address);
+    expectAccessEvent(tx, owner1, exampleRole, accessControlled.address, true);
   });
 
   it("should disallow owner2", async () => {
@@ -72,15 +74,15 @@ contract("AccessControl", ([accessController, owner1, owner2]) => {
       owner1,
       exampleRole,
       accessControlled.address,
-      1
+      TriState.Allowed
     );
     expectAccessChangedEvent(
       tx,
       owner1,
       exampleRole,
       accessControlled.address,
-      0,
-      1
+      TriState.Unset,
+      TriState.Allowed
     );
     await expect(
       accessControlled.someFunction({ from: owner2 })
@@ -92,15 +94,15 @@ contract("AccessControl", ([accessController, owner1, owner2]) => {
       owner2,
       exampleRole,
       accessControlled.address,
-      2
+      TriState.Denied
     );
     expectAccessChangedEvent(
       tx,
       owner2,
       exampleRole,
       accessControlled.address,
-      0,
-      2
+      TriState.Unset,
+      TriState.Denied
     );
     await expect(
       accessControlled.someFunction({ from: owner2 })
