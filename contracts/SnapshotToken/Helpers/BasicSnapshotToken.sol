@@ -2,12 +2,10 @@ pragma solidity 0.4.15;
 
 import '../../Snapshot/Snapshot.sol';
 import '../../Standards/ISnapshotToken.sol';
-import '../../Standards/ISnapshotTokenParent.sol';
 import './MMint.sol';
 
 contract BasicSnapshotToken is
     ISnapshotToken,
-    ISnapshotTokenParent,
     MMint,
     Snapshot
 {
