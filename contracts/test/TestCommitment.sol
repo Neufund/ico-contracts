@@ -52,10 +52,8 @@ contract TestCommitment is PublicCommitment {
         lockedAccount.lock(investor, amount, neumarks);
     }
 
-    function TestCommitment(uint256 _startDate, uint256 _endDate, uint256 _minCommitment, uint256 _maxCommitment,
-        uint256 _minTicket, uint256 _ethEurFraction, ITokenWithDeposit _ethToken, LockedAccount _lockedAccount, Curve _curve)
-         PublicCommitment(_startDate, _endDate, _minCommitment, _maxCommitment, _minTicket, _ethEurFraction,
-             _ethToken, _lockedAccount, _curve)
+    function TestCommitment(EtherToken _ethToken, LockedAccount _lockedAccount, Curve _curve)
+         PublicCommitment(_ethToken, _lockedAccount, _curve)
     {
     }
 }

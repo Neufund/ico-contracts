@@ -69,15 +69,17 @@ export async function spawnPublicCommitment(
   eurEthRate
 ) {
   commitment = await TestCommitment.new(
+    etherToken.address,
+    lockedAccount.address,
+    curve.address
+  );
+  await commitment.setCommitmentTerms(
     startTimestamp,
     startTimestamp + duration,
     minCommitment,
     maxCommitment,
     minTicket,
-    ether(eurEthRate),
-    etherToken.address,
-    lockedAccount.address,
-    curve.address
+    ether(eurEthRate)
   );
   // console.log(lockedAccount.setController);
   await lockedAccount.setController(commitment.address, {
@@ -96,16 +98,18 @@ export async function spawnWhitelistedCommitment(
   eurEthRate
 ) {
   commitment = await WhitelistedCommitment.new(
+    accessControl.address,
+    etherToken.address,
+    lockedAccount.address,
+    curve.address
+  );
+  await commitment.setCommitmentTerms(
     startTimestamp,
     startTimestamp + duration,
     minCommitment,
     maxCommitment,
     minTicket,
-    ether(eurEthRate),
-    etherToken.address,
-    lockedAccount.address,
-    curve.address,
-    accessControl.address
+    ether(eurEthRate)
   );
   // console.log(lockedAccount.setController);
   const whitelistAdminRole = await accessRoles.ROLE_WHITELIST_ADMIN();

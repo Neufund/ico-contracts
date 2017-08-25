@@ -60,16 +60,18 @@ export async function deployAllContracts(
   });
 
   const commitment = await WhitelistedCommitment.new(
+    accessControl.address,
+    etherToken.address,
+    lockedAccount.address,
+    curve.address
+  );
+  await commitment.setCommitmentTerms(
     startTimestamp,
     startTimestamp + duration,
     minCommitment,
     maxCommitment,
     minTicket,
-    eurEthRate,
-    etherToken.address,
-    lockedAccount.address,
-    curve.address,
-    accessControl.address
+    eurEthRate
   );
   const whitelistAdminRole = await accessRoles.ROLE_WHITELIST_ADMIN();
   await accessControl.setUserRole(

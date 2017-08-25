@@ -45,18 +45,21 @@ module.exports = function(deployer, network, accounts) {
     console.log("Deploying public commitment");
     await deployer.deploy(
       PublicCommitment,
-      Date.now() / 1000 + 60,
-      Date.now() / 1000 + 900,
-      ether(1),
-      ether(2000),
-      ether(1), // min ticket size
-      ether(200), // eur rate to eth
       etherToken.address,
       lock.address,
       Curve.address
     );
     const publicCommitment = await PublicCommitment.deployed();
     console.log("Commitment deployed");
+    await publicCommitment.setCommitmentTerms(
+      Date.now() / 1000 + 60,
+      Date.now() / 1000 + 900,
+      ether(1),
+      ether(2000),
+      ether(1), // min ticket size
+      ether(200) // eur rate to eth
+    );
+    console.log("Commitment terms set");
     console.log("Seting permissions");
     await deployer.deploy(AccessRoles);
     const accessRoles = await AccessRoles.deployed();

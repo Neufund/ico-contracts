@@ -132,12 +132,10 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
         return (whitelisted[msg.sender] > 0 || fixedCost[msg.sender] > 0);
     }
 
-    function WhitelistedCommitment(uint256 _startDate, uint256 _endDate, uint256 _minCommitment, uint256 _maxCommitment,
-        uint256 _minTicket, uint256 _ethEurFraction, ITokenWithDeposit _ethToken, LockedAccount _lockedAccount,
-        Curve _curve, IAccessPolicy _policy)
-         PublicCommitment(_startDate, _endDate, _minCommitment, _maxCommitment, _minTicket, _ethEurFraction,
-             _ethToken, _lockedAccount, _curve)
-        AccessControlled(_policy)
+    function WhitelistedCommitment(IAccessPolicy _policy, EtherToken _ethToken,
+        LockedAccount _lockedAccount, Curve _curve)
+         PublicCommitment(_ethToken, _lockedAccount, _curve)
+         AccessControlled(_policy)
     {
     }
 }
