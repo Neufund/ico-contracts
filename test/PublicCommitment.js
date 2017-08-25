@@ -2,7 +2,7 @@ import { expect } from "chai";
 import advanceToBlock from "./helpers/advanceToBlock";
 import EVMThrow from "./helpers/EVMThrow";
 import * as chain from "./helpers/spawnContracts";
-import eventValue from "./helpers/eventValue";
+import { eventValue } from "./helpers/events";
 import { increaseTime, setTimeTo } from "./helpers/increaseTime";
 import { latestTime, latestTimestamp } from "./helpers/latestTime";
 
