@@ -1,6 +1,6 @@
 pragma solidity 0.4.15;
 
-import 'snapshottoken/contracts/IsContract.sol';
+import './IsContract.sol';
 import './AccessControl/AccessControlled.sol';
 import './AccessRoles.sol';
 import './ReturnsErrors.sol';
@@ -9,9 +9,10 @@ import './EtherToken.sol';
 import './Curve.sol';
 import './TokenOffering.sol';
 import './LockedAccountMigration.sol';
-import './ERC23.sol';
+import './Standards/IERC667Token.sol';
+import './Standards/IERC667Callback.sol';
 
-contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErrors, Math, IsContract, ApproveAndCallFallBack {
+contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErrors, Math, IsContract, IERC667Callback {
     // lock state
     enum LockState {Uncontrolled, AcceptingLocks, AcceptingUnlocks, ReleaseAll }
 
@@ -28,7 +29,7 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
     // total number of locked investors
     uint public totalInvestors;
     // a token controlled by LockedAccount, read ERC20 + extensions to read what token is it (ETH/EUR etc.)
-    ERC23 public assetToken;
+    IERC667Token public assetToken;
     // current state of the locking contract
     LockState public lockState;
     // longstop period in seconds
@@ -248,7 +249,7 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
 
     // _assetToken - token contract with resource locked by LockedAccount, where LockedAccount is allowed to make deposits
     //
-    function LockedAccount(ERC23 _assetToken, Curve _neumarkCurve, IAccessPolicy _policy,
+    function LockedAccount(IERC667Token _assetToken, Curve _neumarkCurve, IAccessPolicy _policy,
         uint _lockPeriod, uint _penaltyFraction)
         AccessControlled(_policy)
     {

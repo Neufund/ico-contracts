@@ -5,7 +5,7 @@ import './LockedAccount.sol';
 import './TimeSource.sol';
 import './Curve.sol';
 import './Math.sol';
-import './TokenWithDeposit.sol';
+import './Standards/ITokenWithDeposit.sol';
 import './TokenOffering.sol';
 
 /// public capital commitment for general public
@@ -13,7 +13,7 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
 
     // locks investors capital
     LockedAccount public lockedAccount;
-    TokenWithDeposit public paymentToken;
+    ITokenWithDeposit public paymentToken;
     Neumark public neumarkToken;
     Curve public curve;
 
@@ -205,9 +205,17 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
     /// min and max amounts in this commitment is _minCommitment - _maxCommitment
     /// store funds in _ethToken and lock funds in _lockedAccount while issuing Neumarks along _curve
     /// commitments can be serialized via long lived _lockedAccount and _curve
-    function PublicCommitment(uint256 _startDate, uint256 _endDate, uint256 _minCommitment, uint256 _maxCommitment,
-        uint256 _minTicket, uint256 _ethEurFraction, TokenWithDeposit _ethToken, LockedAccount _lockedAccount, Curve _curve )
-    {
+    function PublicCommitment(
+        uint256 _startDate,
+        uint256 _endDate,
+        uint256 _minCommitment,
+        uint256 _maxCommitment,
+        uint256 _minTicket,
+        uint256 _ethEurFraction,
+        ITokenWithDeposit _ethToken,
+        LockedAccount _lockedAccount,
+        Curve _curve
+    ) {
         require(_endDate >= _startDate);
         require(_minCommitment >= 0);
         require(_maxCommitment >= _minCommitment);

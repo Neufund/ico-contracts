@@ -145,11 +145,13 @@ contract("Curve", accounts => {
       [60000000000, 1500000000],
       [70000000000, 1500000000],
       [80000000000, 1500000000],
-      [90000000000, 1500000000],
+      [90000000000, 1500000000]
     ];
     const gas = await Promise.all(
       correct.map(async ([i, v]) => {
-        const [neumarkUlps, gas] = await curveGas.curveGas.call(EUR_DECIMALS.mul(i));
+        const [neumarkUlps, gas] = await curveGas.curveGas.call(
+          EUR_DECIMALS.mul(i)
+        );
         const neumarks = 0 | neumarkUlps.div(NMK_DECIMALS).floor().valueOf();
         assert.equal(neumarks, v, `Curve compute failed for value ${i}`);
         return [i, 0 | gas.valueOf()];
@@ -165,19 +167,37 @@ contract("Curve", accounts => {
 
     const r1 = await curve.issue(EUR_DECIMALS.mul(100), { from: accounts[1] }); // TODO check result
     console.log(`\tIssue took ${gasCost(r1)}.`);
-    assert.equal((await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(), 100);
-    assert.equal((await neumark.totalSupply.call()).div(NMK_DECIMALS).floor().valueOf(), 649);
     assert.equal(
-      (await neumark.balanceOf.call(accounts[1])).div(NMK_DECIMALS).floor().valueOf(),
+      (await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(),
+      100
+    );
+    assert.equal(
+      (await neumark.totalSupply.call()).div(NMK_DECIMALS).floor().valueOf(),
+      649
+    );
+    assert.equal(
+      (await neumark.balanceOf.call(accounts[1]))
+        .div(NMK_DECIMALS)
+        .floor()
+        .valueOf(),
       649
     );
 
     const r2 = await curve.issue(EUR_DECIMALS.mul(900), { from: accounts[2] });
     console.log(`\tIssue took ${gasCost(r2)}.`);
-    assert.equal((await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(), 1000);
-    assert.equal((await neumark.totalSupply.call()).div(NMK_DECIMALS).floor().valueOf(), 6499);
     assert.equal(
-      (await neumark.balanceOf.call(accounts[2])).div(NMK_DECIMALS).floor().valueOf(),
+      (await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(),
+      1000
+    );
+    assert.equal(
+      (await neumark.totalSupply.call()).div(NMK_DECIMALS).floor().valueOf(),
+      6499
+    );
+    assert.equal(
+      (await neumark.balanceOf.call(accounts[2]))
+        .div(NMK_DECIMALS)
+        .floor()
+        .valueOf(),
       5849
     );
   });
@@ -196,7 +216,10 @@ contract("Curve", accounts => {
     const burned = await curve.burnNeumark(toBurnUlps, { from: accounts[1] });
     console.log(`\tBurn took ${gasCost(burned)}.`);
     assert.equal(
-      (await neumark.balanceOf.call(accounts[1])).div(NMK_DECIMALS).floor().valueOf(),
+      (await neumark.balanceOf.call(accounts[1]))
+        .div(NMK_DECIMALS)
+        .floor()
+        .valueOf(),
       neumarks - toBurn
     );
   });

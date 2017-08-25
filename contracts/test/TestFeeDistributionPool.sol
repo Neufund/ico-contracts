@@ -2,7 +2,7 @@ pragma solidity ^0.4.11;
 
 import 'zeppelin-solidity/contracts/token/ERC20.sol';
 import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
-import 'snapshottoken/contracts/Standards/ISnapshotToken.sol';
+import '../Standards/ISnapshotToken.sol';
 import '../Math.sol';
 import '../TimeSource.sol';
 

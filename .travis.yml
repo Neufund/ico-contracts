@@ -9,7 +9,8 @@ cache: yarn
 install:
   - yarn
 script:
-  - yarn lint
+  - yarn lint:prettier
+  - yarn lint; true
   - yarn testrpc > /dev/null &
   - yarn test
   - yarn test:coverage

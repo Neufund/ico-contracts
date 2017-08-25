@@ -34,8 +34,14 @@ contract("Neumark", accounts => {
   });
 
   it("should allow controller to generate tokens", async () => {
-    assert(await controller.generateTokens(accounts[0], 10000, { from: accounts[0] }));
-    assert.equal(await neumark.totalSupply.call(), 10000, "10000 wasn't the total");
+    assert(
+      await controller.generateTokens(accounts[0], 10000, { from: accounts[0] })
+    );
+    assert.equal(
+      await neumark.totalSupply.call(),
+      10000,
+      "10000 wasn't the total"
+    );
     assert.equal(
       await neumark.balanceOf.call(accounts[0]),
       10000,
@@ -44,8 +50,12 @@ contract("Neumark", accounts => {
   });
 
   it("should allow controller to burn tokens", async () => {
-    assert(await controller.generateTokens(accounts[0], 10000, { from: accounts[0] }));
-    assert(await controller.destroyTokens(accounts[0], 1000, { from: accounts[0] }));
+    assert(
+      await controller.generateTokens(accounts[0], 10000, { from: accounts[0] })
+    );
+    assert(
+      await controller.destroyTokens(accounts[0], 1000, { from: accounts[0] })
+    );
     assert.equal(await neumark.totalSupply.call(), 9000);
     assert.equal(await neumark.balanceOf.call(accounts[0]), 9000);
   });
