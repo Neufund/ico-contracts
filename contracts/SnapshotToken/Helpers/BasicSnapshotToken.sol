@@ -29,12 +29,6 @@ contract BasicSnapshotToken is
     Values[] totalSupplyValues;
 
 ////////////////
-// Events
-////////////////
-
-    event Transfer(address indexed _from, address indexed _to, uint256 _amount);
-
-////////////////
 // Constructor
 ////////////////
 
