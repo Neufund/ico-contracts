@@ -1,6 +1,6 @@
-pragma solidity ^0.4.13;
+pragma solidity 0.4.15;
 
-import '../../Standards/ISnapshotToken.sol';
+import '../../Standards/ISnapshotableToken.sol';
 import '../../Standards/IBasicToken.sol';
 import '../../Standards/IERC20Token.sol';
 import '../../Standards/IERC667Callback.sol';
@@ -28,7 +28,7 @@ contract Disbursal is IERC667Callback {
 // State
 ////////////////
 
-    ISnapshotToken public SHARE_TOKEN;
+    ISnapshotableToken public SHARE_TOKEN;
 
     Disbursment[] disbursments;
 
@@ -58,7 +58,7 @@ contract Disbursal is IERC667Callback {
 ////////////////
 
     function Disbursal(
-        ISnapshotToken shareToken
+        ISnapshotableToken shareToken
     )
         public
     {

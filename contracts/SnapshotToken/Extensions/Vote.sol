@@ -1,6 +1,6 @@
-pragma solidity ^0.4.13;
+pragma solidity 0.4.15;
 
-import '../../Standards/ISnapshotToken.sol';
+import '../../Standards/ISnapshotableToken.sol';
 
 // https://en.wikipedia.org/wiki/Comparison_of_electoral_systems
 
@@ -26,7 +26,7 @@ import '../../Standards/ISnapshotToken.sol';
 
 contract Vote {
 
-    ISnapshotToken public TOKEN;
+    ISnapshotableToken public TOKEN;
     uint256 public SNAPSHOT;
     bytes32[] public CHOICE_HASHES;
 
@@ -36,7 +36,7 @@ contract Vote {
     // Note: we use hashes because Solidity currently does not support passing
     //     string[] as an argument for external functions.
     function Vote(
-        ISnapshotToken token,
+        ISnapshotableToken token,
         bytes32[] choiceHashes
     ) {
         TOKEN = token;

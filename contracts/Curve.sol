@@ -1,9 +1,8 @@
-pragma solidity ^0.4.11;
+pragma solidity 0.4.15;
 
-import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import './NeumarkController.sol';
 
-contract Curve is Ownable {
+contract Curve {
 
     // TODO: Fractional Euros and Fractional Neumarks
 
@@ -14,16 +13,13 @@ contract Curve is Ownable {
     event NeumarksIssued(address beneficiary, uint256 euros, uint256 neumarks);
     event NeumarksBurned(address beneficiary, uint256 euros, uint256 neumarks);
 
-    modifier checkInverse(uint256 euroUlps, uint256 neumarkUlps)
-    {
+    modifier checkInverse(uint256 euroUlps, uint256 neumarkUlps) {
         // TODO: Error margin?
         require(rewind(euroUlps) == neumarkUlps);
         _;
     }
 
-    function Curve(NeumarkController neumarkController)
-        Ownable()
-    {
+    function Curve(NeumarkController neumarkController) {
         totalEuroUlps = 0;
         NEUMARK_CONTROLLER = neumarkController;
     }

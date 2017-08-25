@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import gasCost from "./helpers/gasCost";
-import eventValue from "./helpers/eventValue";
+import { eventValue } from "./helpers/events";
 
 const Curve = artifacts.require("./Curve.sol");
 const CurveGas = artifacts.require("./test/CurveGas.sol");

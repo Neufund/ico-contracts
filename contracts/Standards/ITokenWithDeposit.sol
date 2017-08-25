@@ -1,8 +1,8 @@
 pragma solidity 0.4.15;
 
-import 'zeppelin-solidity/contracts/token/ERC20.sol';
+import './IERC20Token.sol';
 
-contract ITokenWithDeposit is ERC20 {
+contract ITokenWithDeposit is IERC20Token {
 
     function deposit(address to, uint256 amount) payable returns (bool);
     function withdraw(uint256 amount);

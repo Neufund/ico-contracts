@@ -1,13 +1,11 @@
-pragma solidity ^0.4.13;
+pragma solidity 0.4.15;
 
 import '../../Snapshot/Snapshot.sol';
 import '../../Standards/ISnapshotToken.sol';
-import '../../Standards/ISnapshotTokenParent.sol';
 import './MMint.sol';
 
 contract BasicSnapshotToken is
     ISnapshotToken,
-    ISnapshotTokenParent,
     MMint,
     Snapshot
 {
@@ -27,12 +25,6 @@ contract BasicSnapshotToken is
 
     // Tracks the history of the `totalSupply` of the token
     Values[] totalSupplyValues;
-
-////////////////
-// Events
-////////////////
-
-    event Transfer(address indexed _from, address indexed _to, uint256 _amount);
 
 ////////////////
 // Constructor

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.13;
+pragma solidity 0.4.15;
 
 import '../../Standards/IERC667Token.sol';
 import '../../Standards/IERC667Callback.sol';
@@ -16,16 +16,6 @@ contract Allowance is
 
     // `allowed` tracks any extra transfer rights as in all ERC20 tokens
     mapping (address => mapping (address => uint256)) allowed;
-
-////////////////
-// Events
-////////////////
-
-    event Approval(
-        address indexed _owner,
-        address indexed _spender,
-        uint256 _amount
-        );
 
 ////////////////
 // Constructor

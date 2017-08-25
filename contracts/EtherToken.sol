@@ -1,11 +1,11 @@
 pragma solidity 0.4.15;
 
-import 'zeppelin-solidity/contracts/token/StandardToken.sol';
+import './Zeppelin/StandardToken.sol';
 import './Math.sol';
 import './Standards/ITokenWithDeposit.sol';
 import './Standards/IERC667Callback.sol';
 
-contract EtherToken is StandardToken, ITokenWithDeposit, Math {
+contract EtherToken is StandardToken, ITokenWithDeposit {
 
     // Constant token specific fields
     string public constant name = "Ether Token";

@@ -1,7 +1,7 @@
 pragma solidity 0.4.15;
 
-import 'zeppelin-solidity/contracts/token/ERC20.sol';
 import '../Standards/IERC667Callback.sol';
+import '../Standards/IERC667Token.sol';
 
 contract TestFeeDistributionPool is IERC667Callback {
 
@@ -10,7 +10,7 @@ contract TestFeeDistributionPool is IERC667Callback {
         public
         returns (bool)
     {
-        require(ERC20(_token).transferFrom(from, address(this), _amount));
+        require(IERC667Token(_token).transferFrom(from, address(this), _amount));
         TEST_receiveApproval(from, _amount);
         return true;
     }

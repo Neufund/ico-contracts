@@ -30,8 +30,7 @@
     "moment": "^2.18.1",
     "swarm-js": "^0.1.35",
     "truffle": "3.4.9",
-    "web3": "0.20.1",
-    "zeppelin-solidity": "^1.2.0"
+    "web3": "0.20.1"
   },
   "scripts": {
     "lint": "eslint --ignore-path .gitignore .",

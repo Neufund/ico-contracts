@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity 0.4.15;
 
 
 /// implemented in the contract that is the target of LockedAccount migration

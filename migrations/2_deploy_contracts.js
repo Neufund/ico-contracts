@@ -3,7 +3,6 @@ require("babel-register");
 const NeumarkController = artifacts.require("NeumarkController");
 const Neumark = artifacts.require("Neumark");
 const LockedAccount = artifacts.require("LockedAccount");
-const SafeMath = artifacts.require("SafeMath");
 const EtherToken = artifacts.require("EtherToken");
 const PublicCommitment = artifacts.require("PublicCommitment");
 const Curve = artifacts.require("Curve");

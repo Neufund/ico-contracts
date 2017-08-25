@@ -2,7 +2,7 @@ import { expect } from "chai";
 import moment from "moment";
 import gasCost from "./helpers/gasCost";
 import error from "./helpers/error";
-import eventValue from "./helpers/eventValue";
+import { hasEvent, eventValue } from "./helpers/events";
 import * as chain from "./helpers/spawnContracts";
 import increaseTime, { setTimeTo } from "./helpers/increaseTime";
 import latestTime, { latestTimestamp } from "./helpers/latestTime";
@@ -148,15 +148,13 @@ contract("TestLockedAccountMigrationTarget", ([admin, investor, investor2]) => {
   it("migrate same investor twice should do nothing", async () => {
     await migrateOne();
     const tx = await chain.lockedAccount.migrate({ from: investor });
-    const event = eventValue(tx, "InvestorMigrated");
-    expect(event).to.not.exist;
+    expect(hasEvent(tx, "InvestorMigrated")).to.be.false;
   });
 
   it("migrate non existing investor should do nothing", async () => {
     await migrateOne();
     const tx = await chain.lockedAccount.migrate({ from: investor2 });
-    const event = eventValue(tx, "InvestorMigrated");
-    expect(event).to.not.exist;
+    expect(hasEvent(tx, "InvestorMigrated")).to.be.false;
   });
 
   it("enabling migration for a second time should throw", async () => {

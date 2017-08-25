@@ -2,7 +2,7 @@ import { expect } from "chai";
 import moment from "moment";
 import gasCost from "./helpers/gasCost";
 import error from "./helpers/error";
-import eventValue from "./helpers/eventValue";
+import { eventValue } from "./helpers/events";
 import * as chain from "./helpers/spawnContracts";
 import increaseTime, { setTimeTo } from "./helpers/increaseTime";
 import latestTime, { latestTimestamp } from "./helpers/latestTime";
@@ -125,7 +125,7 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
         from: investor
       }
     );
-    expect(eventValue(tx, "Approval", "_amount")).to.be.bignumber.equal(
+    expect(eventValue(tx, "Approval", "amount")).to.be.bignumber.equal(
       neumarkToBurn
     );
     // only investor can unlock and must burn tokens
@@ -147,7 +147,7 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
         from: investor
       }
     );
-    expect(eventValue(tx, "Approval", "_amount")).to.be.bignumber.equal(
+    expect(eventValue(tx, "Approval", "amount")).to.be.bignumber.equal(
       neumarkToBurn
     );
 
@@ -188,9 +188,9 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
     const event = eventValue(tx, "Transfer");
     // console.log(event);
     expect(event).to.exist;
-    expect(event.args._from).to.equal(from);
-    expect(event.args._to).to.equal(to);
-    expect(event.args._amount).to.be.bignumber.equal(val);
+    expect(event.args.from).to.equal(from);
+    expect(event.args.to).to.equal(to);
+    expect(event.args.amount).to.be.bignumber.equal(val);
   }
 
   async function expectUnlockEvent(tx, investor, ticket, withPenalty) {

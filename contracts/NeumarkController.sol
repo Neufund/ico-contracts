@@ -1,9 +1,8 @@
 pragma solidity 0.4.15;
 
-import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import './Neumark.sol';
 
-contract NeumarkController is Ownable {
+contract NeumarkController {
 
     Neumark public TOKEN;
 
