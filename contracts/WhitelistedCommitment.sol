@@ -66,7 +66,7 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
         internal
     {
         // rollback unspect neumarks from fixed pool
-        //rollbackCurve();
+        rollbackCurve();
     }
 
     /// allows to abort commitment process before it starts and rollback curve
