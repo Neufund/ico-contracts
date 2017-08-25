@@ -1,5 +1,5 @@
 import gasCost from "./gasCost";
-import { TriState } from "./triState.js"
+import { TriState } from "./triState.js";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
