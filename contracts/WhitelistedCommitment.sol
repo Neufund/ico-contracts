@@ -108,17 +108,17 @@ contract WhitelistedCommitment is PublicCommitment {
         uint256 fixedreward = 0;
         if (eth > 0) {
             fixedreward = proportion(fixedNeumarks, eth, fixedTicket);
-            // rounding errors, send out remainders
-            // @remco review
-            uint256 remainingBalance = neumarkToken.balanceOf(address(this));
-            if (absDiff(fixedreward, remainingBalance) < 1000)
-                fixedreward = remainingBalance; // send all
             // decrease ticket size and neumarks left
-            fixedCostTickets[investor] -= eth;
-            if (fixedreward >= 0) {
+            if (absDiff(fixedreward, fixedNeumarks) > 9) {
                 fixedCostNeumarks[investor] -= fixedreward;
+                // this will not overflow, we check fixedCostTickets[investor] > eth earlier
+                fixedCostTickets[investor] -= eth;
             } else {
+                // give rest of the neumarks
+                fixedreward = fixedNeumarks;
+                // zero whole ticket
                 fixedCostNeumarks[investor] = 0;
+                fixedCostTickets[investor] = 0;
             }
         }
         // distribute to investor and platform operator
