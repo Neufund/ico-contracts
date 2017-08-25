@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity 0.4.15;
 
 /// Base class for any token offering on Neufund platform
 contract TokenOffering {
