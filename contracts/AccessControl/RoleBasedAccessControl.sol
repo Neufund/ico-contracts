@@ -38,18 +38,18 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
     ////////////////
 
     event AccessChanged(
-        IAccessControlled indexed object,
-        address indexed subject,
         address controller,
+        address indexed subject,
         bytes32 role,
+        IAccessControlled indexed object,
         TriState oldValue,
         TriState newValue
     );
 
     event Access(
-        IAccessControlled indexed object,
         address indexed subject,
         bytes32 role,
+        IAccessControlled indexed object,
         bytes4 verb,
         bool granted
     );
@@ -97,7 +97,7 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
             bool grantedLocal = localAccess == TriState.True;
 
             // Log and return
-            Access(object, subject, role, verb, grantedLocal);
+            Access(subject, role, object, verb, granted);
             return grantedLocal;
         }
 
@@ -106,7 +106,7 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
         bool granted = globalAccess == TriState.True;
 
         // Log and return
-        Access(object, subject, role, verb, granted);
+        Access(subject, role, object, verb, granted);
         return granted;
     }
 
@@ -209,6 +209,6 @@ contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
         }
 
         // Log
-        AccessChanged(object, subject, msg.sender, role, oldValue, newValue);
+        AccessChanged(msg.sender, subject, role, object, oldValue, newValue);
     }
 }
