@@ -29,7 +29,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       ];
 
       const { commitment, curve } = await deployAllContracts();
-      await commitment.setFixed(investors, tickets);
+      await commitment.setOrderedWhitelist(investors, tickets);
 
       expect(await commitment.fixedCostInvestors(0)).to.be.eq(investors[0]);
       expect(await commitment.fixedCostInvestors(1)).to.be.eq(investors[1]);
@@ -58,9 +58,9 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       const investors = [accounts[0], accounts[1]];
       const tickets = [etherToWei(1), etherToWei(2)];
 
-      await commitment.setFixed(investors, tickets);
+      await commitment.setOrderedWhitelist(investors, tickets);
 
-      await expect(commitment.setFixed(investors, tickets)).to.be.rejectedWith(
+      await expect(commitment.setOrderedWhitelist(investors, tickets)).to.be.rejectedWith(
         EvmError
       );
     });
@@ -75,7 +75,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
 
       await setTimeTo(startingDate);
 
-      await expect(commitment.setFixed(investors, tickets)).to.be.rejectedWith(
+      await expect(commitment.setOrderedWhitelist(investors, tickets)).to.be.rejectedWith(
         EvmError
       );
     });
@@ -85,7 +85,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       const investors = [accounts[0]];
       const tickets = [etherToWei(1), etherToWei(2)];
 
-      await expect(commitment.setFixed(investors, tickets)).to.be.rejectedWith(
+      await expect(commitment.setOrderedWhitelist(investors, tickets)).to.be.rejectedWith(
         EvmError
       );
     });
@@ -142,7 +142,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       const fixedTickets = [etherToWei(1)];
 
       await commitment.setWhitelist(whitelistedInvestors);
-      await commitment.setFixed(fixedInvestors, fixedTickets);
+      await commitment.setOrderedWhitelist(fixedInvestors, fixedTickets);
 
       expect(await commitment.whitelistedInvestors(0)).to.be.eq(
         whitelistedInvestors[0]
@@ -184,7 +184,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       const fixedInvestors = [accounts[2]];
       const fixedTickets = [etherToWei(1)];
 
-      await commitment.setFixed(fixedInvestors, fixedTickets);
+      await commitment.setOrderedWhitelist(fixedInvestors, fixedTickets);
       await commitment.setWhitelist(whitelistedInvestors);
 
       expect(await commitment.whitelistedInvestors(0)).to.be.eq(

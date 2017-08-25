@@ -62,7 +62,7 @@ export async function deployAllContracts(
       fixedInvestors && fixedTickets,
       "Both fixedInvestors and fixedTickets has to be provided"
     );
-    await commitment.setFixed(fixedInvestors, fixedTickets);
+    await commitment.setOrderedWhitelist(fixedInvestors, fixedTickets);
   }
 
   if (whitelistedInvestors) {

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity 0.4.15;
 
 import './PublicCommitment.sol';
 
@@ -12,7 +12,7 @@ contract WhitelistedCommitment is PublicCommitment {
     address[] public fixedCostInvestors;
 
     // order of investors matter! first will get better terms on neumarks
-    function setFixed(address[] addresses, uint256[] ticketsETH)
+    function setOrderedWhitelist(address[] addresses, uint256[] ticketsETH)
         public
         onlyOwner
     {
@@ -33,7 +33,7 @@ contract WhitelistedCommitment is PublicCommitment {
             uint256 euros = convertToEUR(ticket);
             fixedCostNeumarks[addresses[idx]] = curve.issue(euros);
 
-            // also allow to invest from whitelist along the curve
+            // also allow to invest from unordered whitelist along the curve
             whitelisted[addresses[idx]] = 1;
         }
 
@@ -87,7 +87,7 @@ contract WhitelistedCommitment is PublicCommitment {
         }
     }
 
-    /// overrides base class to compute neumark reward for fixed price investors
+    /// overrides base class to compute neumark reward for ordered whitelistfix investors
     function giveNeumarks(address investor, uint256 eth, uint256 euros)
         internal
         returns (uint256)
