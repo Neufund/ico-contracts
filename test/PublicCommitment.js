@@ -70,11 +70,11 @@ contract("PublicCommitment", ([owner, investor, investor2]) => {
     expect(await chain.commitment.maxAbsCap()).to.be.bignumber.equal(0);
   });
 
-  it("commit before startDate", async () => {});
-
-  it("commit after startDate", async () => {
-    // few cases of ETH->EUR->Neumark using PublicCommitment and independent check of values
-  });
+  it("commit before startDate");
+  it("commit on startDate");
+  it("commit after startDate"); // few cases of ETH->EUR->Neumark using PublicCommitment and independent check of values
+  it("should emit FundsInvested event");
+  it("should emit CommitmentCompleted event");
 
   it("should complete Commitment with failed state without any investors", async () => {
     await setTimeTo(startTimestamp); // commitment starts
@@ -207,33 +207,19 @@ contract("PublicCommitment", ([owner, investor, investor2]) => {
     );
   });
 
-  it("converts to EUR correctly and issues Neumark", async () => {
-    // few cases of ETH->EUR->Neumark using PublicCommitment and independent check of values
-  });
+  // few cases of ETH->EUR->Neumark using PublicCommitment and independent check of values
+  it("converts to EUR correctly and issues Neumark");
+  it("should commit minimum ticket");
+  it("should reject below minimum ticket");
+  // escape hatch is used after Commitment is finalized
+  // this will lower the amount so in theory if C was finished due to cap it may become active again!
+  // checking finalize will prevent it
+  it("fails to re-activate Commitment by escape hatch");
+  it("commitment should succeed due to endDate reached");
+  it("first ticket should commit max cap");
+  it("should commit large ticket ether 100000000000000");
+  it("should reject commitment larger than remaining cap");
+  it("send ether to default func should fail");
+  it("implement all cases from zeppeling Crowdsale.js and CappedCrowdsale.js");
 
-  // it -> check min ticket
-
-  it("check ETH EURT Neumark rates in investment", async () => {
-    // few cases of ETH->EUR->Neumark using PublicCommitment and independent check of values
-  });
-
-  it("fails to re-activate Commitment by escape hatch", async () => {
-    // escape hatch is used after Commitment is finalized
-    // this will lower the amount so in theory if C was finished due to cap it may become active again!
-    // checking finalize will prevent it
-  });
-
-  it("cap revealing no-repeat and no-before", async () => {
-    // disregard this test case until situation with caps is clear
-  });
-
-  it("commitment should succeed due to endDate reached", async () => {
-    //
-  });
-
-  // it -> first ticket commits max cap
-  // it -> a really large ticket like ether(10000000)
-  // it -> commit after max cap reached
-  // it -> send ether to default func should fail
-  // it -> implement all cases from zeppeling Crowdsale.js and CappedCrowdsale.js
 });
