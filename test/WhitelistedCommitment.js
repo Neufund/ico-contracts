@@ -404,6 +404,7 @@ contract(
         const investor1 = accounts[0];
         const fixedInvestors = [investor1];
         const fixedDeclaredTickets = [etherToWei(2)];
+        const eutEthRate = etherToWei(0.1); // sets up a rate allowing for rounding errors
 
         const {
           commitment,
@@ -416,13 +417,13 @@ contract(
             fixedTickets: fixedDeclaredTickets,
             startTimestamp: startingDate,
             minTicket: etherToWei(0),
-            eurEthRate: etherToWei(0.1) // sets up a rate allowing for rounding errors
+            eurEthRate: eutEthRate
           }
         });
 
         const expectedNeumarkAmmount = await curveInEther(
           fixedDeclaredTickets[0],
-          await commitment.ethEURFraction()
+          eutEthRate
         );
         const expectedInvestor1NeumarkShare = expectedNeumarkAmmount
           .div(2)
@@ -515,17 +516,29 @@ contract(
         );
       });
 
-      it.only("should allow fixed investor to make commitment in mulitple tickets", async () => {
+      it("should allow fixed investor to make commitment in mulitple tickets", async () => {
         const startingDate = closeFutureDate();
         const mutableCurve = await deployMutableCurve();
         const investor = accounts[0];
-        const actualInvestorTickets = [etherToWei(1.19280128309), etherToWei(11.1298001), etherToWei(1.8991)];
-        const totalDeclaredTicket = actualInvestorTickets.reduce((s, v) => s.add(v), new web3.BigNumber(0));
-        const expectedNeumarkAmmountForDeclaredTicket = await mutableCurve.issueInEth(totalDeclaredTicket);
-
+        const actualInvestorTickets = [
+          etherToWei(1.19280128309),
+          etherToWei(11.1298001),
+          etherToWei(1.8991)
+        ];
+        const totalDeclaredTicket = actualInvestorTickets.reduce(
+          (s, v) => s.add(v),
+          new web3.BigNumber(0)
+        );
+        const expectedNeumarkAmountForDeclaredTicket = await mutableCurve.issueInEth(
+          totalDeclaredTicket
+        );
+        const expectedNeumarkAmountForInvestor = expectedNeumarkAmountForDeclaredTicket
+          .div(2)
+          .round(0, 4);
         const {
           commitment,
-          lockedAccount
+          lockedAccount,
+          neumark
         } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
           commitmentCfg: {
             fixedInvestors: [investor],
@@ -533,6 +546,9 @@ contract(
             startTimestamp: startingDate
           }
         });
+        expect(await neumark.balanceOf(commitment.address)).to.be.bignumber.eq(
+          expectedNeumarkAmountForDeclaredTicket
+        );
         await setTimeTo(startingDate);
         for (let idx = 0; idx < actualInvestorTickets.length; idx++) {
           await commitment.commit({
@@ -540,12 +556,13 @@ contract(
             from: investor
           });
         }
+        // this will allow single Ulp of rounding errors per ticket
+        const lockedNeumarkBalance = (await lockedAccount.balanceOf(
+          investor
+        ))[1];
         expect(
-          await lockedAccount.balanceOf(investor)
-        ).to.be.balanceWith({
-          ether: totalDeclaredTicket,
-          neumarks: expectedNeumarkAmmountForDeclaredTicket
-        });
+          lockedNeumarkBalance.sub(expectedNeumarkAmountForInvestor).abs()
+        ).to.be.bignumber.most(actualInvestorTickets.length);
       });
       it("should not allow whitelisted investor to take part in fixed ");
       it("should not work when investor is not on the list");
