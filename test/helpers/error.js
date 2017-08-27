@@ -1,5 +1,9 @@
-import eventValue from "./eventValue";
+import { hasEvent, eventValue } from "./events";
 
 export default function error(tx) {
-  return parseInt(eventValue(tx, "Error", "code")) || 0;
+  // Default to zero on no error
+  if (!hasEvent(tx, "Error")) {
+    return 0;
+  }
+  return parseInt(eventValue(tx, "Error", "code"));
 }

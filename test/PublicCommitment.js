@@ -2,22 +2,23 @@ import { expect } from "chai";
 import advanceToBlock from "./helpers/advanceToBlock";
 import EVMThrow from "./helpers/EVMThrow";
 import * as chain from "./helpers/spawnContracts";
-import eventValue from "./helpers/eventValue";
+import { eventValue } from "./helpers/events";
 import { increaseTime, setTimeTo } from "./helpers/increaseTime";
 import { latestTime, latestTimestamp } from "./helpers/latestTime";
 
 const TestCommitment = artifacts.require("TestCommitment");
 
-contract("PublicCommitment", ([owner, investor, investor2]) => {
+contract("PublicCommitment", ([lockAdmin, investor, investor2]) => {
   let startTimestamp;
   const commitmentDuration = chain.months;
 
   beforeEach(async () => {
-    await chain.spawnLockedAccount(18, 0.1);
+    await chain.spawnLockedAccount(lockAdmin, 18, 0.1);
     // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurrate
     startTimestamp = latestTimestamp() + chain.days;
     // apply time limit to ICO
     await chain.spawnPublicCommitment(
+      lockAdmin,
       startTimestamp,
       commitmentDuration,
       chain.ether(1),

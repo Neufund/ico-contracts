@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity 0.4.15;
 
 
 /// Error pattern is used to inform clients (web3, other smart contracts) on "business logic" errors

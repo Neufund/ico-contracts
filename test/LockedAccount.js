@@ -2,7 +2,7 @@ import { expect } from "chai";
 import moment from "moment";
 import gasCost from "./helpers/gasCost";
 import error from "./helpers/error";
-import eventValue from "./helpers/eventValue";
+import { eventValue } from "./helpers/events";
 import * as chain from "./helpers/spawnContracts";
 import increaseTime, { setTimeTo } from "./helpers/increaseTime";
 import latestTime, { latestTimestamp } from "./helpers/latestTime";
@@ -10,14 +10,15 @@ import EvmError from "./helpers/EVMThrow";
 
 const TestFeeDistributionPool = artifacts.require("TestFeeDistributionPool");
 
-contract("LockedAccount", ([owner, investor, investor2]) => {
+contract("LockedAccount", ([admin, investor, investor2]) => {
   let startTimestamp;
 
   beforeEach(async () => {
-    await chain.spawnLockedAccount(18, 0.1);
+    await chain.spawnLockedAccount(admin, 18, 0.1);
     // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurrate
     startTimestamp = latestTimestamp();
     await chain.spawnPublicCommitment(
+      admin,
       startTimestamp,
       chain.months,
       chain.ether(1),
@@ -124,7 +125,7 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
         from: investor
       }
     );
-    expect(eventValue(tx, "Approval", "_amount")).to.be.bignumber.equal(
+    expect(eventValue(tx, "Approval", "amount")).to.be.bignumber.equal(
       neumarkToBurn
     );
     // only investor can unlock and must burn tokens
@@ -146,7 +147,7 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
         from: investor
       }
     );
-    expect(eventValue(tx, "Approval", "_amount")).to.be.bignumber.equal(
+    expect(eventValue(tx, "Approval", "amount")).to.be.bignumber.equal(
       neumarkToBurn
     );
 
@@ -187,9 +188,9 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
     const event = eventValue(tx, "Transfer");
     // console.log(event);
     expect(event).to.exist;
-    expect(event.args._from).to.equal(from);
-    expect(event.args._to).to.equal(to);
-    expect(event.args._amount).to.be.bignumber.equal(val);
+    expect(event.args.from).to.equal(from);
+    expect(event.args.to).to.equal(to);
+    expect(event.args.amount).to.be.bignumber.equal(val);
   }
 
   async function expectUnlockEvent(tx, investor, ticket, withPenalty) {
@@ -311,4 +312,5 @@ contract("LockedAccount", ([owner, investor, investor2]) => {
   // it -> fee disbursal to contract
   // it -> fee disbursal to contract that has no callback function
   // it -> tries to burn not enough neumarks with unlock and receiveApproval
+  // it -> ACL control for methods: enableMigration, setController, setPenaltyDisbursal
 });

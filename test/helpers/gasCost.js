@@ -1,6 +1,6 @@
-export const weiPrice = 222e-18; // http://coincap.io/
-export const gasPrice = 50e9 * weiPrice; // https://ethstats.net
-export const gasLimit = 6712503; // https://ethstats.net
+export const weiPrice = 300e-18; // http://coincap.io/
+export const gasPrice = 21e9 * weiPrice; // https://ethstats.net
+export const gasLimit = 6712392; // https://ethstats.net
 
 export const gasCost = gas =>
   `${gas} gas (€${Math.round(100 * gas * gasPrice) / 100}, ${Math.round(

@@ -1,8 +1,8 @@
 pragma solidity 0.4.15;
 
-import './ERC23.sol';
+import './IERC20Token.sol';
 
-contract TokenWithDeposit is ERC23 {
+contract ITokenWithDeposit is IERC20Token {
 
     function deposit(address to, uint256 amount) payable returns (bool);
     function withdraw(uint256 amount);

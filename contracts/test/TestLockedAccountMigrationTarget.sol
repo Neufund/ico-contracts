@@ -1,21 +1,22 @@
-pragma solidity ^0.4.11;
+pragma solidity 0.4.15;
 
 import "../LockedAccount.sol";
 import "../LockedAccountMigration.sol";
+import '../Standards/IERC667Token.sol';
 
 contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigration {
     LockedAccount public migrationSource;
     bool public shouldMigrationFail;
 
     function setMigrationSource(LockedAccount source)
-        onlyOwner
+        only(ROLE_LOCKED_ACCOUNT_ADMIN)
         public
     {
         migrationSource = source;
     }
 
     function setShouldMigrationFail(bool shouldFail)
-        onlyOwner
+        only(ROLE_LOCKED_ACCOUNT_ADMIN)
         public
     {
         shouldMigrationFail = shouldFail;
@@ -51,9 +52,9 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
         return true;
     }
 
-    function TestLockedAccountMigrationTarget(ERC23 _assetToken, Curve _neumarkCurve,
+    function TestLockedAccountMigrationTarget(IAccessPolicy _policy, IERC667Token _assetToken, Curve _neumarkCurve,
         uint _lockPeriod, uint _penaltyFraction)
-        LockedAccount(_assetToken, _neumarkCurve, _lockPeriod, _penaltyFraction)
+        LockedAccount(_policy, _assetToken, _neumarkCurve, _lockPeriod, _penaltyFraction)
     {
     }
 

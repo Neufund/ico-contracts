@@ -1,4 +1,5 @@
 import gasCost from "./gasCost";
+import { TriState } from "./triState.js";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
@@ -7,6 +8,8 @@ const Neumark = artifacts.require("Neumark");
 const Curve = artifacts.require("Curve");
 const TestCommitment = artifacts.require("TestCommitment");
 const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
+const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
+const AccessRoles = artifacts.require("AccessRoles");
 
 const BigNumber = web3.BigNumber;
 
@@ -17,13 +20,21 @@ export let lockedAccount;
 export let curve;
 export let commitment;
 export let feePool;
+export let accessControl;
+export let accessRoles;
 export const operatorWallet = "0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c";
 
 export const days = 24 * 60 * 60;
 export const months = 30 * 24 * 60 * 60;
 export const ether = wei => new BigNumber(wei).mul(10 ** 18);
 
-export async function spawnLockedAccount(unlockDateMonths, unlockPenalty) {
+export async function spawnLockedAccount(
+  lockAdminAccount,
+  unlockDateMonths,
+  unlockPenalty
+) {
+  accessControl = await RoleBasedAccessControl.new();
+  accessRoles = await AccessRoles.new();
   etherToken = await EtherToken.new();
   // console.log(`\tEtherToken took ${gasCost(etherToken)}.`);
   neumark = await Neumark.new();
@@ -31,16 +42,26 @@ export async function spawnLockedAccount(unlockDateMonths, unlockPenalty) {
   await neumark.changeController(neumarkController.address);
   curve = await Curve.new(neumarkController.address);
   lockedAccount = await LockedAccount.new(
+    accessControl.address,
     etherToken.address,
     curve.address,
     unlockDateMonths * months,
     ether(1).mul(unlockPenalty).round()
   );
-  // console.log(`\tLockedAccount took ${gasCost(lockedAccount)}.`);
-  await lockedAccount.setPenaltyDisbursal(operatorWallet);
+  const lockedAccountAdminRole = await accessRoles.ROLE_LOCKED_ACCOUNT_ADMIN();
+  await accessControl.setUserRole(
+    lockAdminAccount,
+    lockedAccountAdminRole,
+    lockedAccount.address,
+    TriState.Allow
+  );
+  await lockedAccount.setPenaltyDisbursal(operatorWallet, {
+    from: lockAdminAccount
+  });
 }
 
 export async function spawnPublicCommitment(
+  lockAdminAccount,
   startTimestamp,
   duration,
   minCommitment,
@@ -49,21 +70,27 @@ export async function spawnPublicCommitment(
   eurEthRate
 ) {
   commitment = await TestCommitment.new(
+    etherToken.address,
+    lockedAccount.address,
+    curve.address
+  );
+  await commitment.setCommitmentTerms(
     startTimestamp,
     startTimestamp + duration,
     minCommitment,
     maxCommitment,
     minTicket,
-    ether(eurEthRate),
-    etherToken.address,
-    lockedAccount.address,
-    curve.address
+    ether(eurEthRate)
   );
   // console.log(lockedAccount.setController);
-  await lockedAccount.setController(commitment.address);
+  await lockedAccount.setController(commitment.address, {
+    from: lockAdminAccount
+  });
 }
 
 export async function spawnWhitelistedCommitment(
+  lockAdminAccount,
+  whitelistAdminAccount,
   startTimestamp,
   duration,
   minCommitment,
@@ -72,16 +99,28 @@ export async function spawnWhitelistedCommitment(
   eurEthRate
 ) {
   commitment = await WhitelistedCommitment.new(
+    accessControl.address,
+    etherToken.address,
+    lockedAccount.address,
+    curve.address
+  );
+  await commitment.setCommitmentTerms(
     startTimestamp,
     startTimestamp + duration,
     minCommitment,
     maxCommitment,
     minTicket,
-    ether(eurEthRate),
-    etherToken.address,
-    lockedAccount.address,
-    curve.address
+    ether(eurEthRate)
   );
   // console.log(lockedAccount.setController);
-  await lockedAccount.setController(commitment.address);
+  const whitelistAdminRole = await accessRoles.ROLE_WHITELIST_ADMIN();
+  await accessControl.setUserRole(
+    whitelistAdminAccount,
+    whitelistAdminRole,
+    commitment.address,
+    TriState.Allow
+  );
+  await lockedAccount.setController(commitment.address, {
+    from: lockAdminAccount
+  });
 }

@@ -1,5 +1,5 @@
 import { etherToWei, DIGITS } from "./unitConverter";
-import eventValue from "./eventValue";
+import { eventValue } from "./events";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
