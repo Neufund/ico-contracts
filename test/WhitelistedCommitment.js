@@ -18,7 +18,7 @@ import {
   eurUlpToEth
 } from "./helpers/verification";
 
-contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
+contract("WhitelistedCommitment", ([_, lockAdminAccount, whitelistAdminAccount, ...accounts]) => {
   describe("set ordered whitelist", () => {
     it("should work", async () => {
       const mutableCurve = await deployMutableCurve();
@@ -29,8 +29,8 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
         await mutableCurve.issueInEth(tickets[1])
       ];
 
-      const { commitment, curve } = await deployAllContracts();
-      await commitment.setOrderedWhitelist(investors, tickets);
+      const { commitment, curve } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount);
+      await commitment.setOrderedWhitelist(investors, tickets, {from: whitelistAdminAccount});
 
       expect(await commitment.fixedCostInvestors(0)).to.be.eq(investors[0]);
       expect(await commitment.fixedCostInvestors(1)).to.be.eq(investors[1]);
@@ -55,20 +55,20 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
     });
 
     it("should not be possible to set it twice", async () => {
-      const { commitment, curve } = await deployAllContracts();
+      const { commitment, curve } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount);
       const investors = [accounts[0], accounts[1]];
       const tickets = [etherToWei(1), etherToWei(2)];
 
-      await commitment.setOrderedWhitelist(investors, tickets);
+      await commitment.setOrderedWhitelist(investors, tickets, {from: whitelistAdminAccount});
 
-      await expect(commitment.setOrderedWhitelist(investors, tickets)).to.be.rejectedWith(
+      await expect(commitment.setOrderedWhitelist(investors, tickets, {from: whitelistAdminAccount})).to.be.rejectedWith(
         EvmError
       );
     });
 
     it("should not be possible to set it after commitment is started", async () => {
       const startingDate = closeFutureDate();
-      const { commitment, curve } = await deployAllContracts({
+      const { commitment, curve } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
         commitmentCfg: { startTimestamp: startingDate }
       });
       const investors = [accounts[0], accounts[1]];
@@ -76,17 +76,17 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
 
       await setTimeTo(startingDate);
 
-      await expect(commitment.setOrderedWhitelist(investors, tickets)).to.be.rejectedWith(
+      await expect(commitment.setOrderedWhitelist(investors, tickets, {from: whitelistAdminAccount})).to.be.rejectedWith(
         EvmError
       );
     });
 
     it("should not be possible to set it with not matching input", async () => {
-      const { commitment, curve } = await deployAllContracts();
+      const { commitment, curve } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount);
       const investors = [accounts[0]];
       const tickets = [etherToWei(1), etherToWei(2)];
 
-      await expect(commitment.setOrderedWhitelist(investors, tickets)).to.be.rejectedWith(
+      await expect(commitment.setOrderedWhitelist(investors, tickets, {from: whitelistAdminAccount})).to.be.rejectedWith(
         EvmError
       );
     });
@@ -96,10 +96,10 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
 
   describe("set whitelisted investors", () => {
     it("should work", async () => {
-      const { commitment } = await deployAllContracts();
+      const { commitment } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount);
       const investors = [accounts[0], accounts[1]];
 
-      await commitment.setWhitelist(investors);
+      await commitment.setWhitelist(investors, {from: whitelistAdminAccount});
 
       expect(await commitment.whitelistedInvestors(0)).to.be.eq(investors[0]);
       expect(await commitment.whitelistedInvestors(1)).to.be.eq(investors[1]);
@@ -112,26 +112,26 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
     });
 
     it("should not be possible to set it twice", async () => {
-      const { commitment } = await deployAllContracts();
+      const { commitment } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount);
       const investors = [accounts[0], accounts[1]];
 
-      await commitment.setWhitelist(investors);
+      await commitment.setWhitelist(investors, {from: whitelistAdminAccount});
 
-      await expect(commitment.setWhitelist(investors)).to.be.rejectedWith(
+      await expect(commitment.setWhitelist(investors, {from: whitelistAdminAccount})).to.be.rejectedWith(
         EvmError
       );
     });
 
     it("should not be possible to set it after commitment is started", async () => {
       const startingDate = closeFutureDate();
-      const { commitment, curve } = await deployAllContracts({
+      const { commitment, curve } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
         commitmentCfg: { startTimestamp: startingDate }
       });
       const investors = [accounts[0], accounts[1]];
 
       await setTimeTo(startingDate);
 
-      await expect(commitment.setWhitelist(investors)).to.be.rejectedWith(
+      await expect(commitment.setWhitelist(investors, {from: whitelistAdminAccount})).to.be.rejectedWith(
         EvmError
       );
     });
@@ -140,13 +140,13 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
 
   describe("set whitelist investor with fixed investors", () => {
     it("should be possible to whitelist investors before fixed investors", async () => {
-      const { commitment } = await deployAllContracts();
+      const { commitment } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount);
       const whitelistedInvestors = [accounts[0], accounts[1]];
       const fixedInvestors = [accounts[2]];
       const fixedTickets = [etherToWei(1)];
 
-      await commitment.setWhitelist(whitelistedInvestors);
-      await commitment.setOrderedWhitelist(fixedInvestors, fixedTickets);
+      await commitment.setWhitelist(whitelistedInvestors, {from: whitelistAdminAccount});
+      await commitment.setOrderedWhitelist(fixedInvestors, fixedTickets, {from: whitelistAdminAccount});
 
       expect(await commitment.whitelistedInvestors(0)).to.be.eq(
         whitelistedInvestors[0]
@@ -183,13 +183,13 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
     });
 
     it("should be possible to whitelist investors after fixed investors", async () => {
-      const { commitment } = await deployAllContracts();
+      const { commitment } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount);
       const whitelistedInvestors = [accounts[0], accounts[1]];
       const fixedInvestors = [accounts[2]];
       const fixedTickets = [etherToWei(1)];
 
-      await commitment.setOrderedWhitelist(fixedInvestors, fixedTickets);
-      await commitment.setWhitelist(whitelistedInvestors);
+      await commitment.setOrderedWhitelist(fixedInvestors, fixedTickets, {from: whitelistAdminAccount});
+      await commitment.setWhitelist(whitelistedInvestors, {from: whitelistAdminAccount});
 
       expect(await commitment.whitelistedInvestors(0)).to.be.eq(
         whitelistedInvestors[0]
@@ -250,7 +250,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
           .round(0, 4)
       ];
 
-      const { commitment, lockedAccount } = await deployAllContracts({
+      const { commitment, lockedAccount } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
         commitmentCfg: {
           fixedInvestors,
           fixedTickets: fixedDeclaredTickets,
@@ -296,7 +296,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
         .round(0, 4)
         .add(1); // for rounding error
 
-      const { commitment, lockedAccount, neumark } = await deployAllContracts({
+      const { commitment, lockedAccount, neumark } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
         commitmentCfg: {
           fixedInvestors,
           fixedTickets: fixedDeclaredTickets,
@@ -329,7 +329,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       const fixedInvestors = [investor1];
       const fixedDeclaredTickets = [etherToWei(2)];
 
-      const { commitment, lockedAccount, neumark, curve } = await deployAllContracts({
+      const { commitment, lockedAccount, neumark, curve } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
         commitmentCfg: {
           fixedInvestors,
           fixedTickets: fixedDeclaredTickets,
@@ -347,7 +347,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       // send out as remainder, mind the ether rate 10 ETH = 1 EUR
       // with market rate weis would be 0
       const etherDeclarationDiff = eurUlpToEth(await curve.rewindInverse(5), 0.1).round(0);
-      console.log(etherDeclarationDiff);
+      // console.log(etherDeclarationDiff);
       const actualInvestor1Commitment = fixedDeclaredTickets[0].sub(etherDeclarationDiff);
 
       await setTimeTo(startingDate);
@@ -386,7 +386,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
         .div(2)
         .round(0, 4);
 
-      const { commitment, lockedAccount } = await deployAllContracts({
+      const { commitment, lockedAccount } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
         commitmentCfg: {
           fixedInvestors,
           fixedTickets: fixedDeclaredTickets,
@@ -439,7 +439,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
         (await verificationCurve.issueInEth(ticketSizes[1])).div(2).round(0, 4)
       ];
 
-      const { commitment, lockedAccount } = await deployAllContracts({
+      const { commitment, lockedAccount } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
         commitmentCfg: {
           whitelistedInvestors,
           startTimestamp: startingDate
@@ -475,7 +475,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       const investor = accounts[2];
       const ticketSize = etherToWei(1.5);
 
-      const { commitment, lockedAccount } = await deployAllContracts({
+      const { commitment, lockedAccount } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
         commitmentCfg: {
           whitelistedInvestors,
           startTimestamp: startingDate
@@ -494,7 +494,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       const investor = accounts[2];
       const ticketSize = etherToWei(1.5);
 
-      const { commitment, lockedAccount } = await deployAllContracts({
+      const { commitment, lockedAccount } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
         commitmentCfg: {
           whitelistedInvestors,
           startTimestamp: startingDate
@@ -513,7 +513,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       const investor = accounts[2];
       const ticketSize = etherToWei(1.5);
 
-      const { commitment, lockedAccount } = await deployAllContracts({
+      const { commitment, lockedAccount } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
         commitmentCfg: {
           whitelistedInvestors,
           duration,
@@ -544,7 +544,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
         commitment,
         lockedAccount,
         etherToken
-      } = await deployAllContracts({
+      } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
         commitmentCfg: {
           whitelistedInvestors,
           duration,
@@ -586,7 +586,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
   });
 
   describe("successful comittment", () => {
-    it.only("should burn unused neumarks from fixed pool", async () => {
+    it("should burn unused neumarks from fixed pool", async () => {
       const startingDate = closeFutureDate();
       const duration = MONTH;
       const investor1 = accounts[0];
@@ -604,7 +604,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       );
       const expectedError = new web3.BigNumber(0);
 
-      const { commitment, lockedAccount, curve, neumark } = await deployAllContracts({
+      const { commitment, lockedAccount, curve, neumark } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
         commitmentCfg: {
           fixedInvestors,
           fixedTickets: fixedDeclaredTickets,
@@ -638,52 +638,51 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       );
       expect(difference).to.be.bignumber.eq(expectedError); // should burn unsed fixed pool neumarks
     });
+    it("check all events");
   });
-  // check all events
+  async function investorTicketBiggerThenDeclared(
+    investorAccounts,
+    investorDeclaration,
+    firstInvestorTicket
+  ) {
+    const startingDate = closeFutureDate();
+    const mutableCurve = await deployMutableCurve();
+    const equalShareSize = investorDeclaration[0];
+    const curveShareSize = firstInvestorTicket.sub(equalShareSize);
+    const expectedTicketsSum = investorDeclaration.reduce(
+      (a, x) => a.add(x),
+      new web3.BigNumber(0)
+    );
+    const expectedNeumarkAmmountIssuance = [
+      ...(await sequence(investorDeclaration, mutableCurve.issueInEth)),
+      await mutableCurve.issueInEth(curveShareSize)
+    ];
+    const expectedInvestor1NeumarkShare = new web3.BigNumber(0)
+      .add(expectedNeumarkAmmountIssuance[0]) // fixed part
+      .add(last(expectedNeumarkAmmountIssuance)) // curve part
+      .div(2)
+      .round(0, 4);
+
+    const { commitment, lockedAccount } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
+      commitmentCfg: {
+        fixedInvestors: investorAccounts,
+        fixedTickets: investorDeclaration,
+        startTimestamp: startingDate
+      }
+    });
+    await setTimeTo(startingDate);
+    await commitment.commit({
+      value: firstInvestorTicket,
+      from: investorAccounts[0]
+    });
+
+    expect(await lockedAccount.balanceOf(investorAccounts[0])).to.be.balanceWith({
+      ether: firstInvestorTicket,
+      neumarks: expectedInvestor1NeumarkShare
+    });
+  }
 });
 
 function accumulateGasPrice(tx, acc = new web3.BigNumber(0)) {
   return new web3.BigNumber(tx.receipt.gasUsed).add(acc);
-}
-
-async function investorTicketBiggerThenDeclared(
-  investorAccounts,
-  investorDeclaration,
-  firstInvestorTicket
-) {
-  const startingDate = closeFutureDate();
-  const mutableCurve = await deployMutableCurve();
-  const equalShareSize = investorDeclaration[0];
-  const curveShareSize = firstInvestorTicket.sub(equalShareSize);
-  const expectedTicketsSum = investorDeclaration.reduce(
-    (a, x) => a.add(x),
-    new web3.BigNumber(0)
-  );
-  const expectedNeumarkAmmountIssuance = [
-    ...(await sequence(investorDeclaration, mutableCurve.issueInEth)),
-    await mutableCurve.issueInEth(curveShareSize)
-  ];
-  const expectedInvestor1NeumarkShare = new web3.BigNumber(0)
-    .add(expectedNeumarkAmmountIssuance[0]) // fixed part
-    .add(last(expectedNeumarkAmmountIssuance)) // curve part
-    .div(2)
-    .round(0, 4);
-
-  const { commitment, lockedAccount } = await deployAllContracts({
-    commitmentCfg: {
-      fixedInvestors: investorAccounts,
-      fixedTickets: investorDeclaration,
-      startTimestamp: startingDate
-    }
-  });
-  await setTimeTo(startingDate);
-  await commitment.commit({
-    value: firstInvestorTicket,
-    from: investorAccounts[0]
-  });
-
-  expect(await lockedAccount.balanceOf(investorAccounts[0])).to.be.balanceWith({
-    ether: firstInvestorTicket,
-    neumarks: expectedInvestor1NeumarkShare
-  });
 }
