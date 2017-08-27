@@ -515,7 +515,38 @@ contract(
         );
       });
 
-      it("should allow fixed investor to make commitment in mulitple tickets");
+      it.only("should allow fixed investor to make commitment in mulitple tickets", async () => {
+        const startingDate = closeFutureDate();
+        const mutableCurve = await deployMutableCurve();
+        const investor = accounts[0];
+        const actualInvestorTickets = [etherToWei(1.19280128309), etherToWei(11.1298001), etherToWei(1.8991)];
+        const totalDeclaredTicket = actualInvestorTickets.reduce((s, v) => s.add(v), new web3.BigNumber(0));
+        const expectedNeumarkAmmountForDeclaredTicket = await mutableCurve.issueInEth(totalDeclaredTicket);
+
+        const {
+          commitment,
+          lockedAccount
+        } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
+          commitmentCfg: {
+            fixedInvestors: [investor],
+            fixedTickets: [totalDeclaredTicket],
+            startTimestamp: startingDate
+          }
+        });
+        await setTimeTo(startingDate);
+        for (let idx = 0; idx < actualInvestorTickets.length; idx++) {
+          await commitment.commit({
+            value: actualInvestorTickets[idx],
+            from: investor
+          });
+        }
+        expect(
+          await lockedAccount.balanceOf(investor)
+        ).to.be.balanceWith({
+          ether: totalDeclaredTicket,
+          neumarks: expectedNeumarkAmmountForDeclaredTicket
+        });
+      });
       it("should not allow whitelisted investor to take part in fixed ");
       it("should not work when investor is not on the list");
       it("should not be possible to invest before ico");
