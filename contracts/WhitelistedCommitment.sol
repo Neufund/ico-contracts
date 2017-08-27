@@ -93,33 +93,35 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
         internal
         returns (uint256)
     {
-        uint256 fixedTicket = fixedCostTickets[investor]; // returns 0 in case of investor not in mapping
-        uint256 fixedNeumarks = fixedCostNeumarks[investor]; // returns 0 in case of investor not in mapping
+        uint256 fixedRemainingTicket = fixedCostTickets[investor]; // returns 0 in case of investor not in mapping
+        uint256 fixedRemainingNeumarks = fixedCostNeumarks[investor]; // returns 0 in case of investor not in mapping
 
         // what is above limit for fixed price should be rewarded from curve
         uint256 reward = 0;
-        if ( eth > fixedTicket ) {
-            if (fixedTicket > 0) // recompute euro if part of msg.value goes thru whitelist
-                euros = convertToEUR(eth - fixedTicket);
-            reward = curve.issue(euros); // PublicCommitment.giveNeumarks(investor, eth - fixedTicket, euros);
-            eth = fixedTicket;
+        if ( eth > fixedRemainingTicket ) {
+            if (fixedRemainingTicket > 0) // recompute euro if part of msg.value goes thru whitelist
+                euros = convertToEUR(eth - fixedRemainingTicket);
+            reward = curve.issue(euros);
+            eth = fixedRemainingTicket;
         }
 
         // get pro rata neumark reward for any eth left
         uint256 fixedreward = 0;
         if (eth > 0) {
-            fixedreward = proportion(fixedNeumarks, eth, fixedTicket);
+            fixedreward = proportion(fixedRemainingNeumarks, eth, fixedRemainingTicket);
             // decrease ticket size and neumarks left
-            if (absDiff(fixedreward, fixedNeumarks) > 9) {
-                fixedCostNeumarks[investor] -= fixedreward;
-                // this will not overflow, we check fixedCostTickets[investor] > eth earlier
-                fixedCostTickets[investor] -= eth;
-            } else {
+            if ((fixedreward > fixedRemainingNeumarks)
+                || (fixedRemainingNeumarks - fixedreward < 10))
+            {
                 // give rest of the neumarks
-                fixedreward = fixedNeumarks;
+                fixedreward = fixedRemainingNeumarks;
                 // zero whole ticket
                 fixedCostNeumarks[investor] = 0;
                 fixedCostTickets[investor] = 0;
+            } else {
+                fixedCostNeumarks[investor] -= fixedreward;
+                // this will not overflow, we check fixedCostTickets[investor] > eth earlier
+                fixedCostTickets[investor] -= eth;
             }
         }
         // distribute to investor and platform operator
