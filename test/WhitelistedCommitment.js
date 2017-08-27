@@ -90,6 +90,8 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
         EvmError
       );
     });
+
+    it("should not cross gas limit of 4 000 000 when inserting 100 investors");
   });
 
   describe("set whitelisted investors", () => {
@@ -133,6 +135,7 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
         EvmError
       );
     });
+    it("should not cross gas limit of 4 000 000 when inserting 1000 investors");
   });
 
   describe("set whitelist investor with fixed investors", () => {
@@ -340,8 +343,9 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       const expectedInvestor1NeumarkShare = expectedNeumarkAmmount
         .div(2)
         .round(0, 4)
-      // use curve inverse to get weis producing less than 9000 neumarks which is
-      // send out as remainder
+      // use curve inverse to get weis producing less than 9 neumarks which is
+      // send out as remainder, mind the ether rate 10 ETH = 1 EUR
+      // with market rate weis would be 0
       const etherDeclarationDiff = eurUlpToEth(await curve.rewindInverse(5), 0.1).round(0);
       console.log(etherDeclarationDiff);
       const actualInvestor1Commitment = fixedDeclaredTickets[0].sub(etherDeclarationDiff);
@@ -360,10 +364,11 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       );
       expect(await commitment.fixedCostTickets(investor1)).to.be.bignumber.equal(0);
       // if not zeroed investor1 can steal a small number of additional neumarks
-      /* await commitment.commit({
-        value: etherDeclarationDiff,
-        from: investor1
-      });*/
+      // and below is possible
+      // await commitment.commit({
+      //  value: etherDeclarationDiff,
+      //  from: investor1
+      // });
       // what's worse next investor will not be able to get all his neumarks as
       // those go from a general pool held by commitment contract
     });
@@ -581,10 +586,9 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
   });
 
   describe("successful comittment", () => {
-    it("should burn unused neumarks from fixed pool", async () => {
+    it.only("should burn unused neumarks from fixed pool", async () => {
       const startingDate = closeFutureDate();
       const duration = MONTH;
-      const mutableCurve = await deployMutableCurve();
       const investor1 = accounts[0];
       const fixedInvestors = [investor1, accounts[1]];
       const fixedDeclaredTickets = [etherToWei(1), etherToWei(3)];
@@ -592,12 +596,15 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       const expectedTicketsSum = fixedDeclaredTickets[0].add(
         fixedDeclaredTickets[1]
       );
-      const expectedNeumarkAmmountOnFixedRate = await mutableCurve.issueInEth(
+      const expectedNeumarkAmmountOnFixedRate = await curveInEther(
         expectedTicketsSum
+      );
+      const expectedNeumarkAmmountOnInvestor1 = await curveInEther(
+        fixedDeclaredTickets[0]
       );
       const expectedError = new web3.BigNumber(0);
 
-      const { commitment, lockedAccount, curve } = await deployAllContracts({
+      const { commitment, lockedAccount, curve, neumark } = await deployAllContracts({
         commitmentCfg: {
           fixedInvestors,
           fixedTickets: fixedDeclaredTickets,
@@ -608,6 +615,9 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       });
       expect(await curve.totalEuroUlps()).to.be.bignumber.eq(
         ethToEur(expectedTicketsSum)
+      );
+      expect(await neumark.balanceOf(commitment.address)).to.be.bignumber.eq(
+        expectedNeumarkAmmountOnFixedRate
       ); // should secure all neumarks on fixed pool
 
       await setTimeTo(startingDate);
@@ -615,6 +625,10 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
         value: fixedDeclaredTickets[0],
         from: investor1
       });
+
+      expect(await neumark.balanceOf(commitment.address)).to.be.bignumber.eq(
+        expectedNeumarkAmmountOnFixedRate.sub(expectedNeumarkAmmountOnInvestor1)
+      ); // make sure we still hold expected number of Neumarks
 
       await setTimeTo(startingDate + duration + HOUR);
       await commitment.finalize();
@@ -625,9 +639,6 @@ contract("WhitelistedCommitment", ([_, owner, ...accounts]) => {
       expect(difference).to.be.bignumber.eq(expectedError); // should burn unsed fixed pool neumarks
     });
   });
-
-  // it should not accept ether send without data
-
   // check all events
 });
 
