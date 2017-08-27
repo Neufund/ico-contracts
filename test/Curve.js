@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import gasCost from "./helpers/gasCost";
+import { txGasCost } from "./helpers/gasCost";
 import { eventValue } from "./helpers/events";
 
 const Curve = artifacts.require("./Curve.sol");
@@ -23,10 +23,6 @@ contract("Curve", accounts => {
     await neumark.changeController(controller.address);
     curve = await Curve.new(controller.address);
     curveGas = await CurveGas.new(controller.address);
-  });
-
-  it("should deploy", async () => {
-    console.log(`\tCurve took ${gasCost(curve)}.`);
   });
 
   it("should start at zero", async () => {
@@ -147,26 +143,27 @@ contract("Curve", accounts => {
       [80000000000, 1500000000],
       [90000000000, 1500000000]
     ];
-    const gas = await Promise.all(
+    const gasChunks = await Promise.all(
       correct.map(async ([i, v]) => {
         const [neumarkUlps, gas] = await curveGas.curveGas.call(
           EUR_DECIMALS.mul(i)
         );
-        const neumarks = 0 | neumarkUlps.div(NMK_DECIMALS).floor().valueOf();
+        const neumarks = neumarkUlps.div(NMK_DECIMALS).floor().toNumber();
         assert.equal(neumarks, v, `Curve compute failed for value ${i}`);
-        return [i, 0 | gas.valueOf()];
+        return gas.toNumber();
       })
     );
-    const totalGas = gas.reduce((t, [_, gas]) => t + gas, 0);
-    console.log(`\t${correct.length} evaluations took ${gasCost(totalGas)}.`);
+    const totalGas = gasChunks.reduce((sum, gas) => sum + gas, 0);
+
+    expect(totalGas).to.be.eq(136282);
   });
 
   it("should issue Neumarks", async () => {
     assert.equal((await curve.totalEuroUlps.call()).valueOf(), 0);
     assert.equal((await neumark.totalSupply.call()).valueOf(), 0);
 
-    const r1 = await curve.issue(EUR_DECIMALS.mul(100), { from: accounts[1] }); // TODO check result
-    console.log(`\tIssue took ${gasCost(r1)}.`);
+    const r1 = await curve.issue(EUR_DECIMALS.mul(100), { from: accounts[1] });
+    expect(txGasCost(r1)).to.be.eq(191726);
     assert.equal(
       (await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(),
       100
@@ -184,7 +181,7 @@ contract("Curve", accounts => {
     );
 
     const r2 = await curve.issue(EUR_DECIMALS.mul(900), { from: accounts[2] });
-    console.log(`\tIssue took ${gasCost(r2)}.`);
+    expect(txGasCost(r2)).to.be.eq(101924);
     assert.equal(
       (await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(),
       1000
@@ -206,7 +203,7 @@ contract("Curve", accounts => {
     // Issue Neumarks for 1 mln Euros
     const euroUlps = EUR_DECIMALS.mul(1000000);
     const r = await curve.issue(euroUlps, { from: accounts[1] });
-    console.log(`\tIssue took ${gasCost(r)}.`);
+    expect(txGasCost(r)).to.be.eq(191936);
     const neumarkUlps = await neumark.balanceOf.call(accounts[1]);
     const neumarks = neumarkUlps.div(NMK_DECIMALS).floor().valueOf();
 
@@ -214,7 +211,7 @@ contract("Curve", accounts => {
     const toBurn = Math.floor(neumarks / 3);
     const toBurnUlps = NMK_DECIMALS.mul(toBurn);
     const burned = await curve.burnNeumark(toBurnUlps, { from: accounts[1] });
-    console.log(`\tBurn took ${gasCost(burned)}.`);
+    expect(txGasCost(burned)).to.be.eq(112192);
     assert.equal(
       (await neumark.balanceOf.call(accounts[1]))
         .div(NMK_DECIMALS)

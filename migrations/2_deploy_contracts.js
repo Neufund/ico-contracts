@@ -9,16 +9,14 @@ const Curve = artifacts.require("Curve");
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const AccessRoles = artifacts.require("AccessRoles");
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const months = 30 * 24 * 60 * 60;
-const FP_SCALE = 10000;
 const ether = Wei => Wei * 10 ** 18;
 
 /* const minCap = new web3.BigNumber(web3.toWei(1, 'ether'));
 const maxCap = new web3.BigNumber(web3.toWei(30, 'ether'));
 const startDate = Date.now.getTime() / 1000; */
 
-module.exports = function(deployer, network, accounts) {
+module.exports = function deployContracts(deployer, network, accounts) {
   deployer.then(async () => {
     console.log("AccessControl deployment...");
     await deployer.deploy(RoleBasedAccessControl);
