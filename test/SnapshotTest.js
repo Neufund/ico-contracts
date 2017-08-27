@@ -1,4 +1,5 @@
-import gasCost from "./helpers/gasCost";
+import { expect } from "chai";
+import { txGasCost } from "./helpers/gasCost";
 import { latestTimestamp } from "./helpers/latestTime";
 import increaseTime from "./helpers/increaseTime";
 import moment from "moment";
@@ -8,7 +9,7 @@ const SnapshotTest = artifacts.require("./test/SnapshotTest.sol");
 
 const day = 24 * 3600;
 
-contract("Snapshot", accounts => {
+contract("Snapshot", () => {
   let value;
 
   const createSnapshot = async () => {
@@ -20,10 +21,6 @@ contract("Snapshot", accounts => {
 
   beforeEach(async () => {
     value = await SnapshotTest.new();
-  });
-
-  it("should deploy", async () => {
-    console.log(`\tSnapshot took ${gasCost(value)}.`);
   });
 
   it("should be initially unset", async () => {
@@ -41,12 +38,13 @@ contract("Snapshot", accounts => {
 
   it("should create a snapshot", async () => {
     const r = await value.createSnapshot();
-    console.log(`\tcreateSnapshot took ${gasCost(r)}`);
+    expect(txGasCost(r)).to.be.eq(22869);
   });
 
   it("should set a new value", async () => {
     const r = await value.setValue(1234);
-    console.log(`\tsetValue took ${gasCost(r)}`);
+
+    expect(txGasCost(r)).to.be.eq(102855);
 
     assert.equal(1234, await value.getValue.call(12));
     assert.isTrue(await value.hasValue.call());
@@ -56,7 +54,7 @@ contract("Snapshot", accounts => {
     await value.setValue(1234);
 
     const r = await value.setValue(12345);
-    console.log(`\tsetValue took ${gasCost(r)}`);
+    expect(txGasCost(r)).to.be.eq(27616);
 
     assert.equal(12345, await value.getValue.call(12));
     assert.isTrue(await value.hasValue.call());

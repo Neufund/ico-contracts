@@ -1,11 +1,14 @@
 import invariant from "invariant";
 
-export default function(chai, utils) {
-  chai.Assertion.addMethod("balanceWith", function({ ether, neumarks }) {
+export default function(chai) {
+  chai.Assertion.addMethod("balanceWith", function balanceWith({
+    ether,
+    neumarks
+  }) {
     invariant(ether, "missing ether parameter");
     invariant(neumarks, "missing neumarks parameter");
 
-    const balance = this._obj;
+    const balance = this._obj; // eslint-disable-line no-underscore-dangle
 
     chai
       .expect(balance[0], `Ether balance should be eq to ${ether.toString()}`)

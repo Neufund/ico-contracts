@@ -5,5 +5,5 @@ export default function error(tx) {
   if (!hasEvent(tx, "Error")) {
     return 0;
   }
-  return parseInt(eventValue(tx, "Error", "code"));
+  return parseInt(eventValue(tx, "Error", "code"), 10);
 }

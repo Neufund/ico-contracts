@@ -1,5 +1,3 @@
-import gasCost from "./helpers/gasCost";
-
 const Neumark = artifacts.require("./Neumark.sol");
 const NeumarkController = artifacts.require("./NeumarkController.sol");
 
@@ -13,10 +11,6 @@ contract("Neumark", accounts => {
     await neumark.changeController(controller.address);
   });
 
-  it("should deploy", async () => {
-    console.log(`\tNeumark took ${gasCost(neumark)}.`);
-    console.log(`\tController took ${gasCost(controller)}.`);
-  });
   it("should have name Neumark, symbol NMK and 18 decimals", async () => {
     assert.equal(await neumark.name.call(), "Neumark");
     assert.equal(await neumark.symbol.call(), "NMK");
