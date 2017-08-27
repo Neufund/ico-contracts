@@ -54,7 +54,7 @@ contract("AccessControl", ([accessController, owner1, owner2]) => {
       owner1,
       exampleRole,
       accessControlled.address,
-      TriState.Allowed
+      TriState.Allow
     );
     expectAccessChangedEvent(
       tx,
@@ -62,7 +62,7 @@ contract("AccessControl", ([accessController, owner1, owner2]) => {
       exampleRole,
       accessControlled.address,
       TriState.Unset,
-      TriState.Allowed
+      TriState.Allow
     );
     tx = await accessControlled.someFunction({ from: owner1 });
     // tx = await expect().to.be.ok;
@@ -74,7 +74,7 @@ contract("AccessControl", ([accessController, owner1, owner2]) => {
       owner1,
       exampleRole,
       accessControlled.address,
-      TriState.Allowed
+      TriState.Allow
     );
     expectAccessChangedEvent(
       tx,
@@ -82,7 +82,7 @@ contract("AccessControl", ([accessController, owner1, owner2]) => {
       exampleRole,
       accessControlled.address,
       TriState.Unset,
-      TriState.Allowed
+      TriState.Allow
     );
     await expect(
       accessControlled.someFunction({ from: owner2 })
@@ -94,7 +94,7 @@ contract("AccessControl", ([accessController, owner1, owner2]) => {
       owner2,
       exampleRole,
       accessControlled.address,
-      TriState.Denied
+      TriState.Deny
     );
     expectAccessChangedEvent(
       tx,
@@ -102,7 +102,7 @@ contract("AccessControl", ([accessController, owner1, owner2]) => {
       exampleRole,
       accessControlled.address,
       TriState.Unset,
-      TriState.Denied
+      TriState.Deny
     );
     await expect(
       accessControlled.someFunction({ from: owner2 })

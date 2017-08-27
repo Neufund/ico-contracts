@@ -53,7 +53,7 @@ export async function spawnLockedAccount(
     lockAdminAccount,
     lockedAccountAdminRole,
     lockedAccount.address,
-    TriState.Allowed
+    TriState.Allow
   );
   await lockedAccount.setPenaltyDisbursal(operatorWallet, {
     from: lockAdminAccount
@@ -118,7 +118,7 @@ export async function spawnWhitelistedCommitment(
     whitelistAdminAccount,
     whitelistAdminRole,
     commitment.address,
-    TriState.Allowed
+    TriState.Allow
   );
   await lockedAccount.setController(commitment.address, {
     from: lockAdminAccount
