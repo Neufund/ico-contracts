@@ -2,7 +2,7 @@ pragma solidity 0.4.15;
 
 import './PublicCommitment.sol';
 
-contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitment {
+contract WhitelistedCommitment is AccessControlled, AccessRoles, CommitmentBase {
 
     // mapping of addresses allowed to participate, ticket value is ignored
     mapping (address => uint256) public whitelisted;
@@ -58,15 +58,6 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
         whitelistedInvestors = addresses;
     }
 
-    /// called by finalize() so may be called by ANYONE
-    /// intended to be overriden
-    function onCommitmentSuccessful()
-        internal
-    {
-        // rollback unspect neumarks from fixed pool
-        rollbackCurve();
-    }
-
     /// allows to abort commitment process before it starts and rollback curve
     // @remco this is a small breach of trust as we can invalidate terms any moment
     function abortCommitment()
@@ -78,7 +69,6 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
         selfdestruct(address(0));
     }
 
-    /// burns all neumarks in commitment contract possesions
     function rollbackCurve()
         internal
     {
@@ -88,8 +78,24 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
         }
     }
 
-    /// overrides base class to compute neumark reward for ordered whitelistfix investors
-    function giveNeumarks(address investor, uint256 eth, uint256 euros)
+    // implement BaseCommitment abstract functions
+    // all overriden functions are called via public commit and finalize
+
+    function onCommitmentSuccessful()
+        internal
+    {
+        // rollback unspect neumarks from fixed pool
+        rollbackCurve();
+    }
+
+    function onCommitmentFailed()
+        internal
+    {
+        // unlock all accounts in lockedAccount
+        lockedAccount.controllerFailed();
+    }
+
+    function giveNeumarks(address investor, uint256 eth)
         internal
         returns (uint256)
     {
@@ -99,9 +105,8 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
         // what is above limit for fixed price should be rewarded from curve
         uint256 reward = 0;
         if ( eth > fixedRemainingTicket ) {
-            if (fixedRemainingTicket > 0) // recompute euro if part of msg.value goes thru whitelist
-                euros = convertToEUR(eth - fixedRemainingTicket);
-            reward = neumark.issueForEuro(euros);
+            uint256 euroUlps = convertToEUR(eth - fixedRemainingTicket);
+            reward = neumark.issueForEuro(euroUlps);
             eth = fixedRemainingTicket;
         }
 
@@ -128,8 +133,7 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
         return distributeNeumarks(investor, reward + fixedreward);
     }
 
-    /// overrides base class to check if msg.sender is on any of the lists
-    function validPurchase()
+    function validCommitment()
         internal
         constant
         returns (bool)
@@ -138,10 +142,14 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
         return (whitelisted[msg.sender] > 0 || fixedCostTickets[msg.sender] > 0);
     }
 
-    function WhitelistedCommitment(IAccessPolicy _policy, EtherToken _ethToken,
-        LockedAccount _lockedAccount, Neumark _neumark)
-         PublicCommitment(_ethToken, _lockedAccount, _neumark)
+    function WhitelistedCommitment(
+        IAccessPolicy _policy,
+        EtherToken _ethToken,
+        LockedAccount _lockedAccount,
+        Neumark _neumark
+    )
          AccessControlled(_policy)
+         CommitmentBase(_ethToken, _lockedAccount, _neumark)
     {
     }
 }
