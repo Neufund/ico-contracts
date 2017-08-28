@@ -1,13 +1,38 @@
 import { etherToWei, DIGITS } from "./unitConverter";
 import { eventValue } from "./events";
+import { TriState, EVERYONE } from "./triState";
 
+const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
+const AccessRoles = artifacts.require("AccessRoles");
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
 const Neumark = artifacts.require("Neumark");
 
 async function deployNeumark() {
+  const rbac = await RoleBasedAccessControl.new();
+  const roles = await AccessRoles.new();
   const etherToken = await EtherToken.new();
-  const neumark = await Neumark.new();
+  const neumark = await Neumark.new(rbac.address);
+
+  // TODO: more specific rights
+  await rbac.setUserRole(
+    EVERYONE,
+    await roles.ROLE_NEUMARK_ISSUER(),
+    neumark.address,
+    TriState.Allow
+  );
+  await rbac.setUserRole(
+    EVERYONE,
+    await roles.ROLE_NEUMARK_BURNER(),
+    neumark.address,
+    TriState.Allow
+  );
+  await rbac.setUserRole(
+    EVERYONE,
+    await roles.ROLE_TRANSFERS_ADMIN(),
+    neumark.address,
+    TriState.Allow
+  );
 
   return neumark;
 }

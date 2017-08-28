@@ -25,7 +25,7 @@ contract(
         const expectedTicketsSum = tickets[0].add(tickets[1]);
         const expectedNeumarkAmmount = await curveInEther(expectedTicketsSum);
 
-        const { commitment, curve } = await deployAllContracts(
+        const { commitment } = await deployAllContracts(
           lockAdminAccount,
           whitelistAdminAccount
         );

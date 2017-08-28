@@ -1,7 +1,12 @@
 import { expect } from "chai";
 import gasCost from "./helpers/gasCost";
 import { eventValue } from "./helpers/events";
+import { TriState } from "./helpers/triState";
 
+const RoleBasedAccessControl = artifacts.require(
+  "./AccessControl/RoleBasedAccessControl.sol"
+);
+const AccessRoles = artifacts.require("./AccessRoles");
 const Neumark = artifacts.require("./Neumark.sol");
 
 const BigNumber = web3.BigNumber;
@@ -9,10 +14,43 @@ const EUR_DECIMALS = new BigNumber(10).toPower(18);
 const NMK_DECIMALS = new BigNumber(10).toPower(18);
 
 contract("Neumark", accounts => {
+  let rbac;
   let neumark;
 
   beforeEach(async () => {
-    neumark = await Neumark.new();
+    rbac = await RoleBasedAccessControl.new();
+    neumark = await Neumark.new(rbac.address);
+    const roles = await AccessRoles.new();
+    await rbac.setUserRole(
+      accounts[0],
+      await roles.ROLE_NEUMARK_ISSUER(),
+      neumark.address,
+      TriState.Allow
+    );
+    await rbac.setUserRole(
+      accounts[1],
+      await roles.ROLE_NEUMARK_ISSUER(),
+      neumark.address,
+      TriState.Allow
+    );
+    await rbac.setUserRole(
+      accounts[2],
+      await roles.ROLE_NEUMARK_ISSUER(),
+      neumark.address,
+      TriState.Allow
+    );
+    await rbac.setUserRole(
+      accounts[0],
+      await roles.ROLE_NEUMARK_BURNER(),
+      neumark.address,
+      TriState.Allow
+    );
+    await rbac.setUserRole(
+      accounts[1],
+      await roles.ROLE_NEUMARK_BURNER(),
+      neumark.address,
+      TriState.Allow
+    );
   });
 
   it("should deploy", async () => {

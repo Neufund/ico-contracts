@@ -1,5 +1,5 @@
 import gasCost from "./gasCost";
-import { TriState } from "./triState.js";
+import { TriState, EVERYONE } from "./triState.js";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
@@ -34,7 +34,7 @@ export async function spawnLockedAccount(
   accessRoles = await AccessRoles.new();
   etherToken = await EtherToken.new();
   // console.log(`\tEtherToken took ${gasCost(etherToken)}.`);
-  neumark = await Neumark.new();
+  neumark = await Neumark.new(accessControl.address);
   lockedAccount = await LockedAccount.new(
     accessControl.address,
     etherToken.address,
@@ -52,6 +52,32 @@ export async function spawnLockedAccount(
   await lockedAccount.setPenaltyDisbursal(operatorWallet, {
     from: lockAdminAccount
   });
+
+  // TODO: Restrict to correct spawened contracts
+  await accessControl.setUserRole(
+    EVERYONE,
+    await accessRoles.ROLE_SNAPSHOT_CREATOR(),
+    neumark.address,
+    TriState.Allow
+  );
+  await accessControl.setUserRole(
+    EVERYONE,
+    await accessRoles.ROLE_NEUMARK_ISSUER(),
+    neumark.address,
+    TriState.Allow
+  );
+  await accessControl.setUserRole(
+    EVERYONE,
+    await accessRoles.ROLE_NEUMARK_BURNER(),
+    neumark.address,
+    TriState.Allow
+  );
+  await accessControl.setUserRole(
+    EVERYONE,
+    await accessRoles.ROLE_TRANSFERS_ADMIN(),
+    neumark.address,
+    TriState.Allow
+  );
 }
 
 export async function spawnPublicCommitment(
