@@ -746,7 +746,7 @@ contract(
     describe("successful comittment", () => {
       it("should burn unused neumarks from fixed pool", async () => {
           // sets min cap so commitment is successful
-          shouldBurnUnusedNeumarks(etherToWei(0.5));
+          await shouldBurnUnusedNeumarks(etherToWei(0.5));
       });
     });
 
@@ -765,7 +765,6 @@ contract(
       const expectedNeumarkAmmountOnFixedRate = await mutableCurve.issueInEth(
         expectedTicketsSum
       );
-      const expectedError = new web3.BigNumber(309243939690474); // this is much, much less then 1 cent
 
       const {
         commitment,
@@ -780,9 +779,11 @@ contract(
           duration
         }
       });
+
+      // euro for which neumarks were issued must match tickets
       expect(await curve.totalEuroUlps()).to.be.bignumber.eq(
         ethToEur(expectedTicketsSum)
-      ); // should secure all neumarks on fixed pool
+      );
 
       await setTimeTo(startingDate);
       await commitment.commit({
@@ -795,11 +796,8 @@ contract(
 
       expect(await commitment.wasSuccessful()).to.be.true;
 
-      const difference = ethToEur(fixedDeclaredTickets[0]).sub(
-        await curve.totalEuroUlps()
-      );
-      // should burn unsed fixed pool neumarks
-      expect(difference).to.be.bignumber.eq(expectedError);
+      // neumarks corresponding to ticket 1 must be burned to curve is rollbacked to ticket 0
+      expect(await curve.totalEuroUlps()).to.be.bignumber.eq(ethToEur(fixedDeclaredTickets[0]));
     }
 
     async function investorTicketBiggerThenDeclared(
