@@ -1,13 +1,16 @@
 require("babel-register");
 
-const NeumarkController = artifacts.require("NeumarkController");
 const Neumark = artifacts.require("Neumark");
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
 const PublicCommitment = artifacts.require("PublicCommitment");
-const Curve = artifacts.require("Curve");
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const AccessRoles = artifacts.require("AccessRoles");
+
+// Needs to match contracts/AccessControl/RoleBasedAccessControl.sol:TriState
+const TriState = { Unset: 0, Allow: 1, Deny: 2 };
+const EVERYONE = "0x0";
+const GLOBAL = "0x0";
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const months = 30 * 24 * 60 * 60;
@@ -24,19 +27,16 @@ module.exports = function(deployer, network, accounts) {
     await deployer.deploy(RoleBasedAccessControl);
     const accessControl = await RoleBasedAccessControl.deployed();
     console.log("Neumark deploying...");
-    await deployer.deploy(Neumark);
-    await deployer.deploy(NeumarkController, Neumark.address);
+    await deployer.deploy(Neumark, accessControl.address);
     const neumark = await Neumark.deployed();
-    await neumark.changeController(NeumarkController.address);
     console.log("ETR-T and LockedAccount deploying...");
     await deployer.deploy(EtherToken);
     const etherToken = await EtherToken.deployed();
-    await deployer.deploy(Curve, NeumarkController.address);
     await deployer.deploy(
       LockedAccount,
       accessControl.address,
       etherToken.address,
-      Curve.address,
+      neumark.address,
       18 * months,
       Math.round(0.1 * ether(1)) // fractions are in 10**18
     );
@@ -46,7 +46,7 @@ module.exports = function(deployer, network, accounts) {
       PublicCommitment,
       etherToken.address,
       lock.address,
-      Curve.address
+      neumark.address
     );
     const publicCommitment = await PublicCommitment.deployed();
     console.log("Commitment deployed");
@@ -63,17 +63,41 @@ module.exports = function(deployer, network, accounts) {
     await deployer.deploy(AccessRoles);
     const accessRoles = await AccessRoles.deployed();
     await accessControl.setUserRole(
+      publicCommitment.address,
+      await accessRoles.ROLE_NEUMARK_ISSUER(),
+      neumark.address,
+      TriState.Allow
+    );
+    await accessControl.setUserRole(
+      EVERYONE,
+      await accessRoles.ROLE_NEUMARK_BURNER(),
+      neumark.address,
+      TriState.Allow
+    );
+    await accessControl.setUserRole(
+      EVERYONE,
+      await accessRoles.ROLE_SNAPSHOT_CREATOR(),
+      neumark.address,
+      TriState.Allow
+    );
+    await accessControl.setUserRole(
+      publicCommitment.address,
+      await accessRoles.ROLE_TRANSFERS_ADMIN(),
+      neumark.address,
+      TriState.Allow
+    );
+    await accessControl.setUserRole(
       accounts[1],
       await accessRoles.ROLE_LOCKED_ACCOUNT_ADMIN(),
       lock.address,
-      1
-    ); // 1 is True
+      TriState.Allow
+    );
     await lock.setController(publicCommitment.address, { from: accounts[1] });
     await accessControl.setUserRole(
       accounts[2],
       await accessRoles.ROLE_WHITELIST_ADMIN(),
       PublicCommitment.address,
-      1
+      TriState.Allow
     );
     console.log("Contracts deployed!");
 

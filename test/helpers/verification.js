@@ -1,52 +1,72 @@
 import { etherToWei, DIGITS } from "./unitConverter";
 import { eventValue } from "./events";
+import { TriState, EVERYONE } from "./triState";
 
+const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
+const AccessRoles = artifacts.require("AccessRoles");
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
-const NeumarkController = artifacts.require("NeumarkController");
 const Neumark = artifacts.require("Neumark");
-const Curve = artifacts.require("Curve");
 
-async function deployCurve() {
+async function deployNeumark() {
+  const rbac = await RoleBasedAccessControl.new();
+  const roles = await AccessRoles.new();
   const etherToken = await EtherToken.new();
-  const neumark = await Neumark.new();
-  const neumarkController = await NeumarkController.new(neumark.address);
-  await neumark.changeController(neumarkController.address);
-  const curve = await Curve.new(neumarkController.address);
+  const neumark = await Neumark.new(rbac.address);
 
-  return curve;
+  // TODO: more specific rights
+  await rbac.setUserRole(
+    EVERYONE,
+    await roles.ROLE_NEUMARK_ISSUER(),
+    neumark.address,
+    TriState.Allow
+  );
+  await rbac.setUserRole(
+    EVERYONE,
+    await roles.ROLE_NEUMARK_BURNER(),
+    neumark.address,
+    TriState.Allow
+  );
+  await rbac.setUserRole(
+    EVERYONE,
+    await roles.ROLE_TRANSFERS_ADMIN(),
+    neumark.address,
+    TriState.Allow
+  );
+
+  return neumark;
 }
 
 export async function deployMutableCurve() {
-  const curve = await deployCurve();
+  const neumark = await deployNeumark();
 
   return {
     issueInEth: async ether => {
       const euro = ethToEur(ether);
-      const tx = await curve.issue(euro);
-      return eventValue(tx, "NeumarksIssued", "neumarks");
+      const tx = await neumark.issueForEuro(euro);
+      return eventValue(tx, "NeumarksIssued", "neumarkUlp");
     }
   };
 }
 
-let curve;
+let neumark;
 
 export async function curveInEur(moneyInEurULP) {
-  if (!curve) {
-    curve = await deployCurve();
+  if (!neumark) {
+    neumark = await deployNeumark();
   }
 
-  return curve.curve(moneyInEurULP);
+  return neumark.cumulative(moneyInEurULP);
 }
 
 export async function curveInEther(money, eurEtherRatio) {
-  if (!curve) {
-    curve = await deployCurve();
+  if (!neumark) {
+    neumark = await deployNeumark();
   }
 
   const moneyInEurULP = ethToEur(money, eurEtherRatio);
 
-  return curve.curve(moneyInEurULP);
+  return neumark.cumulative(moneyInEurULP);
 }
 
 export function ethToEur(ether, eurEtherRatio = etherToWei(218.1192809)) {

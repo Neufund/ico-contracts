@@ -13,6 +13,7 @@ contract AccessControlled is IAccessControlled, StandardRoles {
     }
 
     function AccessControlled(IAccessPolicy policy) {
+        require(address(policy) != 0x0);
         accessPolicy = policy;
     }
 
