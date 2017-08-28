@@ -12,4 +12,6 @@ contract AccessRoles {
     bytes32 public constant ROLE_NEUMARK_BURNER = keccak256("NeumarkBurner");
     bytes32 public constant ROLE_TRANSFERS_ADMIN = keccak256("TransferAdmin");
     bytes32 public constant ROLE_SNAPSHOT_CREATOR = keccak256("SnapshotCreator");
+
+    bytes32 public constant ROLE_RECLAIMER = keccak256("Reclaimer");
 }
