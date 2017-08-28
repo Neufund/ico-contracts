@@ -1,15 +1,15 @@
 pragma solidity 0.4.15;
 
-import './EtherToken.sol';
-import './LockedAccount.sol';
-import './TimeSource.sol';
-import './Neumark.sol';
-import './Math.sol';
-import './Standards/ITokenWithDeposit.sol';
-import './TokenOffering.sol';
+import '../EtherToken.sol';
+import '../LockedAccount.sol';
+import '../TimeSource.sol';
+import '../Neumark.sol';
+import '../Math.sol';
+import '../Standards/ITokenWithDeposit.sol';
+import './ITokenOffering.sol';
 
 /// public capital commitment for general public
-contract PublicCommitment is TimeSource, Math, TokenOffering {
+contract PublicCommitment is TimeSource, Math, ITokenOffering {
 
     // locks investors capital
     LockedAccount public lockedAccount;

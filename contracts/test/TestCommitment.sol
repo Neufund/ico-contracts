@@ -1,6 +1,6 @@
 pragma solidity 0.4.15;
 
-import '../PublicCommitment.sol';
+import '../Commitment/PublicCommitment.sol';
 
 contract TestCommitment is PublicCommitment {
 
