@@ -3,8 +3,13 @@ pragma solidity 0.4.15;
 import './IAccessPolicy.sol';
 import './IAccessControlled.sol';
 import './AccessControlled.sol';
+import '../Reclaimable.sol';
 
-contract RoleBasedAccessControl is IAccessPolicy, AccessControlled {
+contract RoleBasedAccessControl is
+    IAccessPolicy,
+    AccessControlled,
+    Reclaimable
+{
 
     ////////////////
     // Types

@@ -11,8 +11,9 @@ import './Commitment/ITokenOffering.sol';
 import './LockedAccountMigration.sol';
 import './Standards/IERC667Token.sol';
 import './Standards/IERC667Callback.sol';
+import './Reclaimable.sol';
 
-contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErrors, Math, IsContract, IERC667Callback {
+contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErrors, Math, IsContract, IERC667Callback, Reclaimable {
     // lock state
     enum LockState {Uncontrolled, AcceptingLocks, AcceptingUnlocks, ReleaseAll }
 
@@ -251,6 +252,7 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
     function LockedAccount(IAccessPolicy _policy, IERC667Token _assetToken, Neumark _neumark,
         uint _lockPeriod, uint _penaltyFraction)
         AccessControlled(_policy)
+        Reclaimable()
     {
         assetToken = _assetToken;
         neumark = _neumark;
@@ -282,4 +284,14 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
             lockState = newState;
         }
     }
+
+    function reclaim(IBasicToken token)
+        public
+        returns (bool)
+    {
+        // This contract holds the asset token
+        require(token != assetToken);
+        return Reclaimable.reclaim(token);
+    }
+
 }

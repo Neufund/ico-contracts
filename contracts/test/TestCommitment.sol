@@ -52,8 +52,8 @@ contract TestCommitment is PublicCommitment {
         lockedAccount.lock(investor, amount, neumarks);
     }
 
-    function TestCommitment(EtherToken _ethToken, LockedAccount _lockedAccount, Neumark _neumark)
-         PublicCommitment(_ethToken, _lockedAccount, _neumark)
+    function TestCommitment(IAccessPolicy accessPolicy, EtherToken _ethToken, LockedAccount _lockedAccount, Neumark _neumark)
+         PublicCommitment(accessPolicy, _ethToken, _lockedAccount, _neumark)
     {
     }
 }

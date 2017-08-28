@@ -33,9 +33,10 @@ module.exports = function(deployer, network, accounts) {
     console.log("Neumark deploying...");
     await deployer.deploy(Neumark, accessControl.address);
     const neumark = await Neumark.deployed();
-    console.log("ETR-T and LockedAccount deploying...");
-    await deployer.deploy(EtherToken);
+    console.log("EtherToken deploying...");
+    await deployer.deploy(EtherToken, accessControl.address);
     const etherToken = await EtherToken.deployed();
+    console.log("LockedAccount deploying...");
     await deployer.deploy(
       LockedAccount,
       accessControl.address,
@@ -45,15 +46,16 @@ module.exports = function(deployer, network, accounts) {
       Math.round(0.1 * ether(1)) // fractions are in 10**18
     );
     const lock = await LockedAccount.deployed();
-    console.log("Deploying public commitment");
+    console.log("PublicCommitment deploying...");
     await deployer.deploy(
       PublicCommitment,
+      accessControl.address,
       etherToken.address,
       lock.address,
       neumark.address
     );
     const publicCommitment = await PublicCommitment.deployed();
-    console.log("Commitment deployed");
+    console.log("Setting commitment terms...");
     await publicCommitment.setCommitmentTerms(
       Date.now() / 1000 + 60,
       Date.now() / 1000 + 900,
