@@ -13,26 +13,26 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, CommitmentBase 
     address[] public fixedCostInvestors;
 
     // order of investors matter! first will get better terms on neumarks
-    function setOrderedWhitelist(address[] addresses, uint256[] ticketsETH)
+    function setOrderedWhitelist(address[] addresses, uint256[] tickets)
         public
         only(ROLE_WHITELIST_ADMIN)
     {
         // can be set only once
         require(fixedCostInvestors.length == 0);
-        require(addresses.length == ticketsETH.length);
+        require(addresses.length == tickets.length);
         // before commitment starts
         require(currentTime() < startDate);
         // move to storage
         for(uint256 idx=0; idx < addresses.length; idx++) {
-            uint256 ticket = ticketsETH[idx];
+            uint256 ticket = tickets[idx];
             // tickets of size 0 will not be accepted
             require(ticket > 0);
             // allow to invest up to ticket on fixed cost
             fixedCostTickets[addresses[idx]] = ticket;
 
             // issue neumarks for given investor
-            uint256 euros = convertToEUR(ticket);
-            fixedCostNeumarks[addresses[idx]] = neumark.issueForEuro(euros);
+            uint256 ticketEuroUlps = convertToEUR(ticket);
+            fixedCostNeumarks[addresses[idx]] = neumark.issueForEuro(ticketEuroUlps);
 
             // also allow to invest from unordered whitelist along the curve
             whitelisted[addresses[idx]] = true;
