@@ -3,7 +3,6 @@ import { TriState } from "./triState.js";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
-const NeumarkController = artifacts.require("NeumarkController");
 const Neumark = artifacts.require("Neumark");
 const Curve = artifacts.require("Curve");
 const TestCommitment = artifacts.require("TestCommitment");
@@ -14,7 +13,6 @@ const AccessRoles = artifacts.require("AccessRoles");
 const BigNumber = web3.BigNumber;
 
 export let neumark;
-export let neumarkController;
 export let etherToken;
 export let lockedAccount;
 export let curve;
@@ -38,9 +36,7 @@ export async function spawnLockedAccount(
   etherToken = await EtherToken.new();
   // console.log(`\tEtherToken took ${gasCost(etherToken)}.`);
   neumark = await Neumark.new();
-  neumarkController = await NeumarkController.new(neumark.address);
-  await neumark.changeController(neumarkController.address);
-  curve = await Curve.new(neumarkController.address);
+  curve = await Curve.new(neumark.address);
   lockedAccount = await LockedAccount.new(
     accessControl.address,
     etherToken.address,

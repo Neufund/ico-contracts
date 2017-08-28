@@ -2,17 +2,13 @@ pragma solidity 0.4.15;
 
 import './SnapshotToken/SnapshotToken.sol';
 
-// NOTE: SnapshotToken inherits Controler, which is like Ownable, except with
-//       different names.
-
-// NOTE: This contract gives warning on compiling, should be fixed with
-//       https://github.com/Giveth/minime/pull/22
-
 contract Neumark is SnapshotToken {
 
     string constant TOKEN_NAME     = "Neumark";
     uint8  constant TOKEN_DECIMALS = 18;
     string constant TOKEN_SYMBOL   = "NMK";
+
+    bool public transferEnabled;
 
     function Neumark()
         SnapshotToken(
@@ -20,9 +16,67 @@ contract Neumark is SnapshotToken {
             0, // Snapshot of the parent token, set to 0 if it is a new token
             TOKEN_NAME,
             TOKEN_DECIMALS,
-            TOKEN_SYMBOL,
-            false // Do not enable transfers at start
+            TOKEN_SYMBOL
         )
     {
+        transferEnabled = false;
     }
+
+    function generateTokens(address owner, uint amount)
+        public
+        // TODO Roles
+        returns (bool)
+    {
+        return mGenerateTokens(owner, amount);
+    }
+
+    function destroyTokens(address owner, uint amount)
+        public
+        // TODO Roles
+        returns (bool)
+    {
+        return mDestroyTokens(owner, amount);
+    }
+
+    function enableTransfer(bool enabled)
+        public
+        // TODO Roles
+    {
+        transferEnabled = enabled;
+    }
+
+    /// @notice Notifies the controller about a token transfer allowing the
+    ///  controller to react if desired
+    /// @param from The origin of the transfer
+    /// @param to The destination of the transfer
+    /// @param amount The amount of the transfer
+    /// @return False if the controller does not authorize the transfer
+    function mOnTransfer(
+        address from,
+        address to,
+        uint amount
+    )
+        internal
+        returns (bool allow)
+    {
+        return transferEnabled;
+    }
+
+    /// @notice Notifies the controller about an approval allowing the
+    ///  controller to react if desired
+    /// @param owner The address that calls `approve()`
+    /// @param spender The spender in the `approve()` call
+    /// @param amount The amount in the `approve()` call
+    /// @return False if the controller does not authorize the approval
+    function mOnApprove(
+        address owner,
+        address spender,
+        uint amount
+    )
+        internal
+        returns (bool allow)
+    {
+        return true;
+    }
+
 }

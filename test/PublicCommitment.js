@@ -202,7 +202,7 @@ contract("PublicCommitment", ([lockAdmin, investor, investor2]) => {
     );
     // check if neumarks transferable
     assert.equal(
-      await chain.neumark.transfersEnabled(),
+      await chain.neumark.transferEnabled(),
       true,
       "neumark transfers should be enabled"
     );

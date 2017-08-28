@@ -253,7 +253,7 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
     // controller says yes
     await chain.commitment._succ();
     // must enable token transfers
-    await chain.neumarkController.enableTransfers(true);
+    await chain.neumark.enableTransfer(true);
   }
 
   it("should unlock with approval on contract disbursal", async () => {

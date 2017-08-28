@@ -4,9 +4,9 @@ import '../Curve.sol';
 
 contract CurveGas is Curve {
 
-    function CurveGas(NeumarkController controller)
+    function CurveGas(Neumark neumark)
         public
-        Curve(controller)
+        Curve(neumark)
     {
     }
 

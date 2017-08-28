@@ -5,7 +5,6 @@ import { eventValue } from "./helpers/events";
 const Curve = artifacts.require("./Curve.sol");
 const CurveGas = artifacts.require("./test/CurveGas.sol");
 const Neumark = artifacts.require("./Neumark.sol");
-const NeumarkController = artifacts.require("./NeumarkController.sol");
 
 const BigNumber = web3.BigNumber;
 const EUR_DECIMALS = new BigNumber(10).toPower(18);
@@ -15,14 +14,11 @@ contract("Curve", accounts => {
   let curve;
   let curveGas;
   let neumark;
-  let controller;
 
   beforeEach(async () => {
     neumark = await Neumark.new();
-    controller = await NeumarkController.new(neumark.address);
-    await neumark.changeController(controller.address);
-    curve = await Curve.new(controller.address);
-    curveGas = await CurveGas.new(controller.address);
+    curve = await Curve.new(neumark.address);
+    curveGas = await CurveGas.new(neumark.address);
   });
 
   it("should deploy", async () => {

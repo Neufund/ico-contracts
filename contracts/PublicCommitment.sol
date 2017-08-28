@@ -31,7 +31,6 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
     bool public finalized;
     bool public capsInitialized;
 
-    NeumarkController internal neumarkController;
     // wallet that keeps Platform Operator share of neumarks
     // todo: take from Universe
     address internal platformOperatorWallet = address(0x55d7d863a155F75c5139E20DCBDA8d0075BA2A1c);
@@ -166,7 +165,7 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         internal
     {
         // enable Neumark trading in token controller
-        neumarkController.enableTransfers(true);
+        neumarkToken.enableTransfer(true);
         // enable escape hatch and end locking funds phase
         lockedAccount.controllerSucceeded();
     }
@@ -201,12 +200,12 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         // distribute half half
         uint256 investorNeumarks = divRound(neumarks, 2);
         // @ remco is there a better way to distribute?
-        bool isEnabled = neumarkToken.transfersEnabled();
+        bool isEnabled = neumarkToken.transferEnabled();
         if (!isEnabled)
-            neumarkController.enableTransfers(true);
+            neumarkToken.enableTransfer(true);
         require(neumarkToken.transfer(investor, investorNeumarks));
         require(neumarkToken.transfer(platformOperatorWallet, neumarks - investorNeumarks));
-        neumarkController.enableTransfers(isEnabled);
+        neumarkToken.enableTransfer(isEnabled);
         return investorNeumarks;
     }
 
@@ -235,8 +234,7 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         require(address(_ethToken) == address(_lockedAccount.assetToken()));
         lockedAccount = _lockedAccount;
         curve = _curve;
-        neumarkController = _curve.NEUMARK_CONTROLLER();
-        neumarkToken = neumarkController.TOKEN();
+        neumarkToken = curve.NEUMARK();
         paymentToken = _ethToken;
     }
 }

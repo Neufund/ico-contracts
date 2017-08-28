@@ -5,7 +5,6 @@ import { TriState } from "./triState.js";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
-const NeumarkController = artifacts.require("NeumarkController");
 const Neumark = artifacts.require("Neumark");
 const Curve = artifacts.require("Curve");
 const TestCommitment = artifacts.require("TestCommitment");
@@ -42,9 +41,7 @@ export async function deployAllContracts(
   const accessRoles = await AccessRoles.new();
   const etherToken = await EtherToken.new();
   const neumark = await Neumark.new();
-  const neumarkController = await NeumarkController.new(neumark.address);
-  await neumark.changeController(neumarkController.address);
-  const curve = await Curve.new(neumarkController.address);
+  const curve = await Curve.new(neumark.address);
 
   const lockedAccount = await LockedAccount.new(
     accessControl.address,
@@ -109,7 +106,6 @@ export async function deployAllContracts(
   return {
     etherToken,
     neumark,
-    neumarkController,
     curve,
     lockedAccount,
     commitment

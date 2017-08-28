@@ -1,10 +1,10 @@
 pragma solidity 0.4.15;
 
-import './NeumarkController.sol';
+import './Neumark.sol';
 
 contract Curve {
 
-    NeumarkController public NEUMARK_CONTROLLER;
+    Neumark public NEUMARK;
 
     uint256 public totalEuroUlps;
 
@@ -18,9 +18,9 @@ contract Curve {
         uint256 euros,
         uint256 neumarks);
 
-    function Curve(NeumarkController neumarkController) {
+    function Curve(Neumark neumark) {
         totalEuroUlps = 0;
-        NEUMARK_CONTROLLER = neumarkController;
+        NEUMARK = neumark;
     }
 
     function issueForEuro(uint256 euroUlps)
@@ -33,7 +33,7 @@ contract Curve {
 
         totalEuroUlps = totalEuroUlps + euroUlps;
 
-        assert(NEUMARK_CONTROLLER.generateTokens(beneficiary, neumarkUlps));
+        assert(NEUMARK.generateTokens(beneficiary, neumarkUlps));
 
         NeumarksIssued(beneficiary, euroUlps, neumarkUlps);
         return neumarkUlps;
@@ -48,7 +48,7 @@ contract Curve {
 
         totalEuroUlps -= euroUlps;
 
-        assert(NEUMARK_CONTROLLER.destroyTokens(owner, neumarkUlps));
+        assert(NEUMARK.destroyTokens(owner, neumarkUlps));
 
         NeumarksBurned(owner, euroUlps, neumarkUlps);
         return euroUlps;

@@ -1,6 +1,5 @@
 require("babel-register");
 
-const NeumarkController = artifacts.require("NeumarkController");
 const Neumark = artifacts.require("Neumark");
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
@@ -25,13 +24,11 @@ module.exports = function(deployer, network, accounts) {
     const accessControl = await RoleBasedAccessControl.deployed();
     console.log("Neumark deploying...");
     await deployer.deploy(Neumark);
-    await deployer.deploy(NeumarkController, Neumark.address);
     const neumark = await Neumark.deployed();
-    await neumark.changeController(NeumarkController.address);
     console.log("ETR-T and LockedAccount deploying...");
     await deployer.deploy(EtherToken);
     const etherToken = await EtherToken.deployed();
-    await deployer.deploy(Curve, NeumarkController.address);
+    await deployer.deploy(Curve, Neumark.address);
     await deployer.deploy(
       LockedAccount,
       accessControl.address,

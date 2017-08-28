@@ -255,7 +255,7 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
     {
         assetToken = _assetToken;
         neumarkCurve = _neumarkCurve;
-        neumarkToken = neumarkCurve.NEUMARK_CONTROLLER().TOKEN();
+        neumarkToken = neumarkCurve.NEUMARK();
         lockPeriod = _lockPeriod;
         penaltyFraction = _penaltyFraction;
     }
