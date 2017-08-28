@@ -391,12 +391,20 @@ contract(
         );
       });
 
-      it("should send all neumarks and zero ticket when neumarks remainder below threshold", async () => {
+      const commitWithoutRemainderTests = [...Array(10).keys()];
+
+      commitWithoutRemainderTests.forEach( function(remainderWei) {
+        it.only(`should receive neumarks for remainder of ${remainderWei+1} wei`, async () => {
+          await commitWithoutRemainder(remainderWei+1);
+        });
+      });
+
+      async function commitWithoutRemainder(remainderWei) {
         const startingDate = closeFutureDate();
         const investor1 = accounts[0];
         const fixedInvestors = [investor1];
-        const fixedDeclaredTickets = [etherToWei(2)];
-        const eurEthRate = 0.1;
+        const fixedDeclaredTickets = [etherToWei(2.1092830910928081)];
+        const eurEthRate = 0.4398719873;
         const eurEthRateWei = etherToWei(eurEthRate); // sets up a rate allowing for rounding errors
 
         const {
@@ -412,25 +420,23 @@ contract(
             eurEthRate: eurEthRateWei
           }
         });
-
-        const expectedNeumarkAmount = await curveInEther(
+        // console.log(await neumark.balanceOf(commitment.address));
+        const totalNeumarkIssued = await curveInEther(
           fixedDeclaredTickets[0],
           eurEthRateWei
         );
-        const expectedInvestor1NeumarkShare = expectedNeumarkAmount
+        // investor will invest almost a full ticket but without small remainder
+        const actualInvestor1Commitment = fixedDeclaredTickets[0].sub(
+          remainderWei
+        );
+        // compute actual neumarks reward by proportion and then take half
+        const expectedInvestor1NeumarkShare = totalNeumarkIssued
+          .mul(actualInvestor1Commitment)
+          .div(fixedDeclaredTickets[0])
+          .round(0, 4)
           .div(2)
           .round(0, 4);
-        // use curve inverse to get weis producing less than 9 neumarks which is
-        // send out as remainder, mind the ether rate 10 ETH = 1 EUR
-        // with market rate weis would be 0
-        const etherDeclarationDiff = eurUlpToEth(
-          await neumark.incrementalInverse(ethToEur(fixedDeclaredTickets[0]), 5),
-          eurEthRate
-        ).round(0);
-        // console.log(etherDeclarationDiff);
-        const actualInvestor1Commitment = fixedDeclaredTickets[0].sub(
-          etherDeclarationDiff
-        );
+        // console.log(expectedInvestor1NeumarkShare);
 
         await setTimeTo(startingDate);
         await commitment.commit({
@@ -441,21 +447,26 @@ contract(
           ether: actualInvestor1Commitment,
           neumarks: expectedInvestor1NeumarkShare
         });
-        expect(await neumark.balanceOf(commitment.address)).to.be.bignumber.eq(
-          new web3.BigNumber(0)
-        );
+        expect(
+          await commitment.fixedCostTickets(investor1)
+        ).to.be.bignumber.equal(remainderWei);
+        // invest remaining weis
+        await commitment.commit({
+          value: remainderWei,
+          from: investor1
+        });
+        // tickets zeroed
         expect(
           await commitment.fixedCostTickets(investor1)
         ).to.be.bignumber.equal(0);
-        // if not zeroed investor1 can steal a small number of additional neumarks
-        // and below is possible
-        // await commitment.commit({
-        //  value: etherDeclarationDiff,
-        //  from: investor1
-        // });
-        // what's worse next investor will not be able to get all his neumarks as
-        // those go from a general pool held by commitment contract
-      });
+        expect(
+          await commitment.fixedCostNeumarks(investor1)
+        ).to.be.bignumber.equal(0);
+        // neumakrs held by commitment contract zeroed
+        expect(await neumark.balanceOf(commitment.address)).to.be.bignumber.eq(
+          0
+        );
+      }
 
       it("should work with ticket exactly the same as declared", async () => {
         const startingDate = closeFutureDate();
