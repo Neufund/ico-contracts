@@ -196,6 +196,7 @@ contract("PublicCommitment", ([lockAdmin, investor, investor2]) => {
   // this will lower the amount so in theory if C was finished due to cap it may become active again!
   // checking finalize will prevent it
   it("fails to re-activate Commitment by escape hatch");
+  it("fails to make Commitment unsuccessful by escape hatch");
   it("commitment should succeed due to endDate reached");
   it("first ticket should commit max cap");
   it("should commit large ticket ether 100000000000000");
