@@ -4,8 +4,8 @@ import './PublicCommitment.sol';
 
 contract WhitelistedCommitment is AccessControlled, AccessRoles, CommitmentBase {
 
-    // mapping of addresses allowed to participate, ticket value is ignored
-    mapping (address => uint256) public whitelisted;
+    // mapping of addresses allowed to participate
+    mapping (address => bool) public whitelisted;
     address[] public whitelistedInvestors;
     // mapping of addresses allowed to participate for fixed Neumark cost
     mapping (address => uint256) public fixedCostTickets;
@@ -35,7 +35,7 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, CommitmentBase 
             fixedCostNeumarks[addresses[idx]] = neumark.issueForEuro(euros);
 
             // also allow to invest from unordered whitelist along the curve
-            whitelisted[addresses[idx]] = 1;
+            whitelisted[addresses[idx]] = true;
         }
 
         // leave array for easy enumeration
@@ -52,7 +52,7 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, CommitmentBase 
         require(currentTime() < startDate);
         // move to storage
         for(uint256 idx=0; idx < addresses.length; idx++) {
-            whitelisted[addresses[idx]] = 1;
+            whitelisted[addresses[idx]] = true;
         }
         // leave array for easy enumeration
         whitelistedInvestors = addresses;
@@ -138,8 +138,9 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, CommitmentBase 
         constant
         returns (bool)
     {
-        // @todo i think the latter part of this condition is not needed because we whitelist every fixed cost investor
-        return (whitelisted[msg.sender] > 0 || fixedCostTickets[msg.sender] > 0);
+        // latter part of this condition is not needed because we whitelist every fixed cost investor
+        // kept to make condition clear
+        return (whitelisted[msg.sender] || fixedCostTickets[msg.sender] > 0);
     }
 
     function WhitelistedCommitment(

@@ -57,12 +57,8 @@ contract(
           await commitment.fixedCostNeumarks(investors[1])
         ).to.be.bignumber.eq(expectedNeumarks[1]);
 
-        expect(await commitment.whitelisted(investors[0])).to.be.bignumber.eq(
-          1
-        );
-        expect(await commitment.whitelisted(investors[1])).to.be.bignumber.eq(
-          1
-        );
+        expect(await commitment.whitelisted(investors[0])).to.be.true;
+        expect(await commitment.whitelisted(investors[1])).to.be.true;
       });
 
       it("should not be possible to set it twice", async () => {
@@ -142,12 +138,8 @@ contract(
           2
         );
 
-        expect(await commitment.whitelisted(investors[0])).to.be.bignumber.eq(
-          1
-        );
-        expect(await commitment.whitelisted(investors[1])).to.be.bignumber.eq(
-          1
-        );
+        expect(await commitment.whitelisted(investors[0])).to.be.true;
+        expect(await commitment.whitelisted(investors[1])).to.be.true;
 
         await expect(commitment.fixedCostInvestors).to.blockchainArrayOfSize(0);
       });
@@ -218,13 +210,13 @@ contract(
 
         expect(
           await commitment.whitelisted(whitelistedInvestors[0])
-        ).to.be.bignumber.eq(1);
+        ).to.be.true;
         expect(
           await commitment.whitelisted(whitelistedInvestors[1])
-        ).to.be.bignumber.eq(1);
+        ).to.be.true;
         expect(
           await commitment.whitelisted(fixedInvestors[0])
-        ).to.be.bignumber.eq(1);
+        ).to.be.true;
 
         expect(await commitment.fixedCostInvestors(0)).to.be.eq(
           fixedInvestors[0]
@@ -270,13 +262,13 @@ contract(
 
         expect(
           await commitment.whitelisted(whitelistedInvestors[0])
-        ).to.be.bignumber.eq(1);
+        ).to.be.true;
         expect(
           await commitment.whitelisted(whitelistedInvestors[1])
-        ).to.be.bignumber.eq(1);
+        ).to.be.true;
         expect(
           await commitment.whitelisted(fixedInvestors[0])
-        ).to.be.bignumber.eq(1);
+        ).to.be.true;
 
         expect(await commitment.fixedCostInvestors(0)).to.be.eq(
           fixedInvestors[0]
