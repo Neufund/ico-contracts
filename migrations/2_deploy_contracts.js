@@ -7,6 +7,11 @@ const PublicCommitment = artifacts.require("PublicCommitment");
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const AccessRoles = artifacts.require("AccessRoles");
 
+// Needs to match contracts/AccessControl/RoleBasedAccessControl.sol:TriState
+const TriState = { Unset: 0, Allow: 1, Deny: 2 };
+const EVERYONE = "0x0";
+const GLOBAL = "0x0";
+
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const months = 30 * 24 * 60 * 60;
 const FP_SCALE = 10000;
@@ -22,7 +27,7 @@ module.exports = function(deployer, network, accounts) {
     await deployer.deploy(RoleBasedAccessControl);
     const accessControl = await RoleBasedAccessControl.deployed();
     console.log("Neumark deploying...");
-    await deployer.deploy(Neumark);
+    await deployer.deploy(Neumark, accessControl.address);
     const neumark = await Neumark.deployed();
     console.log("ETR-T and LockedAccount deploying...");
     await deployer.deploy(EtherToken);
@@ -58,17 +63,41 @@ module.exports = function(deployer, network, accounts) {
     await deployer.deploy(AccessRoles);
     const accessRoles = await AccessRoles.deployed();
     await accessControl.setUserRole(
+      publicCommitment.address,
+      await accessRoles.ROLE_NEUMARK_ISSUER(),
+      neumark.address,
+      TriState.Allow
+    );
+    await accessControl.setUserRole(
+      EVERYONE,
+      await accessRoles.ROLE_NEUMARK_BURNER(),
+      neumark.address,
+      TriState.Allow
+    );
+    await accessControl.setUserRole(
+      EVERYONE,
+      await accessRoles.ROLE_SNAPSHOT_CREATOR(),
+      neumark.address,
+      TriState.Allow
+    );
+    await accessControl.setUserRole(
+      publicCommitment.address,
+      await accessRoles.ROLE_TRANSFERS_ADMIN(),
+      neumark.address,
+      TriState.Allow
+    );
+    await accessControl.setUserRole(
       accounts[1],
       await accessRoles.ROLE_LOCKED_ACCOUNT_ADMIN(),
       lock.address,
-      1
-    ); // 1 is True
+      TriState.Allow
+    );
     await lock.setController(publicCommitment.address, { from: accounts[1] });
     await accessControl.setUserRole(
       accounts[2],
       await accessRoles.ROLE_WHITELIST_ADMIN(),
       PublicCommitment.address,
-      1
+      TriState.Allow
     );
     console.log("Contracts deployed!");
 
