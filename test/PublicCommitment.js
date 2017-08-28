@@ -42,7 +42,7 @@ contract("PublicCommitment", ([lockAdmin, investor, investor2]) => {
       await chain.commitment.lockedAccount.call(),
       chain.lockedAccount.address
     );
-    assert.equal(await chain.commitment.curve.call(), chain.curve.address);
+    assert.equal(await chain.commitment.neumark.call(), chain.neumark.address);
     expect(await chain.commitment.minAbsCap()).to.be.bignumber.equal(
       chain.ether(1)
     );
@@ -182,7 +182,7 @@ contract("PublicCommitment", ([lockAdmin, investor, investor2]) => {
     );
     // check if neumarks transferable
     assert.equal(
-      await chain.neumark.transfersEnabled(),
+      await chain.neumark.transferEnabled(),
       true,
       "neumark transfers should be enabled"
     );

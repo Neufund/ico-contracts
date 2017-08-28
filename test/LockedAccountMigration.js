@@ -32,7 +32,7 @@ contract("TestLockedAccountMigrationTarget", ([admin, investor, investor2]) => {
     migrationTarget = await TestLockedAccountMigrationTarget.new(
       chain.accessControl.address,
       chain.etherToken.address,
-      chain.curve.address,
+      chain.neumark.address,
       18 * chain.months,
       chain.ether(1).mul(0.1).round()
     );

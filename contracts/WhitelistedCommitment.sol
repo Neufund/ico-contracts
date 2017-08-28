@@ -32,7 +32,7 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
 
             // issue neumarks for given investor
             uint256 euros = convertToEUR(ticket);
-            fixedCostNeumarks[addresses[idx]] = curve.issue(euros);
+            fixedCostNeumarks[addresses[idx]] = neumark.issueForEuro(euros);
 
             // also allow to invest from unordered whitelist along the curve
             whitelisted[addresses[idx]] = 1;
@@ -82,9 +82,9 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
     function rollbackCurve()
         internal
     {
-        uint neumarks = neumarkToken.balanceOf(address(this));
+        uint neumarks = neumark.balanceOf(address(this));
         if (neumarks > 0) {
-            curve.burnNeumark(neumarks);
+            neumark.burnNeumark(neumarks);
         }
     }
 
@@ -101,7 +101,7 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
         if ( eth > fixedRemainingTicket ) {
             if (fixedRemainingTicket > 0) // recompute euro if part of msg.value goes thru whitelist
                 euros = convertToEUR(eth - fixedRemainingTicket);
-            reward = curve.issue(euros);
+            reward = neumark.issueForEuro(euros);
             eth = fixedRemainingTicket;
         }
 
@@ -139,8 +139,8 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
     }
 
     function WhitelistedCommitment(IAccessPolicy _policy, EtherToken _ethToken,
-        LockedAccount _lockedAccount, Curve _curve)
-         PublicCommitment(_ethToken, _lockedAccount, _curve)
+        LockedAccount _lockedAccount, Neumark _neumark)
+         PublicCommitment(_ethToken, _lockedAccount, _neumark)
          AccessControlled(_policy)
     {
     }

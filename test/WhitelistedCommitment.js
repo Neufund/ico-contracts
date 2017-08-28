@@ -31,7 +31,7 @@ contract(
           await mutableCurve.issueInEth(tickets[1])
         ];
 
-        const { commitment, curve } = await deployAllContracts(
+        const { commitment } = await deployAllContracts(
           lockAdminAccount,
           whitelistAdminAccount
         );
@@ -769,7 +769,7 @@ contract(
       const {
         commitment,
         lockedAccount,
-        curve
+        neumark
       } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
         commitmentCfg: {
           fixedInvestors,
@@ -781,7 +781,7 @@ contract(
       });
 
       // euro for which neumarks were issued must match tickets
-      expect(await curve.totalEuroUlps()).to.be.bignumber.eq(
+      expect(await neumark.totalEuroUlps()).to.be.bignumber.eq(
         ethToEur(expectedTicketsSum)
       );
 
@@ -797,7 +797,7 @@ contract(
       expect(await commitment.wasSuccessful()).to.be.true;
 
       // neumarks corresponding to ticket 1 must be burned to curve is rollbacked to ticket 0
-      expect(await curve.totalEuroUlps()).to.be.bignumber.eq(ethToEur(fixedDeclaredTickets[0]));
+      expect(await neumark.totalEuroUlps()).to.be.bignumber.eq(ethToEur(fixedDeclaredTickets[0]));
     }
 
     async function investorTicketBiggerThenDeclared(
