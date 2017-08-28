@@ -27,8 +27,8 @@ export async function deployAllContracts(
   const {
     startTimestamp = closeFutureDate(),
     duration = MONTH,
-    minCommitment = etherToWei(10),
-    maxCommitment = etherToWei(1000),
+    minAbsCap = etherToWei(10),
+    maxAbsCap = etherToWei(1000),
     minTicket = etherToWei(1),
     eurEthRate = etherToWei(218.1192809),
     whitelistedInvestors,
@@ -73,8 +73,8 @@ export async function deployAllContracts(
   await commitment.setCommitmentTerms(
     startTimestamp,
     startTimestamp + duration,
-    minCommitment,
-    maxCommitment,
+    minAbsCap,
+    maxAbsCap,
     minTicket,
     eurEthRate
   );

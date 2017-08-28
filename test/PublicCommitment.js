@@ -28,27 +28,6 @@ contract("PublicCommitment", ([lockAdmin, investor, investor2]) => {
     );
   });
 
-  it("first commit sets caps", async () => {
-    await setTimeTo(startTimestamp); // start commitment
-    assert.equal(
-      await chain.lockedAccount.controller(),
-      chain.commitment.address,
-      "must controll lockedAccount"
-    );
-    expect(await chain.commitment.capsInitialized()).to.be.false;
-    await chain.commitment.commit({ value: chain.ether(1), from: investor });
-    // caps are set from min and max commitments
-    expect(
-      await chain.commitment.maxAbsCap(),
-      "max cap to max commitment"
-    ).to.be.bignumber.equal(chain.ether(2000));
-    expect(
-      await chain.commitment.minAbsCap(),
-      "min cap to min commitment"
-    ).to.be.bignumber.equal(chain.ether(1));
-    expect(await chain.commitment.capsInitialized()).to.be.true;
-  });
-
   it("should be able to read Commitment parameters", async () => {
     assert.equal(
       await chain.commitment.startDate.call(),
@@ -64,11 +43,13 @@ contract("PublicCommitment", ([lockAdmin, investor, investor2]) => {
       chain.lockedAccount.address
     );
     assert.equal(await chain.commitment.curve.call(), chain.curve.address);
-    expect(await chain.commitment.minCommitment()).to.be.bignumber.equal(
+    expect(await chain.commitment.minAbsCap()).to.be.bignumber.equal(
       chain.ether(1)
     );
     // caps must be zero before investment
-    expect(await chain.commitment.maxAbsCap()).to.be.bignumber.equal(0);
+    expect(await chain.commitment.maxAbsCap()).to.be.bignumber.equal(
+      chain.ether(2000)
+    );
   });
 
   it("commit before startDate");
@@ -90,7 +71,6 @@ contract("PublicCommitment", ([lockAdmin, investor, investor2]) => {
       false,
       "commitment should run"
     );
-    await chain.commitment.initializeCaps();
     // make commitment finish due to end date
     await setTimeTo(startTimestamp + commitmentDuration); // day forward
     assert.equal(
