@@ -66,14 +66,13 @@ export async function curveInEther(money, eurEtherRatio) {
   }
 
   const moneyInEurULP = ethToEur(money, eurEtherRatio);
-
   return neumark.cumulative(moneyInEurULP);
 }
 
 export function ethToEur(ether, eurEtherRatio = etherToWei(218.1192809)) {
-  return ether.mul(eurEtherRatio).div(DIGITS);
+  return ether.mul(eurEtherRatio).div(DIGITS).round(0, 4);
 }
 
 export function eurUlpToEth(eur, eurEtherRatio = 218.1192809) {
-  return eur.div(eurEtherRatio);
+  return eur.div(eurEtherRatio).round(0, 4);
 }
