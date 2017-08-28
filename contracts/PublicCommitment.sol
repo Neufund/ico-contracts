@@ -3,7 +3,7 @@ pragma solidity 0.4.15;
 import './EtherToken.sol';
 import './LockedAccount.sol';
 import './TimeSource.sol';
-import './Curve.sol';
+import './Neumark.sol';
 import './Math.sol';
 import './Standards/ITokenWithDeposit.sol';
 import './TokenOffering.sol';
@@ -14,8 +14,7 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
     // locks investors capital
     LockedAccount public lockedAccount;
     ITokenWithDeposit public paymentToken;
-    Neumark public neumarkToken;
-    Curve public curve;
+    Neumark public neumark;
 
     uint256 public startDate;
     uint256 public endDate;
@@ -83,7 +82,7 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         paymentToken.approve(address(lockedAccount), msg.value);
         // lock in lock
         lockedAccount.lock(msg.sender, msg.value, neumarks);
-        FundsInvested(msg.sender, msg.value, paymentToken, euros, neumarks, neumarkToken);
+        FundsInvested(msg.sender, msg.value, paymentToken, euros, neumarks, neumark);
     }
 
     /// overrides TokenOffering
@@ -165,7 +164,7 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         internal
     {
         // enable Neumark trading in token controller
-        neumarkToken.enableTransfer(true);
+        neumark.enableTransfer(true);
         // enable escape hatch and end locking funds phase
         lockedAccount.controllerSucceeded();
     }
@@ -187,7 +186,7 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         returns (uint256)
     {
         // issue to self
-        uint256 neumarkUlps = curve.issueForEuro(euros);
+        uint256 neumarkUlps = neumark.issueForEuro(euros);
         return distributeNeumarks(investor, neumarkUlps);
     }
 
@@ -200,12 +199,12 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         // distribute half half
         uint256 investorNeumarks = divRound(neumarks, 2);
         // @ remco is there a better way to distribute?
-        bool isEnabled = neumarkToken.transferEnabled();
+        bool isEnabled = neumark.transferEnabled();
         if (!isEnabled)
-            neumarkToken.enableTransfer(true);
-        require(neumarkToken.transfer(investor, investorNeumarks));
-        require(neumarkToken.transfer(platformOperatorWallet, neumarks - investorNeumarks));
-        neumarkToken.enableTransfer(isEnabled);
+            neumark.enableTransfer(true);
+        require(neumark.transfer(investor, investorNeumarks));
+        require(neumark.transfer(platformOperatorWallet, neumarks - investorNeumarks));
+        neumark.enableTransfer(isEnabled);
         return investorNeumarks;
     }
 
@@ -228,13 +227,12 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
     function PublicCommitment(
         EtherToken _ethToken,
         LockedAccount _lockedAccount,
-        Curve _curve
+        Neumark _neumark
     )
     {
         require(address(_ethToken) == address(_lockedAccount.assetToken()));
         lockedAccount = _lockedAccount;
-        curve = _curve;
-        neumarkToken = curve.NEUMARK();
+        neumark = _neumark;
         paymentToken = _ethToken;
     }
 }

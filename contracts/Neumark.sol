@@ -1,14 +1,26 @@
 pragma solidity 0.4.15;
 
 import './SnapshotToken/SnapshotToken.sol';
+import './NeumarkIssuanceCurve.sol';
 
-contract Neumark is SnapshotToken {
+contract Neumark is SnapshotToken, NeumarkIssuanceCurve {
 
     string constant TOKEN_NAME     = "Neumark";
     uint8  constant TOKEN_DECIMALS = 18;
     string constant TOKEN_SYMBOL   = "NMK";
 
     bool public transferEnabled;
+    uint256 public totalEuroUlps;
+
+    event NeumarksIssued(
+        address indexed owner,
+        uint256 euroUlp,
+        uint256 neumarkUlp);
+
+    event NeumarksBurned(
+        address indexed owner,
+        uint256 euroUlp,
+        uint256 neumarkUlp);
 
     function Neumark()
         SnapshotToken(
@@ -18,24 +30,41 @@ contract Neumark is SnapshotToken {
             TOKEN_DECIMALS,
             TOKEN_SYMBOL
         )
+        NeumarkIssuanceCurve()
     {
         transferEnabled = false;
+        totalEuroUlps = 0;
     }
 
-    function generateTokens(address owner, uint amount)
+    function issueForEuro(uint256 euroUlps)
         public
-        // TODO Roles
-        returns (bool)
+        returns (uint256)
     {
-        return mGenerateTokens(owner, amount);
+        require(totalEuroUlps + euroUlps >= totalEuroUlps);
+        address beneficiary = msg.sender;
+        uint256 neumarkUlps = incremental(totalEuroUlps, euroUlps);
+
+        totalEuroUlps = totalEuroUlps + euroUlps;
+
+        assert(mGenerateTokens(beneficiary, neumarkUlps));
+
+        NeumarksIssued(beneficiary, euroUlps, neumarkUlps);
+        return neumarkUlps;
     }
 
-    function destroyTokens(address owner, uint amount)
+    function burnNeumark(uint256 neumarkUlps)
         public
-        // TODO Roles
-        returns (bool)
+        returns (uint256)
     {
-        return mDestroyTokens(owner, amount);
+        address owner = msg.sender;
+        uint256 euroUlps = incrementalInverse(totalEuroUlps, neumarkUlps);
+
+        totalEuroUlps -= euroUlps;
+
+        assert(mDestroyTokens(owner, neumarkUlps));
+
+        NeumarksBurned(owner, euroUlps, neumarkUlps);
+        return euroUlps;
     }
 
     function enableTransfer(bool enabled)

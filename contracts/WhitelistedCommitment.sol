@@ -39,7 +39,7 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
         // issue neumarks for fixed price investors
         uint256 euros = convertToEUR(totalFixedCostAmount);
         // stored in this smart contract balance
-        totalFixedCostNeumarks = curve.issueForEuro(euros);
+        totalFixedCostNeumarks = neumark.issueForEuro(euros);
         // leave array for easy enumeration
         fixedCostInvestors = addresses;
     }
@@ -84,9 +84,9 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
     function rollbackCurve()
         internal
     {
-        uint neumarks = neumarkToken.balanceOf(address(this));
+        uint neumarks = neumark.balanceOf(address(this));
         if (neumarks > 0) {
-            curve.burnNeumark(neumarks);
+            neumark.burnNeumark(neumarks);
         }
     }
     event Debug(uint256 value);
@@ -103,7 +103,7 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
         if ( eth > fixedTicket ) {
             if (fixedTicket > 0) // recompute euro if part of msg.value goes thru whitelist
                 euros = convertToEUR(eth - fixedTicket);
-            reward = curve.issueForEuro(euros); // PublicCommitment.giveNeumarks(investor, eth - fixedTicket, euros);
+            reward = neumark.issueForEuro(euros); // PublicCommitment.giveNeumarks(investor, eth - fixedTicket, euros);
             eth = fixedTicket;
         }
         Debug(eth);
@@ -113,7 +113,7 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
             fixedreward = proportion(totalFixedCostNeumarks, eth, totalFixedCostAmount);
             // rounding errors, send out remainders
             // @remco review
-            uint256 remainingBalance = neumarkToken.balanceOf(address(this));
+            uint256 remainingBalance = neumark.balanceOf(address(this));
             if (absDiff(fixedreward, remainingBalance) < 1000)
                 fixedreward = remainingBalance; // send all
             // decrease ticket size
@@ -133,8 +133,8 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
     }
 
     function WhitelistedCommitment(IAccessPolicy _policy, EtherToken _ethToken,
-        LockedAccount _lockedAccount, Curve _curve)
-         PublicCommitment(_ethToken, _lockedAccount, _curve)
+        LockedAccount _lockedAccount, Neumark _neumark)
+         PublicCommitment(_ethToken, _lockedAccount, _neumark)
          AccessControlled(_policy)
     {
     }

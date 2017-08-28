@@ -6,7 +6,7 @@ import './AccessRoles.sol';
 import './ReturnsErrors.sol';
 import './TimeSource.sol';
 import './EtherToken.sol';
-import './Curve.sol';
+import './Neumark.sol';
 import './TokenOffering.sol';
 import './LockedAccountMigration.sol';
 import './Standards/IERC667Token.sol';
@@ -44,8 +44,7 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
     LockedAccountMigration public migration;
 
 
-    Curve internal neumarkCurve;
-    Neumark internal neumarkToken;
+    Neumark internal neumark;
     // LockedAccountMigration private migration;
     mapping(address => Account) internal accounts;
 
@@ -107,14 +106,14 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
             // in ReleaseAll just give money back by transfering to investor
             if (lockState == LockState.AcceptingUnlocks) {
                 // before burn happens, investor must make allowance to locked account
-                if (neumarkToken.allowance(investor, address(this)) < a.neumarksDue) {
+                if (neumark.allowance(investor, address(this)) < a.neumarksDue) {
                     return logError(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
                 }
-                if (!neumarkToken.transferFrom(investor, address(this), a.neumarksDue)) {
+                if (!neumark.transferFrom(investor, address(this), a.neumarksDue)) {
                     return logError(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
                 }
                 // burn neumarks corresponding to unspent funds
-                neumarkCurve.burnNeumark(a.neumarksDue);
+                neumark.burnNeumark(a.neumarksDue);
                 // take the penalty if before unlockDate
                 if (currentTime() < a.unlockDate) {
                     uint256 penalty = fraction(a.balance, penaltyFraction);
@@ -158,7 +157,7 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
     {
         require(_data.length == 0);
         // only from neumarks
-        require(_token == address(neumarkToken));
+        require(_token == address(neumark));
         // this will check if allowance was made and if _amount is enough to unlock
         unlockFor(from);
         return true;
@@ -249,13 +248,12 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
 
     // _assetToken - token contract with resource locked by LockedAccount, where LockedAccount is allowed to make deposits
     //
-    function LockedAccount(IAccessPolicy _policy, IERC667Token _assetToken, Curve _neumarkCurve,
+    function LockedAccount(IAccessPolicy _policy, IERC667Token _assetToken, Neumark _neumark,
         uint _lockPeriod, uint _penaltyFraction)
         AccessControlled(_policy)
     {
         assetToken = _assetToken;
-        neumarkCurve = _neumarkCurve;
-        neumarkToken = neumarkCurve.NEUMARK();
+        neumark = _neumark;
         lockPeriod = _lockPeriod;
         penaltyFraction = _penaltyFraction;
     }

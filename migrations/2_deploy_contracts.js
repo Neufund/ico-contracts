@@ -4,7 +4,6 @@ const Neumark = artifacts.require("Neumark");
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
 const PublicCommitment = artifacts.require("PublicCommitment");
-const Curve = artifacts.require("Curve");
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const AccessRoles = artifacts.require("AccessRoles");
 
@@ -28,12 +27,11 @@ module.exports = function(deployer, network, accounts) {
     console.log("ETR-T and LockedAccount deploying...");
     await deployer.deploy(EtherToken);
     const etherToken = await EtherToken.deployed();
-    await deployer.deploy(Curve, Neumark.address);
     await deployer.deploy(
       LockedAccount,
       accessControl.address,
       etherToken.address,
-      Curve.address,
+      neumark.address,
       18 * months,
       Math.round(0.1 * ether(1)) // fractions are in 10**18
     );
@@ -43,7 +41,7 @@ module.exports = function(deployer, network, accounts) {
       PublicCommitment,
       etherToken.address,
       lock.address,
-      Curve.address
+      neumark.address
     );
     const publicCommitment = await PublicCommitment.deployed();
     console.log("Commitment deployed");

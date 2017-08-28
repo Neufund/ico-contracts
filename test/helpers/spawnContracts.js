@@ -4,7 +4,6 @@ import { TriState } from "./triState.js";
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
 const Neumark = artifacts.require("Neumark");
-const Curve = artifacts.require("Curve");
 const TestCommitment = artifacts.require("TestCommitment");
 const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
@@ -36,11 +35,10 @@ export async function spawnLockedAccount(
   etherToken = await EtherToken.new();
   // console.log(`\tEtherToken took ${gasCost(etherToken)}.`);
   neumark = await Neumark.new();
-  curve = await Curve.new(neumark.address);
   lockedAccount = await LockedAccount.new(
     accessControl.address,
     etherToken.address,
-    curve.address,
+    neumark.address,
     unlockDateMonths * months,
     ether(1).mul(unlockPenalty).round()
   );
@@ -68,7 +66,7 @@ export async function spawnPublicCommitment(
   commitment = await TestCommitment.new(
     etherToken.address,
     lockedAccount.address,
-    curve.address
+    neumark.address
   );
   await commitment.setCommitmentTerms(
     startTimestamp,
@@ -98,7 +96,7 @@ export async function spawnWhitelistedCommitment(
     accessControl.address,
     etherToken.address,
     lockedAccount.address,
-    curve.address
+    neumark.address
   );
   await commitment.setCommitmentTerms(
     startTimestamp,

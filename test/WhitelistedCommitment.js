@@ -622,7 +622,7 @@ contract(
         const {
           commitment,
           lockedAccount,
-          curve
+          neumark
         } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
           commitmentCfg: {
             fixedInvestors,
@@ -632,7 +632,7 @@ contract(
             duration
           }
         });
-        expect(await curve.totalEuroUlps()).to.be.bignumber.eq(
+        expect(await neumark.totalEuroUlps()).to.be.bignumber.eq(
           ethToEur(expectedTicketsSum)
         ); // should secure all neumarks on fixed pool
 
@@ -646,7 +646,7 @@ contract(
         await commitment.finalize();
 
         const difference = ethToEur(fixedDeclaredTickets[0]).sub(
-          await curve.totalEuroUlps()
+          await neumark.totalEuroUlps()
         );
         expect(difference).to.be.bignumber.eq(expectedError); // should burn unsed fixed pool neumarks
       });

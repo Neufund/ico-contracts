@@ -2,31 +2,21 @@ import { expect } from "chai";
 import gasCost from "./helpers/gasCost";
 import { eventValue } from "./helpers/events";
 
-const Curve = artifacts.require("./Curve.sol");
 const CurveGas = artifacts.require("./test/CurveGas.sol");
-const Neumark = artifacts.require("./Neumark.sol");
 
 const BigNumber = web3.BigNumber;
 const EUR_DECIMALS = new BigNumber(10).toPower(18);
 const NMK_DECIMALS = new BigNumber(10).toPower(18);
 
-contract("Curve", accounts => {
-  let curve;
+contract("NeumarkIssuanceCurve", accounts => {
   let curveGas;
-  let neumark;
 
   beforeEach(async () => {
-    neumark = await Neumark.new();
-    curve = await Curve.new(neumark.address);
-    curveGas = await CurveGas.new(neumark.address);
+    curveGas = await CurveGas.new();
   });
 
   it("should deploy", async () => {
-    console.log(`\tCurve took ${gasCost(curve)}.`);
-  });
-
-  it("should start at zero", async () => {
-    assert.equal(await curve.totalEuroUlps.call(), 0);
+    console.log(`\tCurveGas took ${gasCost(curveGas)}.`);
   });
 
   it("should compute exactly over the whole range", async () => {
@@ -155,87 +145,5 @@ contract("Curve", accounts => {
     );
     const totalGas = gas.reduce((t, [_, gas]) => t + gas, 0);
     console.log(`\t${correct.length} evaluations took ${gasCost(totalGas)}.`);
-  });
-
-  it("should issue Neumarks", async () => {
-    assert.equal((await curve.totalEuroUlps.call()).valueOf(), 0);
-    assert.equal((await neumark.totalSupply.call()).valueOf(), 0);
-
-    const r1 = await curve.issueForEuro(EUR_DECIMALS.mul(100), {
-      from: accounts[1]
-    }); // TODO check result
-    console.log(`\tIssue took ${gasCost(r1)}.`);
-    assert.equal(
-      (await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(),
-      100
-    );
-    assert.equal(
-      (await neumark.totalSupply.call()).div(NMK_DECIMALS).floor().valueOf(),
-      649
-    );
-    assert.equal(
-      (await neumark.balanceOf.call(accounts[1]))
-        .div(NMK_DECIMALS)
-        .floor()
-        .valueOf(),
-      649
-    );
-
-    const r2 = await curve.issueForEuro(EUR_DECIMALS.mul(900), {
-      from: accounts[2]
-    });
-    console.log(`\tIssue took ${gasCost(r2)}.`);
-    assert.equal(
-      (await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(),
-      1000
-    );
-    assert.equal(
-      (await neumark.totalSupply.call()).div(NMK_DECIMALS).floor().valueOf(),
-      6499
-    );
-    assert.equal(
-      (await neumark.balanceOf.call(accounts[2]))
-        .div(NMK_DECIMALS)
-        .floor()
-        .valueOf(),
-      5849
-    );
-  });
-
-  it("should issue and then burn Neumarks", async () => {
-    // Issue Neumarks for 1 mln Euros
-    const euroUlps = EUR_DECIMALS.mul(1000000);
-    const r = await curve.issueForEuro(euroUlps, { from: accounts[1] });
-    console.log(`\tIssue took ${gasCost(r)}.`);
-    const neumarkUlps = await neumark.balanceOf.call(accounts[1]);
-    const neumarks = neumarkUlps.div(NMK_DECIMALS).floor().valueOf();
-
-    // Burn a third the Neumarks
-    const toBurn = Math.floor(neumarks / 3);
-    const toBurnUlps = NMK_DECIMALS.mul(toBurn);
-    const burned = await curve.burnNeumark(toBurnUlps, { from: accounts[1] });
-    console.log(`\tBurn took ${gasCost(burned)}.`);
-    assert.equal(
-      (await neumark.balanceOf.call(accounts[1]))
-        .div(NMK_DECIMALS)
-        .floor()
-        .valueOf(),
-      neumarks - toBurn
-    );
-  });
-
-  it("should issue same amount in multiple issuances", async () => {
-    // 1 ether + 100 wei in eur
-    const eurRate = 218.1192809;
-    const euroUlps = EUR_DECIMALS.mul(1).add(100).mul(eurRate);
-    const totNMK = await curve.cumulative(euroUlps);
-    // issue for 1 ether
-    const euro1EthUlps = EUR_DECIMALS.mul(1).mul(eurRate);
-    let tx = await curve.issueForEuro(euro1EthUlps);
-    const p1NMK = eventValue(tx, "NeumarksIssued", "neumarks");
-    // issue for 100 wei
-    tx = await curve.issueForEuro(new BigNumber(100).mul(eurRate));
-    const p2NMK = eventValue(tx, "NeumarksIssued", "neumarks");
-    expect(totNMK).to.be.bignumber.equal(p1NMK.plus(p2NMK));
   });
 });

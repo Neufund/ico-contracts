@@ -4,46 +4,44 @@ import { eventValue } from "./events";
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
 const Neumark = artifacts.require("Neumark");
-const Curve = artifacts.require("Curve");
 
-async function deployCurve() {
+async function deployNeumark() {
   const etherToken = await EtherToken.new();
   const neumark = await Neumark.new();
-  const curve = await Curve.new(neumark.address);
 
-  return curve;
+  return neumark;
 }
 
 export async function deployMutableCurve() {
-  const curve = await deployCurve();
+  const neumark = await deployNeumark();
 
   return {
     issueInEth: async ether => {
       const euro = ethToEur(ether);
-      const tx = await curve.issueForEuro(euro);
-      return eventValue(tx, "NeumarksIssued", "neumarks");
+      const tx = await neumark.issueForEuro(euro);
+      return eventValue(tx, "NeumarksIssued", "neumarkUlp");
     }
   };
 }
 
-let curve;
+let neumark;
 
 export async function curveInEur(moneyInEurULP) {
-  if (!curve) {
-    curve = await deployCurve();
+  if (!neumark) {
+    neumark = await deployNeumark();
   }
 
-  return curve.cumulative(moneyInEurULP);
+  return neumark.cumulative(moneyInEurULP);
 }
 
 export async function curveInEther(money, eurEtherRatio) {
-  if (!curve) {
-    curve = await deployCurve();
+  if (!neumark) {
+    neumark = await deployNeumark();
   }
 
   const moneyInEurULP = ethToEur(money, eurEtherRatio);
 
-  return curve.cumulative(moneyInEurULP);
+  return neumark.cumulative(moneyInEurULP);
 }
 
 export function ethToEur(ether, eurEtherRatio = etherToWei(218.1192809)) {

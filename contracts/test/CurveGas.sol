@@ -1,14 +1,8 @@
 pragma solidity 0.4.15;
 
-import '../Curve.sol';
+import '../NeumarkIssuanceCurve.sol';
 
-contract CurveGas is Curve {
-
-    function CurveGas(Neumark neumark)
-        public
-        Curve(neumark)
-    {
-    }
+contract CurveGas is NeumarkIssuanceCurve {
 
     function cumulativeWithGas(uint256 n)
         external

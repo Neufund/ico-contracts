@@ -1,60 +1,8 @@
 pragma solidity 0.4.15;
 
-import './Neumark.sol';
+contract NeumarkIssuanceCurve {
 
-contract Curve {
-
-    Neumark public NEUMARK;
-
-    uint256 public totalEuroUlps;
-
-    event NeumarksIssued(
-        address indexed owner,
-        uint256 euros,
-        uint256 neumarks);
-
-    event NeumarksBurned(
-        address indexed owner,
-        uint256 euros,
-        uint256 neumarks);
-
-    function Curve(Neumark neumark) {
-        totalEuroUlps = 0;
-        NEUMARK = neumark;
-    }
-
-    function issueForEuro(uint256 euroUlps)
-        public
-        returns (uint256)
-    {
-        require(totalEuroUlps + euroUlps >= totalEuroUlps);
-        address beneficiary = msg.sender;
-        uint256 neumarkUlps = incremental(euroUlps);
-
-        totalEuroUlps = totalEuroUlps + euroUlps;
-
-        assert(NEUMARK.generateTokens(beneficiary, neumarkUlps));
-
-        NeumarksIssued(beneficiary, euroUlps, neumarkUlps);
-        return neumarkUlps;
-    }
-
-    function burnNeumark(uint256 neumarkUlps)
-        public
-        returns (uint256)
-    {
-        address owner = msg.sender;
-        uint256 euroUlps = incrementalInverse(neumarkUlps);
-
-        totalEuroUlps -= euroUlps;
-
-        assert(NEUMARK.destroyTokens(owner, neumarkUlps));
-
-        NeumarksBurned(owner, euroUlps, neumarkUlps);
-        return euroUlps;
-    }
-
-    function incremental(uint256 euroUlps)
+    function incremental(uint256 totalEuroUlps, uint256 euroUlps)
         public
         constant
         returns (uint256 neumarkUlps)
@@ -66,7 +14,7 @@ contract Curve {
         return to - from;
     }
 
-    function incrementalInverse(uint256 neumarkUlps)
+    function incrementalInverse(uint256 totalEuroUlps, uint256 neumarkUlps)
         public
         constant
         returns (uint256 euroUlps)
