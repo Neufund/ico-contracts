@@ -208,15 +208,11 @@ contract(
           2
         );
 
-        expect(
-          await commitment.whitelisted(whitelistedInvestors[0])
-        ).to.be.true;
-        expect(
-          await commitment.whitelisted(whitelistedInvestors[1])
-        ).to.be.true;
-        expect(
-          await commitment.whitelisted(fixedInvestors[0])
-        ).to.be.true;
+        expect(await commitment.whitelisted(whitelistedInvestors[0])).to.be
+          .true;
+        expect(await commitment.whitelisted(whitelistedInvestors[1])).to.be
+          .true;
+        expect(await commitment.whitelisted(fixedInvestors[0])).to.be.true;
 
         expect(await commitment.fixedCostInvestors(0)).to.be.eq(
           fixedInvestors[0]
@@ -260,15 +256,11 @@ contract(
           2
         );
 
-        expect(
-          await commitment.whitelisted(whitelistedInvestors[0])
-        ).to.be.true;
-        expect(
-          await commitment.whitelisted(whitelistedInvestors[1])
-        ).to.be.true;
-        expect(
-          await commitment.whitelisted(fixedInvestors[0])
-        ).to.be.true;
+        expect(await commitment.whitelisted(whitelistedInvestors[0])).to.be
+          .true;
+        expect(await commitment.whitelisted(whitelistedInvestors[1])).to.be
+          .true;
+        expect(await commitment.whitelisted(fixedInvestors[0])).to.be.true;
 
         expect(await commitment.fixedCostInvestors(0)).to.be.eq(
           fixedInvestors[0]
@@ -393,9 +385,10 @@ contract(
 
       const commitWithoutRemainderTests = [...Array(10).keys()];
 
-      commitWithoutRemainderTests.forEach( function(remainderWei) {
-        it.only(`should receive neumarks for remainder of ${remainderWei+1} wei`, async () => {
-          await commitWithoutRemainder(remainderWei+1);
+      commitWithoutRemainderTests.forEach(remainderWei => {
+        it(`should receive neumarks for remainder of ${remainderWei +
+          1} wei`, async () => {
+          await commitWithoutRemainder(remainderWei + 1);
         });
       });
 
@@ -748,14 +741,12 @@ contract(
 
     describe("successful comittment", () => {
       it("should burn unused neumarks from fixed pool", async () => {
-          // sets min cap so commitment is successful
-          await shouldBurnUnusedNeumarks(etherToWei(0.5));
+        // sets min cap so commitment is successful
+        await shouldBurnUnusedNeumarks(etherToWei(0.5));
       });
     });
 
-    async function shouldBurnUnusedNeumarks(
-      minAbsCap
-    ) {
+    async function shouldBurnUnusedNeumarks(minAbsCap) {
       const startingDate = closeFutureDate();
       const duration = MONTH;
       const mutableCurve = await deployMutableCurve();
@@ -778,7 +769,7 @@ contract(
           fixedInvestors,
           fixedTickets: fixedDeclaredTickets,
           startTimestamp: startingDate,
-          minAbsCap: minAbsCap,
+          minAbsCap,
           duration
         }
       });
@@ -800,7 +791,9 @@ contract(
       expect(await commitment.wasSuccessful()).to.be.true;
 
       // neumarks corresponding to ticket 1 must be burned to curve is rollbacked to ticket 0
-      expect(await neumark.totalEuroUlps()).to.be.bignumber.eq(ethToEur(fixedDeclaredTickets[0]));
+      expect(await neumark.totalEuroUlps()).to.be.bignumber.eq(
+        ethToEur(fixedDeclaredTickets[0])
+      );
     }
 
     async function investorTicketBiggerThenDeclared(
