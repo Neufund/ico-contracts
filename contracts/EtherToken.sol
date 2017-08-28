@@ -49,9 +49,9 @@ contract EtherToken is StandardToken, ITokenWithDeposit {
         public
     {
         require(balances[msg.sender] >= amount);
-        assert(msg.sender.send(amount));
         balances[msg.sender] -= amount;
         totalSupply -= amount;
+        assert(msg.sender.send(amount));
         Withdrawal(msg.sender, amount);
     }
 }
