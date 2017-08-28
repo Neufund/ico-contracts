@@ -19,24 +19,22 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
 
     uint256 public startDate;
     uint256 public endDate;
-    uint256 public minCommitment;
-    uint256 public maxCommitment;
+
     uint256 public minTicket;
-
-    uint256 public ethEURFraction;
-
     uint256 public minAbsCap;
     uint256 public maxAbsCap;
+    uint256 public ethEURFraction;
 
     bool public finalized;
-    bool public capsInitialized;
+    // amount stored in LockedAccount on finalized
+    uint256 public finalCommitedAmount;
 
     NeumarkController internal neumarkController;
     // wallet that keeps Platform Operator share of neumarks
     // todo: take from Universe
     address internal platformOperatorWallet = address(0x55d7d863a155F75c5139E20DCBDA8d0075BA2A1c);
 
-    function setCommitmentTerms(uint256 _startDate, uint256 _endDate, uint256 _minCommitment, uint256 _maxCommitment,
+    function setCommitmentTerms(uint256 _startDate, uint256 _endDate, uint256 _minAbsCap, uint256 _maxAbsCap,
         uint256 _minTicket, uint256 _ethEurFraction)
         public
     {
@@ -44,16 +42,16 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         require(endDate == 0);
         require(_startDate > 0);
         require(_endDate >= _startDate);
-        require(_minCommitment >= 0);
-        require(_maxCommitment >= _minCommitment);
+        require(_maxAbsCap > 0);
+        require(_maxAbsCap >= _minAbsCap);
         ethEURFraction = _ethEurFraction;
         minTicket = _minTicket;
 
         startDate = _startDate;
         endDate = _endDate;
 
-        minCommitment = _minCommitment;
-        maxCommitment = _maxCommitment;
+        minAbsCap = _minAbsCap;
+        maxAbsCap = _maxAbsCap;
     }
 
     function commit()
@@ -63,10 +61,6 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         // first commit checks lockedAccount and generates status code event
         require(address(lockedAccount.controller()) == address(this));
         require(currentTime() >= startDate);
-        // on first commit caps will be frozen
-        if (!capsInitialized) {
-            initializeCaps();
-        }
         require(msg.value >= minTicket);
         require(!hasEnded());
         uint256 total = add(lockedAccount.totalLockedAmount(), msg.value);
@@ -93,7 +87,8 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         public
         returns (bool)
     {
-        return lockedAccount.totalLockedAmount() >= minAbsCap;
+        uint256 amount = finalized ? finalCommitedAmount : lockedAccount.totalLockedAmount();
+        return amount >= minAbsCap;
     }
 
     /// overrides TokenOffering
@@ -102,8 +97,8 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         public
         returns(bool)
     {
-        // todo: add finalized check
-        return capsInitialized && (lockedAccount.totalLockedAmount() >= maxAbsCap || currentTime() >= endDate);
+        uint256 amount = finalized ? finalCommitedAmount : lockedAccount.totalLockedAmount();
+        return amount >= maxAbsCap || currentTime() >= endDate;
     }
 
     /// overrides TokenOffering
@@ -143,21 +138,8 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
             onCommitmentFailed();
             CommitmentCompleted(false);
         }
+        finalCommitedAmount = lockedAccount.totalLockedAmount();
         finalized = true;
-    }
-
-    /// if this is first commitment or before, caps must be finalized from lockedAccount
-    /// as we require that next commitment phase sets caps based on results of previous commitment phase
-    // ANYONE can call it
-    function initializeCaps()
-        public
-    {
-        require(!capsInitialized);
-        require(currentTime() >= startDate);
-        // continue previous commitments on this lockedAccount
-        minAbsCap = minCommitment + lockedAccount.totalLockedAmount();
-        maxAbsCap = maxCommitment + lockedAccount.totalLockedAmount();
-        capsInitialized = true;
     }
 
     /// called by finalize() so may be called by ANYONE
@@ -221,8 +203,7 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
     /// default function not callable. prevent investors without transaction data
     function () { revert(); }
 
-    /// declare capital commitment into Neufund ecosystem between _startDate and _endDate
-    /// min and max amounts in this commitment is _minCommitment - _maxCommitment
+    /// declare capital commitment into Neufund ecosystem
     /// store funds in _ethToken and lock funds in _lockedAccount while issuing Neumarks along _curve
     /// commitments can be serialized via long lived _lockedAccount and _curve
     function PublicCommitment(
