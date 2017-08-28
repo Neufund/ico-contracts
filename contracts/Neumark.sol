@@ -1,9 +1,16 @@
 pragma solidity 0.4.15;
 
+import './AccessControl/AccessControlled.sol';
+import './AccessRoles.sol';
 import './SnapshotToken/SnapshotToken.sol';
 import './NeumarkIssuanceCurve.sol';
 
-contract Neumark is SnapshotToken, NeumarkIssuanceCurve {
+contract Neumark is
+    AccessControlled,
+    AccessRoles,
+    SnapshotToken,
+    NeumarkIssuanceCurve
+{
 
     string constant TOKEN_NAME     = "Neumark";
     uint8  constant TOKEN_DECIMALS = 18;
@@ -22,7 +29,9 @@ contract Neumark is SnapshotToken, NeumarkIssuanceCurve {
         uint256 euroUlp,
         uint256 neumarkUlp);
 
-    function Neumark()
+    function Neumark(IAccessPolicy accessPolicy)
+        AccessControlled(accessPolicy)
+        AccessRoles()
         SnapshotToken(
             ISnapshotTokenParent(0x0), // Address of the parent token, set to 0x0 if it is a new token
             0, // Snapshot of the parent token, set to 0 if it is a new token
@@ -38,6 +47,7 @@ contract Neumark is SnapshotToken, NeumarkIssuanceCurve {
 
     function issueForEuro(uint256 euroUlps)
         public
+        only(ROLE_NEUMARK_ISSUER)
         returns (uint256)
     {
         require(totalEuroUlps + euroUlps >= totalEuroUlps);
@@ -54,6 +64,7 @@ contract Neumark is SnapshotToken, NeumarkIssuanceCurve {
 
     function burnNeumark(uint256 neumarkUlps)
         public
+        only(ROLE_NEUMARK_BURNER)
         returns (uint256)
     {
         address owner = msg.sender;
@@ -69,9 +80,17 @@ contract Neumark is SnapshotToken, NeumarkIssuanceCurve {
 
     function enableTransfer(bool enabled)
         public
-        // TODO Roles
+        only(ROLE_TRANSFERS_ADMIN)
     {
         transferEnabled = enabled;
+    }
+
+    function createSnapshot()
+        public
+        only(ROLE_SNAPSHOT_CREATOR)
+        returns (uint256)
+    {
+        return DailyAndSnapshotable.createSnapshot();
     }
 
     /// @notice Notifies the controller about a token transfer allowing the
