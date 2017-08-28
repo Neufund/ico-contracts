@@ -140,7 +140,7 @@ contract CommitmentBase is TimeSource, Math, ITokenOffering {
 
     /// distributes neumarks on `this` balance to investor and platform operator: half half
     /// returns amount of investor part
-    function distributeNeumarks(address investor, uint256 neumarks)
+    function distributeAndReturnInvestorNeumarks(address investor, uint256 neumarks)
         internal
         returns (uint256)
     {
@@ -165,9 +165,10 @@ contract CommitmentBase is TimeSource, Math, ITokenOffering {
     /// called by finalize() so may be called by ANYONE
     /// intended to be overriden
     function onCommitmentFailed() internal;
-    /// awards investor with Neumarks computed along curve for `eth` amount
+    /// awards investor with Neumarks computed along curve for `amount`
     /// this function modifies state of curve
-    function giveNeumarks(address investor, uint256 eth) internal returns (uint256);
+    /// return amount of investor's Neumark reward
+    function giveNeumarks(address investor, uint256 amount) internal returns (uint256);
     /// tells if commitment may be executed ie. investor is whitelisted
     function validCommitment() internal constant returns (bool);
 

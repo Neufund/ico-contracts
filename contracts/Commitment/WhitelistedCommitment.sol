@@ -95,7 +95,7 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, CommitmentBase 
         lockedAccount.controllerFailed();
     }
 
-    function giveNeumarks(address investor, uint256 eth)
+    function giveNeumarks(address investor, uint256 amount)
         internal
         returns (uint256)
     {
@@ -103,9 +103,9 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, CommitmentBase 
         uint256 fixedInvestorTicket = fixedCostTickets[investor];
         // what is above limit for fixed price should be rewarded from curve
         uint256 whitelistReward = 0;
-        uint256 remainingAmount = eth;
-        if ( eth > fixedInvestorTicket ) {
-            uint256 whitelistedAmount = eth - fixedInvestorTicket;
+        uint256 remainingAmount = amount;
+        if (amount > fixedInvestorTicket) {
+            uint256 whitelistedAmount = amount - fixedInvestorTicket;
             uint256 whitelistedEuroUlps = convertToEUR(whitelistedAmount);
             whitelistReward = neumark.issueForEuro(whitelistedEuroUlps);
             remainingAmount = fixedInvestorTicket;
@@ -122,7 +122,7 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, CommitmentBase 
             fixedCostTickets[investor] -= remainingAmount;
         }
         // distribute to investor and platform operator
-        return distributeNeumarks(investor, whitelistReward + fixedReward);
+        return distributeAndReturnInvestorNeumarks(investor, whitelistReward + fixedReward);
     }
 
     function validCommitment()

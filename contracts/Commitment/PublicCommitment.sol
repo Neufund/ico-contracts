@@ -24,14 +24,14 @@ contract PublicCommitment is CommitmentBase {
         lockedAccount.controllerFailed();
     }
 
-    function giveNeumarks(address investor, uint256 eth)
+    function giveNeumarks(address investor, uint256 amount)
         internal
         returns (uint256)
     {
-        uint256 euroUlps = convertToEUR(msg.value);
+        uint256 euroUlps = convertToEUR(amount);
         // issue to self
         uint256 neumarkUlps = neumark.issueForEuro(euroUlps);
-        return distributeNeumarks(investor, neumarkUlps);
+        return distributeAndReturnInvestorNeumarks(investor, neumarkUlps);
     }
 
     function validCommitment()
