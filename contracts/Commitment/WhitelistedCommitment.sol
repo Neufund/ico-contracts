@@ -99,38 +99,30 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, CommitmentBase 
         internal
         returns (uint256)
     {
-        uint256 fixedRemainingTicket = fixedCostTickets[investor]; // returns 0 in case of investor not in mapping
-        uint256 fixedRemainingNeumarks = fixedCostNeumarks[investor]; // returns 0 in case of investor not in mapping
-
+        // returns 0 in case of investor has no fixed cost ticket
+        uint256 fixedInvestorTicket = fixedCostTickets[investor];
         // what is above limit for fixed price should be rewarded from curve
-        uint256 reward = 0;
-        if ( eth > fixedRemainingTicket ) {
-            uint256 euroUlps = convertToEUR(eth - fixedRemainingTicket);
-            reward = neumark.issueForEuro(euroUlps);
-            eth = fixedRemainingTicket;
+        uint256 whitelistReward = 0;
+        uint256 remainingAmount = eth;
+        if ( eth > fixedInvestorTicket ) {
+            uint256 whitelistedAmount = eth - fixedInvestorTicket;
+            uint256 whitelistedEuroUlps = convertToEUR(whitelistedAmount);
+            whitelistReward = neumark.issueForEuro(whitelistedEuroUlps);
+            remainingAmount = fixedInvestorTicket;
         }
-
         // get pro rata neumark reward for any eth left
-        uint256 fixedreward = 0;
-        if (eth > 0) {
-            fixedreward = proportion(fixedRemainingNeumarks, eth, fixedRemainingTicket);
-            // decrease ticket size and neumarks left
-            if ((fixedreward > fixedRemainingNeumarks)
-                || (fixedRemainingNeumarks - fixedreward < 10))
-            {
-                // give rest of the neumarks
-                fixedreward = fixedRemainingNeumarks;
-                // zero whole ticket
-                fixedCostNeumarks[investor] = 0;
-                fixedCostTickets[investor] = 0;
-            } else {
-                fixedCostNeumarks[investor] -= fixedreward;
-                // this will not overflow, we check fixedCostTickets[investor] > eth earlier
-                fixedCostTickets[investor] -= eth;
-            }
+        uint256 fixedReward = 0;
+        if (remainingAmount > 0) {
+            uint256 fixedInvestorNeumarks = fixedCostNeumarks[investor];
+            fixedReward = proportion(fixedInvestorNeumarks, remainingAmount, fixedInvestorTicket);
+            // if investor gets neumark with `k` tranches of different wei sizes a1...ak and `ticket` is total declared ticket
+            // then last proportion must be: ak / (ticket - sum(a1...ak-1)) == 1
+            // which gives fixedReward == fixedInvestorNeumarks, therefore we may safely do the following:
+            fixedCostNeumarks[investor] -= fixedReward;
+            fixedCostTickets[investor] -= remainingAmount;
         }
         // distribute to investor and platform operator
-        return distributeNeumarks(investor, reward + fixedreward);
+        return distributeNeumarks(investor, whitelistReward + fixedReward);
     }
 
     function validCommitment()
