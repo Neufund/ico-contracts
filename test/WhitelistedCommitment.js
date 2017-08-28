@@ -745,66 +745,63 @@ contract(
 
     describe("successful comittment", () => {
       it("should burn unused neumarks from fixed pool", async () => {
-        const startingDate = closeFutureDate();
-        const duration = MONTH;
-        const investor1 = accounts[0];
-        const fixedInvestors = [investor1, accounts[1]];
-        const fixedDeclaredTickets = [etherToWei(1), etherToWei(3)];
-        const equalShareSize = fixedDeclaredTickets[0];
-        const expectedTicketsSum = fixedDeclaredTickets[0].add(
-          fixedDeclaredTickets[1]
-        );
-        const expectedNeumarkAmmountOnFixedRate = await curveInEther(
-          expectedTicketsSum
-        );
-        const expectedNeumarkAmmountOnInvestor1 = await curveInEther(
-          fixedDeclaredTickets[0]
-        );
-        const expectedError = new web3.BigNumber(0);
-
-        const {
-          commitment,
-          lockedAccount,
-          curve,
-          neumark
-        } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
-          commitmentCfg: {
-            fixedInvestors,
-            fixedTickets: fixedDeclaredTickets,
-            startTimestamp: startingDate,
-            minCommitment: etherToWei(0.5),
-            duration
-          }
-        });
-        expect(await curve.totalEuroUlps()).to.be.bignumber.eq(
-          ethToEur(expectedTicketsSum)
-        );
-        expect(await neumark.balanceOf(commitment.address)).to.be.bignumber.eq(
-          expectedNeumarkAmmountOnFixedRate
-        ); // should secure all neumarks on fixed pool
-
-        await setTimeTo(startingDate);
-        await commitment.commit({
-          value: fixedDeclaredTickets[0],
-          from: investor1
-        });
-
-        expect(await neumark.balanceOf(commitment.address)).to.be.bignumber.eq(
-          expectedNeumarkAmmountOnFixedRate.sub(
-            expectedNeumarkAmmountOnInvestor1
-          )
-        ); // make sure we still hold expected number of Neumarks
-
-        await setTimeTo(startingDate + duration + HOUR);
-        await commitment.finalize();
-
-        const difference = ethToEur(fixedDeclaredTickets[0]).sub(
-          await curve.totalEuroUlps()
-        );
-        expect(difference).to.be.bignumber.eq(expectedError); // should burn unsed fixed pool neumarks
+          // sets min cap so commitment is successful
+          shouldBurnUnusedNeumarks(etherToWei(0.5));
       });
-      it("check all events");
     });
+
+    async function shouldBurnUnusedNeumarks(
+      minAbsCap
+    ) {
+      const startingDate = closeFutureDate();
+      const duration = MONTH;
+      const mutableCurve = await deployMutableCurve();
+      const investor1 = accounts[0];
+      const fixedInvestors = [investor1, accounts[1]];
+      const fixedDeclaredTickets = [etherToWei(1), etherToWei(3)];
+      const expectedTicketsSum = fixedDeclaredTickets[0].add(
+        fixedDeclaredTickets[1]
+      );
+      const expectedNeumarkAmmountOnFixedRate = await mutableCurve.issueInEth(
+        expectedTicketsSum
+      );
+      const expectedError = new web3.BigNumber(309243939690474); // this is much, much less then 1 cent
+
+      const {
+        commitment,
+        lockedAccount,
+        curve
+      } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
+        commitmentCfg: {
+          fixedInvestors,
+          fixedTickets: fixedDeclaredTickets,
+          startTimestamp: startingDate,
+          minAbsCap: minAbsCap,
+          duration
+        }
+      });
+      expect(await curve.totalEuroUlps()).to.be.bignumber.eq(
+        ethToEur(expectedTicketsSum)
+      ); // should secure all neumarks on fixed pool
+
+      await setTimeTo(startingDate);
+      await commitment.commit({
+        value: fixedDeclaredTickets[0],
+        from: investor1
+      });
+
+      await setTimeTo(startingDate + duration + HOUR);
+      await commitment.finalize();
+
+      expect(await commitment.wasSuccessful()).to.be.true;
+
+      const difference = ethToEur(fixedDeclaredTickets[0]).sub(
+        await curve.totalEuroUlps()
+      );
+      // should burn unsed fixed pool neumarks
+      expect(difference).to.be.bignumber.eq(expectedError);
+    }
+
     async function investorTicketBiggerThenDeclared(
       investorAccounts,
       investorDeclaration,
