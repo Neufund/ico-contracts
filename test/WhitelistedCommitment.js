@@ -404,36 +404,36 @@ contract(
         const investor1 = accounts[0];
         const fixedInvestors = [investor1];
         const fixedDeclaredTickets = [etherToWei(2)];
-        const eutEthRate = etherToWei(0.1); // sets up a rate allowing for rounding errors
+        const eurEthRate = 0.1;
+        const eurEthRateWei = etherToWei(eurEthRate); // sets up a rate allowing for rounding errors
 
         const {
           commitment,
           lockedAccount,
-          neumark,
-          curve
+          neumark
         } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
           commitmentCfg: {
             fixedInvestors,
             fixedTickets: fixedDeclaredTickets,
             startTimestamp: startingDate,
             minTicket: etherToWei(0),
-            eurEthRate: eutEthRate
+            eurEthRate: eurEthRateWei
           }
         });
 
-        const expectedNeumarkAmmount = await curveInEther(
+        const expectedNeumarkAmount = await curveInEther(
           fixedDeclaredTickets[0],
-          eutEthRate
+          eurEthRateWei
         );
-        const expectedInvestor1NeumarkShare = expectedNeumarkAmmount
+        const expectedInvestor1NeumarkShare = expectedNeumarkAmount
           .div(2)
           .round(0, 4);
         // use curve inverse to get weis producing less than 9 neumarks which is
         // send out as remainder, mind the ether rate 10 ETH = 1 EUR
         // with market rate weis would be 0
         const etherDeclarationDiff = eurUlpToEth(
-          await curve.rewindInverse(5),
-          0.1
+          await neumark.incrementalInverse(ethToEur(fixedDeclaredTickets[0]), 5),
+          eurEthRate
         ).round(0);
         // console.log(etherDeclarationDiff);
         const actualInvestor1Commitment = fixedDeclaredTickets[0].sub(
