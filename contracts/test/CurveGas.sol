@@ -10,12 +10,12 @@ contract CurveGas is Curve {
     {
     }
 
-    function curveGas(uint256 n)
+    function cumulativeWithGas(uint256 n)
         external
         returns (uint256, uint256)
     {
         uint start = msg.gas;
-        uint result = curve(n);
+        uint result = cumulative(n);
         uint finish = msg.gas;
         return (result, start - finish);
     }

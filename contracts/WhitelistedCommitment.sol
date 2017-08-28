@@ -39,7 +39,7 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
         // issue neumarks for fixed price investors
         uint256 euros = convertToEUR(totalFixedCostAmount);
         // stored in this smart contract balance
-        totalFixedCostNeumarks = curve.issue(euros);
+        totalFixedCostNeumarks = curve.issueForEuro(euros);
         // leave array for easy enumeration
         fixedCostInvestors = addresses;
     }
@@ -103,7 +103,7 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, PublicCommitmen
         if ( eth > fixedTicket ) {
             if (fixedTicket > 0) // recompute euro if part of msg.value goes thru whitelist
                 euros = convertToEUR(eth - fixedTicket);
-            reward = curve.issue(euros); // PublicCommitment.giveNeumarks(investor, eth - fixedTicket, euros);
+            reward = curve.issueForEuro(euros); // PublicCommitment.giveNeumarks(investor, eth - fixedTicket, euros);
             eth = fixedTicket;
         }
         Debug(eth);

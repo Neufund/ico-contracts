@@ -53,7 +53,7 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
     const initialNeumarksBalance = await chain.neumark.balanceOf(investor);
     const initialLockedBalance = await chain.lockedAccount.balanceOf(investor);
     // issue real neumarks and check against
-    let tx = await chain.curve.issue(ticket, { from: investor });
+    let tx = await chain.curve.issueForEuro(ticket, { from: investor });
     const neumarks = eventValue(tx, "NeumarksIssued", "neumarks");
     expect(
       await chain.neumark.balanceOf(investor),

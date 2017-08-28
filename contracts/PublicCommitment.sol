@@ -188,7 +188,8 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         returns (uint256)
     {
         // issue to self
-        return distributeNeumarks(investor, curve.issue(euros));
+        uint256 neumarkUlps = curve.issueForEuro(euros);
+        return distributeNeumarks(investor, neumarkUlps);
     }
 
     /// distributes neumarks on `this` balance to investor and platform operator: half half

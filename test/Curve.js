@@ -149,7 +149,7 @@ contract("Curve", accounts => {
     ];
     const gas = await Promise.all(
       correct.map(async ([i, v]) => {
-        const [neumarkUlps, gas] = await curveGas.curveGas.call(
+        const [neumarkUlps, gas] = await curveGas.cumulativeWithGas.call(
           EUR_DECIMALS.mul(i)
         );
         const neumarks = 0 | neumarkUlps.div(NMK_DECIMALS).floor().valueOf();
@@ -165,7 +165,9 @@ contract("Curve", accounts => {
     assert.equal((await curve.totalEuroUlps.call()).valueOf(), 0);
     assert.equal((await neumark.totalSupply.call()).valueOf(), 0);
 
-    const r1 = await curve.issue(EUR_DECIMALS.mul(100), { from: accounts[1] }); // TODO check result
+    const r1 = await curve.issueForEuro(EUR_DECIMALS.mul(100), {
+      from: accounts[1]
+    }); // TODO check result
     console.log(`\tIssue took ${gasCost(r1)}.`);
     assert.equal(
       (await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(),
@@ -183,7 +185,9 @@ contract("Curve", accounts => {
       649
     );
 
-    const r2 = await curve.issue(EUR_DECIMALS.mul(900), { from: accounts[2] });
+    const r2 = await curve.issueForEuro(EUR_DECIMALS.mul(900), {
+      from: accounts[2]
+    });
     console.log(`\tIssue took ${gasCost(r2)}.`);
     assert.equal(
       (await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(),
@@ -205,7 +209,7 @@ contract("Curve", accounts => {
   it("should issue and then burn Neumarks", async () => {
     // Issue Neumarks for 1 mln Euros
     const euroUlps = EUR_DECIMALS.mul(1000000);
-    const r = await curve.issue(euroUlps, { from: accounts[1] });
+    const r = await curve.issueForEuro(euroUlps, { from: accounts[1] });
     console.log(`\tIssue took ${gasCost(r)}.`);
     const neumarkUlps = await neumark.balanceOf.call(accounts[1]);
     const neumarks = neumarkUlps.div(NMK_DECIMALS).floor().valueOf();
@@ -231,10 +235,10 @@ contract("Curve", accounts => {
     const totNMK = await curve.cumulative(euroUlps);
     // issue for 1 ether
     const euro1EthUlps = EUR_DECIMALS.mul(1).mul(eurRate);
-    let tx = await curve.issue(euro1EthUlps);
+    let tx = await curve.issueForEuro(euro1EthUlps);
     const p1NMK = eventValue(tx, "NeumarksIssued", "neumarks");
     // issue for 100 wei
-    tx = await curve.issue(new BigNumber(100).mul(eurRate));
+    tx = await curve.issueForEuro(new BigNumber(100).mul(eurRate));
     const p2NMK = eventValue(tx, "NeumarksIssued", "neumarks");
     expect(totNMK).to.be.bignumber.equal(p1NMK.plus(p2NMK));
   });

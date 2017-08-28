@@ -23,7 +23,7 @@ export async function deployMutableCurve() {
   return {
     issueInEth: async ether => {
       const euro = ethToEur(ether);
-      const tx = await curve.issue(euro);
+      const tx = await curve.issueForEuro(euro);
       return eventValue(tx, "NeumarksIssued", "neumarks");
     }
   };
@@ -36,7 +36,7 @@ export async function curveInEur(moneyInEurULP) {
     curve = await deployCurve();
   }
 
-  return curve.curve(moneyInEurULP);
+  return curve.cumulative(moneyInEurULP);
 }
 
 export async function curveInEther(money, eurEtherRatio) {
@@ -46,7 +46,7 @@ export async function curveInEther(money, eurEtherRatio) {
 
   const moneyInEurULP = ethToEur(money, eurEtherRatio);
 
-  return curve.curve(moneyInEurULP);
+  return curve.cumulative(moneyInEurULP);
 }
 
 export function ethToEur(ether, eurEtherRatio = etherToWei(218.1192809)) {
