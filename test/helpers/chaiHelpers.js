@@ -8,7 +8,8 @@ export default function(chai) {
     invariant(ether, "missing ether parameter");
     invariant(neumarks, "missing neumarks parameter");
 
-    const balance = this._obj; // eslint-disable-line no-underscore-dangle
+    // eslint-disable-next-line no-underscore-dangle
+    const balance = this._obj;
 
     chai
       .expect(balance[0], `Ether balance should be eq to ${ether.toString()}`)

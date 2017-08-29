@@ -4,7 +4,8 @@ export default function(chai) {
     async function blockchainArrayOfSize(size) {
       // I would love to hear ideas for better implementation
 
-      const web3ArrayAccessor = this._obj; // eslint-disable-line no-underscore-dangle
+      // eslint-disable-next-line no-underscore-dangle
+      const web3ArrayAccessor = this._obj;
 
       try {
         await web3ArrayAccessor(size - 1);

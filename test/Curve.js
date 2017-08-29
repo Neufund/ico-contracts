@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { txGasCost } from "./helpers/gasCost";
+import { gasCost, prettyPrintGasCost } from "./helpers/gasUtils";
 import { eventValue } from "./helpers/events";
 
 const Curve = artifacts.require("./Curve.sol");
@@ -23,6 +23,11 @@ contract("Curve", accounts => {
     await neumark.changeController(controller.address);
     curve = await Curve.new(controller.address);
     curveGas = await CurveGas.new(controller.address);
+  });
+
+  it("should deploy", async () => {
+    prettyPrintGasCost("Curve", curve);
+    expect(gasCost(curve)).to.be.eq(613755);
   });
 
   it("should start at zero", async () => {
@@ -162,8 +167,10 @@ contract("Curve", accounts => {
     assert.equal((await curve.totalEuroUlps.call()).valueOf(), 0);
     assert.equal((await neumark.totalSupply.call()).valueOf(), 0);
 
-    const r1 = await curve.issue(EUR_DECIMALS.mul(100), { from: accounts[1] });
-    expect(txGasCost(r1)).to.be.eq(191726);
+    const euros1 = EUR_DECIMALS.mul(100);
+    const tx1 = await curve.issue(euros1, { from: accounts[1] });
+    prettyPrintGasCost(`Issuance of ${euros1}`, tx1);
+    expect(gasCost(tx1)).to.be.eq(191726);
     assert.equal(
       (await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(),
       100
@@ -180,8 +187,10 @@ contract("Curve", accounts => {
       649
     );
 
-    const r2 = await curve.issue(EUR_DECIMALS.mul(900), { from: accounts[2] });
-    expect(txGasCost(r2)).to.be.eq(101924);
+    const euros2 = EUR_DECIMALS.mul(900);
+    const tx2 = await curve.issue(euros2, { from: accounts[2] });
+    prettyPrintGasCost(`Issuance of ${euros2}`, tx1);
+    expect(gasCost(tx2)).to.be.eq(101924);
     assert.equal(
       (await curve.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(),
       1000
@@ -202,8 +211,9 @@ contract("Curve", accounts => {
   it("should issue and then burn Neumarks", async () => {
     // Issue Neumarks for 1 mln Euros
     const euroUlps = EUR_DECIMALS.mul(1000000);
-    const r = await curve.issue(euroUlps, { from: accounts[1] });
-    expect(txGasCost(r)).to.be.eq(191936);
+    const tx = await curve.issue(euroUlps, { from: accounts[1] });
+    prettyPrintGasCost(`Issuance of ${euroUlps}`, tx);
+    expect(gasCost(tx)).to.be.eq(191936);
     const neumarkUlps = await neumark.balanceOf.call(accounts[1]);
     const neumarks = neumarkUlps.div(NMK_DECIMALS).floor().valueOf();
 
@@ -211,7 +221,8 @@ contract("Curve", accounts => {
     const toBurn = Math.floor(neumarks / 3);
     const toBurnUlps = NMK_DECIMALS.mul(toBurn);
     const burned = await curve.burnNeumark(toBurnUlps, { from: accounts[1] });
-    expect(txGasCost(burned)).to.be.eq(112192);
+    prettyPrintGasCost(`Burning`, tx);
+    expect(gasCost(burned)).to.be.eq(112192);
     assert.equal(
       (await neumark.balanceOf.call(accounts[1]))
         .div(NMK_DECIMALS)
