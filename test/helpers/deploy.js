@@ -1,13 +1,11 @@
 import invariant from "invariant";
 import { MONTH, closeFutureDate } from "./latestTime";
 import { etherToWei } from "./unitConverter";
-import { TriState } from "./triState";
+import { TriState, EVERYONE } from "./triState.js";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
-const NeumarkController = artifacts.require("NeumarkController");
 const Neumark = artifacts.require("Neumark");
-const Curve = artifacts.require("Curve");
 const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const AccessRoles = artifacts.require("AccessRoles");
@@ -26,8 +24,8 @@ export default async function deploy(
   const {
     startTimestamp = closeFutureDate(),
     duration = MONTH,
-    minCommitment = etherToWei(10),
-    maxCommitment = etherToWei(1000),
+    minAbsCap = etherToWei(10),
+    maxAbsCap = etherToWei(1000),
     minTicket = etherToWei(1),
     eurEthRate = etherToWei(218.1192809),
     whitelistedInvestors,
@@ -40,15 +38,12 @@ export default async function deploy(
   const accessControl = await RoleBasedAccessControl.new();
   const accessRoles = await AccessRoles.new();
   const etherToken = await EtherToken.new();
-  const neumark = await Neumark.new();
-  const neumarkController = await NeumarkController.new(neumark.address);
-  await neumark.changeController(neumarkController.address);
-  const curve = await Curve.new(neumarkController.address);
+  const neumark = await Neumark.new(accessControl.address);
 
   const lockedAccount = await LockedAccount.new(
     accessControl.address,
     etherToken.address,
-    curve.address,
+    neumark.address,
     unlockDateMonths * MONTH,
     etherToWei(1).mul(unlockPenalty).round()
   );
@@ -63,20 +58,46 @@ export default async function deploy(
     from: lockAdminAccount
   });
 
+  await accessControl.setUserRole(
+    EVERYONE,
+    await accessRoles.ROLE_NEUMARK_BURNER(),
+    neumark.address,
+    TriState.Allow
+  );
+  await accessControl.setUserRole(
+    EVERYONE,
+    await accessRoles.ROLE_SNAPSHOT_CREATOR(),
+    neumark.address,
+    TriState.Allow
+  );
+
   const commitment = await WhitelistedCommitment.new(
     accessControl.address,
     etherToken.address,
     lockedAccount.address,
-    curve.address
+    neumark.address
   );
   await commitment.setCommitmentTerms(
     startTimestamp,
     startTimestamp + duration,
-    minCommitment,
-    maxCommitment,
+    minAbsCap,
+    maxAbsCap,
     minTicket,
     eurEthRate
   );
+  await accessControl.setUserRole(
+    commitment.address,
+    await accessRoles.ROLE_NEUMARK_ISSUER(),
+    neumark.address,
+    TriState.Allow
+  );
+  await accessControl.setUserRole(
+    commitment.address,
+    await accessRoles.ROLE_TRANSFERS_ADMIN(),
+    neumark.address,
+    TriState.Allow
+  );
+
   const whitelistAdminRole = await accessRoles.ROLE_WHITELIST_ADMIN();
   await accessControl.setUserRole(
     whitelistAdminAccount,
@@ -90,7 +111,7 @@ export default async function deploy(
       fixedInvestors && fixedTickets,
       "Both fixedInvestors and fixedTickets has to be provided"
     );
-    await commitment.setFixed(fixedInvestors, fixedTickets, {
+    await commitment.setOrderedWhitelist(fixedInvestors, fixedTickets, {
       from: whitelistAdminAccount
     });
   }
@@ -108,8 +129,6 @@ export default async function deploy(
   return {
     etherToken,
     neumark,
-    neumarkController,
-    curve,
     lockedAccount,
     commitment
   };

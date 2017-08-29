@@ -1,6 +1,6 @@
 pragma solidity 0.4.15;
 
-import '../PublicCommitment.sol';
+import '../Commitment/PublicCommitment.sol';
 
 contract TestCommitment is PublicCommitment {
 
@@ -52,8 +52,8 @@ contract TestCommitment is PublicCommitment {
         lockedAccount.lock(investor, amount, neumarks);
     }
 
-    function TestCommitment(EtherToken _ethToken, LockedAccount _lockedAccount, Curve _curve)
-         PublicCommitment(_ethToken, _lockedAccount, _curve)
+    function TestCommitment(EtherToken _ethToken, LockedAccount _lockedAccount, Neumark _neumark)
+         PublicCommitment(_ethToken, _lockedAccount, _neumark)
     {
     }
 }

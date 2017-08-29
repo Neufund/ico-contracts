@@ -1,19 +1,16 @@
 pragma solidity 0.4.15;
 
-import '../IsContract.sol';
 import '../Snapshot/DailyAndSnapshotable.sol';
 import '../Standards/IERC667Token.sol';
 import '../Standards/IERC667Callback.sol';
 import '../Standards/IERC20Token.sol';
 import '../Standards/ISnapshotToken.sol';
 import '../Standards/ISnapshotTokenParent.sol';
-import './Controlled.sol';
-import './ControllerClaims.sol';
 import './Helpers/Allowance.sol';
 import './Helpers/BasicSnapshotToken.sol';
 import './Helpers/MMint.sol';
 import './Helpers/TokenInfo.sol';
-import './ITokenController.sol';
+import './MTokenController.sol';
 
 /*
     Copyright 2016, Remco Bloemen, Jordi Baylina
@@ -51,19 +48,13 @@ contract SnapshotToken is
     IERC667Token,
     ISnapshotToken,
     MMint,
+    MTokenController,
     BasicSnapshotToken,
     DailyAndSnapshotable,
     Allowance,
-    TokenInfo,
-    Controlled,
-    ControllerClaims,
-    IsContract
+    TokenInfo
 {
-
     string private constant VERSION = "ST_1.0";
-
-    // Flag that determines if the token is transferable or not.
-    bool public transfersEnabled;
 
 ////////////////
 // Constructor
@@ -78,38 +69,18 @@ contract SnapshotToken is
     /// @param tokenName Name of the new token
     /// @param decimalUnits Number of decimals of the new token
     /// @param tokenSymbol Token Symbol for the new token
-    /// @param _transfersEnabled If true, tokens will be able to be transferred
     function SnapshotToken(
         ISnapshotTokenParent parentToken,
         uint parentSnapshot,
         string tokenName,
         uint8 decimalUnits,
-        string tokenSymbol,
-        bool _transfersEnabled
+        string tokenSymbol
     )
         BasicSnapshotToken(parentToken, parentSnapshot)
         DailyAndSnapshotable()
         Allowance()
         TokenInfo(tokenName, decimalUnits, tokenSymbol, VERSION)
-        Controlled()
-        ControllerClaims()
     {
-        transfersEnabled = _transfersEnabled;
-    }
-
-////////////////
-// Fallback
-////////////////
-
-    /// @notice The fallback function: If the contract's controller has not been
-    ///  set to 0, then the `proxyPayment` method is called which relays the
-    ///  ether and creates tokens as described in the token controller contract
-    function ()
-        public
-        payable
-    {
-        require(isContract(controller));
-        require(controller.proxyPayment.value(msg.value)(msg.sender));
     }
 
 ///////////////////
@@ -134,17 +105,13 @@ contract SnapshotToken is
     /// @param _spender The address of the account able to transfer the tokens
     /// @param _amount The amount of tokens to be approved for transfer
     /// @return True if the approval was successful
-    /// Overrides the public function in AllowanceBase
+    /// Overrides the public function in Allowance
     function approve(address _spender, uint256 _amount)
         public
         returns (bool success)
     {
-        require(transfersEnabled);
-
         // Alerts the token controller of the approve function call
-        if (isContract(controller)) {
-            require(controller.onApprove(msg.sender, _spender, _amount));
-        }
+        require(mOnApprove(msg.sender, _spender, _amount));
 
         return Allowance.approve(_spender, _amount);
     }
@@ -156,7 +123,7 @@ contract SnapshotToken is
     /// @param _spender The address of the contract able to transfer the tokens
     /// @param _amount The amount of tokens to be approved for transfer
     /// @return True if the function call was successful
-    /// Overrides the public function in AllowanceBase
+    /// Reimplements the public function in Allowance
     function approveAndCall(address _spender, uint256 _amount, bytes _extraData)
         public
         returns (bool success)
@@ -171,47 +138,6 @@ contract SnapshotToken is
         );
 
         return true;
-    }
-
-////////////////
-// Enable tokens transfers
-////////////////
-
-    /// @notice Enables token holders to transfer their tokens freely if true
-    /// @param _transfersEnabled True if transfers are allowed in the clone
-    function enableTransfers(bool _transfersEnabled)
-        public
-        onlyController
-    {
-        transfersEnabled = _transfersEnabled;
-    }
-
-////////////////
-// Generate and destroy tokens
-////////////////
-
-    /// @notice Mints `_amount` tokens that are assigned to `_owner`
-    /// @param _owner The address that will be assigned the new tokens
-    /// @param _amount The quantity of tokens generated
-    /// @return True if the tokens are generated correctly
-    function generateTokens(address _owner, uint _amount)
-        public
-        onlyController
-        returns (bool)
-    {
-        return BasicSnapshotToken.mGenerateTokens(_owner, _amount);
-    }
-
-    /// @notice Burns `_amount` tokens from `_owner`
-    /// @param _owner The address that will lose the tokens
-    /// @param _amount The quantity of tokens to burn
-    /// @return True if the tokens are burned correctly
-    function destroyTokens(address _owner, uint _amount)
-        public
-        onlyController
-        returns (bool)
-    {
-        return BasicSnapshotToken.mDestroyTokens(_owner, _amount);
     }
 
 ////////////////
@@ -243,16 +169,8 @@ contract SnapshotToken is
         internal
         returns(bool)
     {
-        require(transfersEnabled);
-
         // Alerts the token controller of the transfer
-        if (isContract(controller)) {
-            require(controller.onTransfer(_from, _to, _amount));
-        }
-
-        // Do not allow transfer to 0x0 or the token contract itself
-        require(_to != 0);
-        require(_to != address(this));
+        require(mOnTransfer(_from, _to, _amount));
 
         return mTransfer(_from, _to, _amount);
     }

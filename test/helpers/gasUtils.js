@@ -24,5 +24,5 @@ export const prettyPrintGasCost = (what, obj) => {
   const gas = gasCost(obj);
 
   // eslint-disable-next-line no-console
-  console.log(`${what} took ${gasCostString(gas)}`);
+  console.log(`\t${what} took ${gasCostString(gas)}`);
 };

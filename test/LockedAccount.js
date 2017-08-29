@@ -52,8 +52,8 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
     const initialNeumarksBalance = await chain.neumark.balanceOf(investor);
     const initialLockedBalance = await chain.lockedAccount.balanceOf(investor);
     // issue real neumarks and check against
-    let tx = await chain.curve.issue(ticket, { from: investor });
-    const neumarks = eventValue(tx, "NeumarksIssued", "neumarks");
+    let tx = await chain.neumark.issueForEuro(ticket, { from: investor });
+    const neumarks = eventValue(tx, "NeumarksIssued", "neumarkUlp");
     expect(
       await chain.neumark.balanceOf(investor),
       "neumarks must be allocated"
@@ -252,7 +252,7 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
     // controller says yes
     await chain.commitment._succ();
     // must enable token transfers
-    await chain.neumarkController.enableTransfers(true);
+    await chain.neumark.enableTransfer(true);
   }
 
   it("should unlock with approval on contract disbursal", async () => {

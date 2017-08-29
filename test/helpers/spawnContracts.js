@@ -1,10 +1,9 @@
-import { TriState } from "./triState";
+import { prettyPrintGasCost } from "./gasUtils";
+import { TriState, EVERYONE } from "./triState.js";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
-const NeumarkController = artifacts.require("NeumarkController");
 const Neumark = artifacts.require("Neumark");
-const Curve = artifacts.require("Curve");
 const TestCommitment = artifacts.require("TestCommitment");
 const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
@@ -14,7 +13,6 @@ const BigNumber = web3.BigNumber;
 
 /* eslint-disable */
 export let neumark;
-export let neumarkController;
 export let etherToken;
 export let lockedAccount;
 export let curve;
@@ -37,14 +35,11 @@ export async function spawnLockedAccount(
   accessControl = await RoleBasedAccessControl.new();
   accessRoles = await AccessRoles.new();
   etherToken = await EtherToken.new();
-  neumark = await Neumark.new();
-  neumarkController = await NeumarkController.new(neumark.address);
-  await neumark.changeController(neumarkController.address);
-  curve = await Curve.new(neumarkController.address);
+  neumark = await Neumark.new(accessControl.address);
   lockedAccount = await LockedAccount.new(
     accessControl.address,
     etherToken.address,
-    curve.address,
+    neumark.address,
     unlockDateMonths * months,
     ether(1).mul(unlockPenalty).round()
   );
@@ -58,27 +53,53 @@ export async function spawnLockedAccount(
   await lockedAccount.setPenaltyDisbursal(operatorWallet, {
     from: lockAdminAccount
   });
+
+  // TODO: Restrict to correct spawened contracts
+  await accessControl.setUserRole(
+    EVERYONE,
+    await accessRoles.ROLE_SNAPSHOT_CREATOR(),
+    neumark.address,
+    TriState.Allow
+  );
+  await accessControl.setUserRole(
+    EVERYONE,
+    await accessRoles.ROLE_NEUMARK_ISSUER(),
+    neumark.address,
+    TriState.Allow
+  );
+  await accessControl.setUserRole(
+    EVERYONE,
+    await accessRoles.ROLE_NEUMARK_BURNER(),
+    neumark.address,
+    TriState.Allow
+  );
+  await accessControl.setUserRole(
+    EVERYONE,
+    await accessRoles.ROLE_TRANSFERS_ADMIN(),
+    neumark.address,
+    TriState.Allow
+  );
 }
 
 export async function spawnPublicCommitment(
   lockAdminAccount,
   startTimestamp,
   duration,
-  minCommitment,
-  maxCommitment,
+  minAbsCap,
+  maxAbsCap,
   minTicket,
   eurEthRate
 ) {
   commitment = await TestCommitment.new(
     etherToken.address,
     lockedAccount.address,
-    curve.address
+    neumark.address
   );
   await commitment.setCommitmentTerms(
     startTimestamp,
     startTimestamp + duration,
-    minCommitment,
-    maxCommitment,
+    minAbsCap,
+    maxAbsCap,
     minTicket,
     ether(eurEthRate)
   );
@@ -93,8 +114,8 @@ export async function spawnWhitelistedCommitment(
   whitelistAdminAccount,
   startTimestamp,
   duration,
-  minCommitment,
-  maxCommitment,
+  minAbsCap,
+  maxAbsCap,
   minTicket,
   eurEthRate
 ) {
@@ -102,13 +123,13 @@ export async function spawnWhitelistedCommitment(
     accessControl.address,
     etherToken.address,
     lockedAccount.address,
-    curve.address
+    neumark.address
   );
   await commitment.setCommitmentTerms(
     startTimestamp,
     startTimestamp + duration,
-    minCommitment,
-    maxCommitment,
+    minAbsCap,
+    maxAbsCap,
     minTicket,
     ether(eurEthRate)
   );
