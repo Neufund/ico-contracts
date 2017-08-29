@@ -43,14 +43,14 @@ contract("Snapshot", () => {
   it("should create a snapshot", async () => {
     const r = await snapshotTest.createSnapshot();
     prettyPrintGasCost("createSnapshot", r);
-    expect(gasCost(r)).to.be.eq(22869);
+    expect(r).to.respectGasLimit(22869);
   });
 
   it("should set a new value", async () => {
     const r = await snapshotTest.setValue(1234);
 
     prettyPrintGasCost("Setting new value should of ", r);
-    expect(gasCost(r)).to.be.eq(102855);
+    expect(r).to.be.respectGasLimit(102855);
 
     assert.equal(1234, await snapshotTest.getValue.call(12));
     assert.isTrue(await snapshotTest.hasValue.call());
@@ -61,7 +61,7 @@ contract("Snapshot", () => {
 
     const r = await snapshotTest.setValue(12345);
     prettyPrintGasCost("Resetting new value", r);
-    expect(gasCost(r)).to.be.eq(27616);
+    expect(r).to.respectGasLimit(27616);
 
     assert.equal(12345, await snapshotTest.getValue.call(12));
     assert.isTrue(await snapshotTest.hasValue.call());

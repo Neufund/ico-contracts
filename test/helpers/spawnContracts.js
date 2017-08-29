@@ -1,4 +1,3 @@
-import { prettyPrintGasCost } from "./gasUtils";
 import { TriState, EVERYONE } from "./triState.js";
 
 const LockedAccount = artifacts.require("LockedAccount");
