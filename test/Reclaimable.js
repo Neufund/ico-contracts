@@ -1,5 +1,4 @@
 import { expect } from "chai";
-import gasCost from "./helpers/gasCost";
 import createAccessPolicy from "./helpers/createAccessPolicy";
 import forceEther from "./helpers/forceEther";
 import expectThrow from "./helpers/expectThrow";
