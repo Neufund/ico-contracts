@@ -29,7 +29,7 @@ contract EthereumForkArbiter is AccessControlled, AccessRoles, Reclaimable {
     {
     }
 
-    /// @notice Announce that a particular future Ethereum fork will be considered the valid one. Once the fork has happened, it will eventually be confirmed by signing a block on the fork. Notice that forks may happen unannounced.
+    /// @notice Announce that a particular future Ethereum fork will the one taken by the contract. The contract on the other branch should be considered invalid. Once the fork has happened, it will additionally be confirmed by signing a block on the fork. Notice that forks may happen unannounced.
     function announceFork(string name, string url)
         public
         only(ROLE_FORK_ARBITER)
@@ -39,7 +39,7 @@ contract EthereumForkArbiter is AccessControlled, AccessRoles, Reclaimable {
         ForkAnnounced(nextForkName, nextForkUrl);
     }
 
-    /// @notice Declare that the current fork (as identified by a blockhash) is the valid fork.
+    /// @notice Declare that the current fork (as identified by a blockhash) is the valid fork. The valid fork is always the one with the most recent signature.
     function signFork(uint256 number, bytes32 hash)
         public
         only(ROLE_FORK_ARBITER)
