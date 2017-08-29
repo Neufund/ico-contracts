@@ -4,18 +4,22 @@ import './Standards/IBasicToken.sol';
 
 contract Reclaimable {
 
+    IBasicToken constant public RECLAIM_ETHER = IBasicToken(0x0);
+
     function reclaim(IBasicToken token)
         public
         returns (bool)
     {
+        uint256 balance;
+        bool success;
         address receiver = msg.sender;
-        if(address(token) == 0x0) {
-            uint256 balance = this.balance;
-            bool success = receiver.send(balance);
+        if(token == RECLAIM_ETHER) {
+            balance = this.balance;
+            success = receiver.send(balance);
             return success;
         } else {
-            uint256 balance = token.balanceOf(this);
-            bool success = token.transfer(receiver, balance);
+            balance = token.balanceOf(this);
+            success = token.transfer(receiver, balance);
             return success;
         }
     }
