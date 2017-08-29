@@ -203,4 +203,6 @@ contract("PublicCommitment", ([lockAdmin, investor, investor2]) => {
   it("should reject commitment larger than remaining cap");
   it("send ether to default func should fail");
   it("implement all cases from zeppeling Crowdsale.js and CappedCrowdsale.js");
+  it("should reject commit before terms are set");
+  it("should reject commit if not controlling locked account");
 });
