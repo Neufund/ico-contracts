@@ -37,7 +37,7 @@ export async function deployAllContracts(
 
   const accessControl = await RoleBasedAccessControl.new();
   const accessRoles = await AccessRoles.new();
-  const etherToken = await EtherToken.new();
+  const etherToken = await EtherToken.new(accessControl.address);
   const neumark = await Neumark.new(accessControl.address);
 
   const lockedAccount = await LockedAccount.new(

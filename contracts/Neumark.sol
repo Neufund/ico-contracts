@@ -4,12 +4,14 @@ import './AccessControl/AccessControlled.sol';
 import './AccessRoles.sol';
 import './SnapshotToken/SnapshotToken.sol';
 import './NeumarkIssuanceCurve.sol';
+import './Reclaimable.sol';
 
 contract Neumark is
     AccessControlled,
     AccessRoles,
     SnapshotToken,
-    NeumarkIssuanceCurve
+    NeumarkIssuanceCurve,
+    Reclaimable
 {
 
     string constant TOKEN_NAME     = "Neumark";
@@ -40,6 +42,7 @@ contract Neumark is
             TOKEN_SYMBOL
         )
         NeumarkIssuanceCurve()
+        Reclaimable()
     {
         transferEnabled = false;
         totalEuroUlps = 0;

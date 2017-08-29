@@ -43,11 +43,12 @@ contract PublicCommitment is CommitmentBase {
     }
 
     function PublicCommitment(
+        IAccessPolicy _policy,
         EtherToken _ethToken,
         LockedAccount _lockedAccount,
         Neumark _neumark
     )
-        CommitmentBase(_ethToken, _lockedAccount, _neumark)
+         CommitmentBase(_policy, _ethToken, _lockedAccount, _neumark)
     {
     }
 }

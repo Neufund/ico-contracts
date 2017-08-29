@@ -32,7 +32,7 @@ export async function spawnLockedAccount(
 ) {
   accessControl = await RoleBasedAccessControl.new();
   accessRoles = await AccessRoles.new();
-  etherToken = await EtherToken.new();
+  etherToken = await EtherToken.new(accessControl.address);
   // console.log(`\tEtherToken took ${gasCost(etherToken)}.`);
   neumark = await Neumark.new(accessControl.address);
   lockedAccount = await LockedAccount.new(
@@ -90,6 +90,7 @@ export async function spawnPublicCommitment(
   eurEthRate
 ) {
   commitment = await TestCommitment.new(
+    accessControl.address,
     etherToken.address,
     lockedAccount.address,
     neumark.address
