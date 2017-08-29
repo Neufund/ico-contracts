@@ -7,7 +7,7 @@ import './ReturnsErrors.sol';
 import './TimeSource.sol';
 import './EtherToken.sol';
 import './Neumark.sol';
-import './TokenOffering.sol';
+import './Commitment/ITokenOffering.sol';
 import './LockedAccountMigration.sol';
 import './Standards/IERC667Token.sol';
 import './Standards/IERC667Callback.sol';
@@ -37,7 +37,7 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
     // penalty: fraction of stored amount on escape hatch
     uint public penaltyFraction;
     // govering ICO contract that may lock money or unlock all account if fails
-    TokenOffering public controller;
+    ITokenOffering public controller;
     // fee distribution pool
     address public penaltyDisbursalAddress;
     // migration target contract
@@ -223,7 +223,7 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
         }
     }
 
-    function setController(TokenOffering _controller)
+    function setController(ITokenOffering _controller)
         only(ROLE_LOCKED_ACCOUNT_ADMIN)
         onlyStates(LockState.Uncontrolled, LockState.AcceptingLocks)
         public

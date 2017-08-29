@@ -84,8 +84,8 @@ export async function spawnPublicCommitment(
   lockAdminAccount,
   startTimestamp,
   duration,
-  minCommitment,
-  maxCommitment,
+  minAbsCap,
+  maxAbsCap,
   minTicket,
   eurEthRate
 ) {
@@ -97,8 +97,8 @@ export async function spawnPublicCommitment(
   await commitment.setCommitmentTerms(
     startTimestamp,
     startTimestamp + duration,
-    minCommitment,
-    maxCommitment,
+    minAbsCap,
+    maxAbsCap,
     minTicket,
     ether(eurEthRate)
   );
@@ -113,8 +113,8 @@ export async function spawnWhitelistedCommitment(
   whitelistAdminAccount,
   startTimestamp,
   duration,
-  minCommitment,
-  maxCommitment,
+  minAbsCap,
+  maxAbsCap,
   minTicket,
   eurEthRate
 ) {
@@ -127,8 +127,8 @@ export async function spawnWhitelistedCommitment(
   await commitment.setCommitmentTerms(
     startTimestamp,
     startTimestamp + duration,
-    minCommitment,
-    maxCommitment,
+    minAbsCap,
+    maxAbsCap,
     minTicket,
     ether(eurEthRate)
   );

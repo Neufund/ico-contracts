@@ -1,7 +1,7 @@
 pragma solidity 0.4.15;
 
 /// Base class for any token offering on Neufund platform
-contract TokenOffering {
+contract ITokenOffering {
     /// on every investment transaction
     /// `investor` invested `amount` in `paymentToken` currency which was converted to `eurEquivalent` that purchases `purchasedAmount` of `ofToken`
     event FundsInvested(address indexed investor, uint256 amount, address paymentToken, uint256 eurEquivalent, uint256 purchasedAmount, address ofToken);

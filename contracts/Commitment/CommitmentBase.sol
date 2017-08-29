@@ -1,16 +1,14 @@
 pragma solidity 0.4.15;
 
-import './EtherToken.sol';
-import './LockedAccount.sol';
-import './TimeSource.sol';
-import './Neumark.sol';
-import './Math.sol';
-import './Standards/ITokenWithDeposit.sol';
-import './TokenOffering.sol';
+import '../EtherToken.sol';
+import '../LockedAccount.sol';
+import '../TimeSource.sol';
+import '../Neumark.sol';
+import '../Math.sol';
+import '../Standards/ITokenWithDeposit.sol';
+import './ITokenOffering.sol';
 
-/// public capital commitment for general public
-contract PublicCommitment is TimeSource, Math, TokenOffering {
-
+contract CommitmentBase is TimeSource, Math, ITokenOffering {
     // locks investors capital
     LockedAccount public lockedAccount;
     ITokenWithDeposit public paymentToken;
@@ -18,23 +16,21 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
 
     uint256 public startDate;
     uint256 public endDate;
-    uint256 public minCommitment;
-    uint256 public maxCommitment;
+
     uint256 public minTicket;
-
-    uint256 public ethEURFraction;
-
     uint256 public minAbsCap;
     uint256 public maxAbsCap;
+    uint256 public ethEURFraction;
 
     bool public finalized;
-    bool public capsInitialized;
+    // amount stored in LockedAccount on finalized
+    uint256 public finalCommitedAmount;
 
     // wallet that keeps Platform Operator share of neumarks
     // todo: take from Universe
     address internal platformOperatorWallet = address(0x55d7d863a155F75c5139E20DCBDA8d0075BA2A1c);
 
-    function setCommitmentTerms(uint256 _startDate, uint256 _endDate, uint256 _minCommitment, uint256 _maxCommitment,
+    function setCommitmentTerms(uint256 _startDate, uint256 _endDate, uint256 _minAbsCap, uint256 _maxAbsCap,
         uint256 _minTicket, uint256 _ethEurFraction)
         public
     {
@@ -42,16 +38,16 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         require(endDate == 0);
         require(_startDate > 0);
         require(_endDate >= _startDate);
-        require(_minCommitment >= 0);
-        require(_maxCommitment >= _minCommitment);
+        require(_maxAbsCap > 0);
+        require(_maxAbsCap >= _minAbsCap);
         ethEURFraction = _ethEurFraction;
         minTicket = _minTicket;
 
         startDate = _startDate;
         endDate = _endDate;
 
-        minCommitment = _minCommitment;
-        maxCommitment = _maxCommitment;
+        minAbsCap = _minAbsCap;
+        maxAbsCap = _maxAbsCap;
     }
 
     function commit()
@@ -61,28 +57,24 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         // first commit checks lockedAccount and generates status code event
         require(address(lockedAccount.controller()) == address(this));
         require(currentTime() >= startDate);
-        // on first commit caps will be frozen
-        if (!capsInitialized) {
-            initializeCaps();
-        }
         require(msg.value >= minTicket);
         require(!hasEnded());
         uint256 total = add(lockedAccount.totalLockedAmount(), msg.value);
         // we are not sending back the difference - only full tickets
         require(total <= maxAbsCap);
-        require(validPurchase());
+        require(validCommitment());
 
-        // convert ether into full euros
-        uint256 euros = convertToEUR(msg.value);
         // get neumarks
-        uint256 neumarks = giveNeumarks(msg.sender, msg.value, euros);
+        uint256 neumarks = giveNeumarks(msg.sender, msg.value);
         //send Money to ETH-T contract
         paymentToken.deposit.value(msg.value)(address(this), msg.value);
         // make allowance for lock
         paymentToken.approve(address(lockedAccount), msg.value);
         // lock in lock
         lockedAccount.lock(msg.sender, msg.value, neumarks);
-        FundsInvested(msg.sender, msg.value, paymentToken, euros, neumarks, neumark);
+        // convert weis into euro
+        uint256 euroUlps = convertToEUR(msg.value);
+        FundsInvested(msg.sender, msg.value, paymentToken, euroUlps, neumarks, neumark);
     }
 
     /// overrides TokenOffering
@@ -91,7 +83,8 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         public
         returns (bool)
     {
-        return lockedAccount.totalLockedAmount() >= minAbsCap;
+        uint256 amount = finalized ? finalCommitedAmount : lockedAccount.totalLockedAmount();
+        return amount >= minAbsCap;
     }
 
     /// overrides TokenOffering
@@ -100,8 +93,8 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         public
         returns(bool)
     {
-        // todo: add finalized check
-        return capsInitialized && (lockedAccount.totalLockedAmount() >= maxAbsCap || currentTime() >= endDate);
+        uint256 amount = finalized ? finalCommitedAmount : lockedAccount.totalLockedAmount();
+        return amount >= maxAbsCap || currentTime() >= endDate;
     }
 
     /// overrides TokenOffering
@@ -141,58 +134,13 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
             onCommitmentFailed();
             CommitmentCompleted(false);
         }
+        finalCommitedAmount = lockedAccount.totalLockedAmount();
         finalized = true;
-    }
-
-    /// if this is first commitment or before, caps must be finalized from lockedAccount
-    /// as we require that next commitment phase sets caps based on results of previous commitment phase
-    // ANYONE can call it
-    function initializeCaps()
-        public
-    {
-        require(!capsInitialized);
-        require(currentTime() >= startDate);
-        // continue previous commitments on this lockedAccount
-        minAbsCap = minCommitment + lockedAccount.totalLockedAmount();
-        maxAbsCap = maxCommitment + lockedAccount.totalLockedAmount();
-        capsInitialized = true;
-    }
-
-    /// called by finalize() so may be called by ANYONE
-    /// intended to be overriden
-    function onCommitmentSuccessful()
-        internal
-    {
-        // enable Neumark trading in token controller
-        neumark.enableTransfer(true);
-        // enable escape hatch and end locking funds phase
-        lockedAccount.controllerSucceeded();
-    }
-
-    /// called by finalize() so may be called by ANYONE
-    /// intended to be overriden
-    function onCommitmentFailed()
-        internal
-    {
-        // @remco should we do smth to curve when commitment fails
-        // unlock all accounts in lockedAccount
-        lockedAccount.controllerFailed();
-    }
-
-    /// awards investor with Neumarks computed along curve for `euros` amount
-    /// this function modifies state of curve
-    function giveNeumarks(address investor, uint256 eth, uint256 euros)
-        internal
-        returns (uint256)
-    {
-        // issue to self
-        uint256 neumarkUlps = neumark.issueForEuro(euros);
-        return distributeNeumarks(investor, neumarkUlps);
     }
 
     /// distributes neumarks on `this` balance to investor and platform operator: half half
     /// returns amount of investor part
-    function distributeNeumarks(address investor, uint256 neumarks)
+    function distributeAndReturnInvestorNeumarks(address investor, uint256 neumarks)
         internal
         returns (uint256)
     {
@@ -208,23 +156,26 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         return investorNeumarks;
     }
 
-    /// validates amount and investor as taken from msg
-    function validPurchase()
-        internal
-        constant
-        returns (bool)
-    {
-        return true;
-    }
-
     /// default function not callable. prevent investors without transaction data
     function () { revert(); }
 
-    /// declare capital commitment into Neufund ecosystem between _startDate and _endDate
-    /// min and max amounts in this commitment is _minCommitment - _maxCommitment
+    /// called by finalize() so may be called by ANYONE
+    /// intended to be overriden
+    function onCommitmentSuccessful() internal;
+    /// called by finalize() so may be called by ANYONE
+    /// intended to be overriden
+    function onCommitmentFailed() internal;
+    /// awards investor with Neumarks computed along curve for `amount`
+    /// this function modifies state of curve
+    /// return amount of investor's Neumark reward
+    function giveNeumarks(address investor, uint256 amount) internal returns (uint256);
+    /// tells if commitment may be executed ie. investor is whitelisted
+    function validCommitment() internal constant returns (bool);
+
+    /// declare capital commitment into Neufund ecosystem
     /// store funds in _ethToken and lock funds in _lockedAccount while issuing Neumarks along _curve
-    /// commitments can be serialized via long lived _lockedAccount and _curve
-    function PublicCommitment(
+    /// commitments can be chained via long lived _lockedAccount and _nemark
+    function CommitmentBase(
         EtherToken _ethToken,
         LockedAccount _lockedAccount,
         Neumark _neumark
@@ -235,4 +186,6 @@ contract PublicCommitment is TimeSource, Math, TokenOffering {
         neumark = _neumark;
         paymentToken = _ethToken;
     }
+
+
 }
