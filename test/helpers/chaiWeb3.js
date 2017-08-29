@@ -39,6 +39,10 @@ export default function(chai) {
     const object = this._obj;
 
     const usedGas = gasCost(object);
-    this.assert(usedGas >= gasLimit, "Used to much gas!");
+    this.assert(
+      usedGas <= gasLimit,
+      `Consumed gas ${usedGas} is more than ${gasLimit} limit.`
+    );
+  });
   });
 }
