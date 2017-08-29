@@ -16,9 +16,11 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
     ]);
     ethereumForkArbiter = await EthereumForkArbiter.new(accessPolicy);
   });
+
   it("should deploy", async () => {
     prettyPrintGasCost("Deploy", ethereumForkArbiter);
   });
+
   it("should announce forks", async () => {
     const name = "Spurious Dragon";
     const url =
@@ -30,6 +32,7 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
     expect(eventValue(tx, "ForkAnnounced", "url")).to.equal(url);
     prettyPrintGasCost("Announce", tx);
   });
+
   it("should remember last announced fork", async () => {
     const name = "Spurious Dragon";
     const url =
@@ -42,6 +45,7 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
     expect(rName).to.equal(name);
     expect(rUrl).to.equal(url);
   });
+
   it("should sign forks", async () => {
     const block = await web3.eth.getBlock("latest");
     const tx = await ethereumForkArbiter.signFork(block.number, block.hash, {
@@ -53,6 +57,7 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
     expect(eventValue(tx, "ForkSigned", "blockHash")).to.be.equal(block.hash);
     prettyPrintGasCost("Sign", tx);
   });
+
   it("should check hash of signed fork", async () => {
     const block = await web3.eth.getBlock("latest");
     const hash =
@@ -66,6 +71,7 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
       from: arbiter
     });
   });
+
   it("should remember last signed fork", async () => {
     const block = await web3.eth.getBlock("latest");
     const tx = await ethereumForkArbiter.signFork(block.number, block.hash, {
@@ -82,6 +88,7 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
     expect(rHash).to.be.bignumber.equal(block.hash);
     expect(rTime).to.be.bignumber.equal(time);
   });
+
   it("should only allow ROLE_FORK_ARBITER to announce", async () => {
     const name = "Spurious Dragon";
     const url =
@@ -100,6 +107,7 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
       from: arbiter
     });
   });
+
   it("should only allow ROLE_FORK_ARBITER to sign", async () => {
     const block = await web3.eth.getBlock("latest");
     await expectThrow(
