@@ -44,5 +44,17 @@ export default function(chai) {
       `Consumed gas ${usedGas} is more than ${gasLimit} limit.`
     );
   });
+
+  chai.Assertion.addProperty("revert", async function revert() {
+    try {
+      await this._obj;
+      this.assert(false, "Transaction did not revert.");
+    } catch (error) {
+      const invalidOpcode = error.message.search("invalid opcode") >= 0;
+      this.assert(
+        invalidOpcode,
+        "Transaction did not revert with the right error."
+      );
+    }
   });
 }
