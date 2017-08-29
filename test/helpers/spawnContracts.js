@@ -100,7 +100,8 @@ export async function spawnPublicCommitment(
     minAbsCap,
     maxAbsCap,
     minTicket,
-    ether(eurEthRate)
+    ether(eurEthRate),
+    operatorWallet
   );
   // console.log(lockedAccount.setController);
   await lockedAccount.setController(commitment.address, {
@@ -130,7 +131,8 @@ export async function spawnWhitelistedCommitment(
     minAbsCap,
     maxAbsCap,
     minTicket,
-    ether(eurEthRate)
+    ether(eurEthRate),
+    operatorWallet
   );
   // console.log(lockedAccount.setController);
   const whitelistAdminRole = await accessRoles.ROLE_WHITELIST_ADMIN();

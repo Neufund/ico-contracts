@@ -29,12 +29,11 @@ export async function deployAllContracts(
     maxAbsCap = etherToWei(1000),
     minTicket = etherToWei(1),
     eurEthRate = etherToWei(218.1192809),
+    operatorWallet = "0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c",
     whitelistedInvestors,
     fixedInvestors,
     fixedTickets
   } = commitmentCfg;
-
-  const operatorWallet = "0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c";
 
   const accessControl = await RoleBasedAccessControl.new();
   const accessRoles = await AccessRoles.new();
@@ -84,7 +83,8 @@ export async function deployAllContracts(
     minAbsCap,
     maxAbsCap,
     minTicket,
-    eurEthRate
+    eurEthRate,
+    operatorWallet
   );
   await accessControl.setUserRole(
     commitment.address,

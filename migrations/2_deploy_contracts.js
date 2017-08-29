@@ -23,6 +23,10 @@ const startDate = Date.now.getTime() / 1000; */
 
 module.exports = function(deployer, network, accounts) {
   deployer.then(async () => {
+    const lockedAccountAdmin = accounts[1];
+    const whitelistAdmin = accounts[2];
+    const platformOperatorWallet = accounts[3];
+
     console.log("AccessControl deployment...");
     await deployer.deploy(RoleBasedAccessControl);
     const accessControl = await RoleBasedAccessControl.deployed();
@@ -56,7 +60,8 @@ module.exports = function(deployer, network, accounts) {
       ether(1),
       ether(2000),
       ether(1), // min ticket size
-      ether(200) // eur rate to eth
+      ether(200), // eur rate to eth
+      platformOperatorWallet
     );
     console.log("Commitment terms set");
     console.log("Seting permissions");
@@ -87,14 +92,16 @@ module.exports = function(deployer, network, accounts) {
       TriState.Allow
     );
     await accessControl.setUserRole(
-      accounts[1],
+      lockedAccountAdmin,
       await accessRoles.ROLE_LOCKED_ACCOUNT_ADMIN(),
       lock.address,
       TriState.Allow
     );
-    await lock.setController(publicCommitment.address, { from: accounts[1] });
+    await lock.setController(publicCommitment.address, {
+      from: lockedAccountAdmin
+    });
     await accessControl.setUserRole(
-      accounts[2],
+      whitelistAdmin,
       await accessRoles.ROLE_WHITELIST_ADMIN(),
       PublicCommitment.address,
       TriState.Allow
