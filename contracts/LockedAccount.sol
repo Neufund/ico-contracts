@@ -172,7 +172,9 @@ contract LockedAccount is
         // only from neumarks
         require(_token == address(neumark));
         // this will check if allowance was made and if _amount is enough to unlock
-        unlockFor(from);
+        require(unlockFor(from) == Status.SUCCESS);
+        // we assume external call so return value will be lost to clients
+        // that's why we throw above
         return true;
     }
 
