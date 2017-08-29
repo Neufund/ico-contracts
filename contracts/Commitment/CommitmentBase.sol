@@ -27,11 +27,19 @@ contract CommitmentBase is TimeSource, Math, ITokenOffering {
     uint256 public finalCommitedAmount;
 
     // wallet that keeps Platform Operator share of neumarks
-    // todo: take from Universe
-    address internal platformOperatorWallet = address(0x55d7d863a155F75c5139E20DCBDA8d0075BA2A1c);
+    address public platformOperatorWallet;
+    // share of Neumark reward platform operator gets
+    uint256 public constant neumarkRewardPlatformOperatorDivisor = 2;
 
-    function setCommitmentTerms(uint256 _startDate, uint256 _endDate, uint256 _minAbsCap, uint256 _maxAbsCap,
-        uint256 _minTicket, uint256 _ethEurFraction)
+    function setCommitmentTerms(
+        uint256 _startDate,
+        uint256 _endDate,
+        uint256 _minAbsCap,
+        uint256 _maxAbsCap,
+        uint256 _minTicket,
+        uint256 _ethEurFraction,
+        address _platformOperatorWallet
+    )
         public
     {
         // set only once
@@ -40,22 +48,27 @@ contract CommitmentBase is TimeSource, Math, ITokenOffering {
         require(_endDate >= _startDate);
         require(_maxAbsCap > 0);
         require(_maxAbsCap >= _minAbsCap);
-        ethEURFraction = _ethEurFraction;
-        minTicket = _minTicket;
+        require(_platformOperatorWallet != address(0));
 
         startDate = _startDate;
         endDate = _endDate;
 
         minAbsCap = _minAbsCap;
         maxAbsCap = _maxAbsCap;
+
+        minTicket = _minTicket;
+        ethEURFraction = _ethEurFraction;
+        platformOperatorWallet = _platformOperatorWallet;
     }
 
     function commit()
         payable
         public
     {
-        // first commit checks lockedAccount and generates status code event
+        // must controll locked account
         require(address(lockedAccount.controller()) == address(this));
+        // must have terms set
+        require(startDate > 0);
         require(currentTime() >= startDate);
         require(msg.value >= minTicket);
         require(!hasEnded());
@@ -145,7 +158,7 @@ contract CommitmentBase is TimeSource, Math, ITokenOffering {
         returns (uint256)
     {
         // distribute half half
-        uint256 investorNeumarks = divRound(neumarks, 2);
+        uint256 investorNeumarks = divRound(neumarks, neumarkRewardPlatformOperatorDivisor);
         // @ remco is there a better way to distribute?
         bool isEnabled = neumark.transferEnabled();
         if (!isEnabled)
