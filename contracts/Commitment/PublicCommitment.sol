@@ -1,10 +1,9 @@
 pragma solidity 0.4.15;
 
 import "./CommitmentBase.sol";
-import "../Reclaimable.sol";
 
 /// public capital commitment for general public
-contract PublicCommitment is AccessControlled, CommitmentBase, Reclaimable {
+contract PublicCommitment is CommitmentBase {
 
     // implement BaseCommitment abstract functions
     // all overriden functions are called via public commit and finalize
@@ -49,9 +48,7 @@ contract PublicCommitment is AccessControlled, CommitmentBase, Reclaimable {
         LockedAccount _lockedAccount,
         Neumark _neumark
     )
-         AccessControlled(_policy)
-         CommitmentBase(_ethToken, _lockedAccount, _neumark)
-         Reclaimable()
+         CommitmentBase(_policy, _ethToken, _lockedAccount, _neumark)
     {
     }
 }

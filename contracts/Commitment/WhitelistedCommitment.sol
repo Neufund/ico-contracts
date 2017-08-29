@@ -1,10 +1,9 @@
 pragma solidity 0.4.15;
 
 import './PublicCommitment.sol';
-import '../Reclaimable.sol';
 
 
-contract WhitelistedCommitment is AccessControlled, AccessRoles, CommitmentBase, Reclaimable {
+contract WhitelistedCommitment is AccessRoles, CommitmentBase {
 
     // mapping of addresses allowed to participate
     mapping (address => bool) public whitelisted;
@@ -143,8 +142,7 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, CommitmentBase,
         LockedAccount _lockedAccount,
         Neumark _neumark
     )
-         AccessControlled(_policy)
-         CommitmentBase(_ethToken, _lockedAccount, _neumark)
+         CommitmentBase(_policy, _ethToken, _lockedAccount, _neumark)
     {
     }
 }

@@ -2,13 +2,16 @@ pragma solidity 0.4.15;
 
 import '../EtherToken.sol';
 import '../LockedAccount.sol';
-import '../TimeSource.sol';
-import '../Neumark.sol';
 import '../Math.sol';
+import '../Neumark.sol';
 import '../Standards/ITokenWithDeposit.sol';
+import '../TimeSource.sol';
 import './ITokenOffering.sol';
+import "../AccessControl/AccessControlled.sol";
+import "../Reclaimable.sol";
 
-contract CommitmentBase is TimeSource, Math, ITokenOffering {
+
+contract CommitmentBase is AccessControlled, TimeSource, Math, ITokenOffering, Reclaimable {
     // locks investors capital
     LockedAccount public lockedAccount;
     ITokenWithDeposit public paymentToken;
@@ -189,10 +192,13 @@ contract CommitmentBase is TimeSource, Math, ITokenOffering {
     /// store funds in _ethToken and lock funds in _lockedAccount while issuing Neumarks along _curve
     /// commitments can be chained via long lived _lockedAccount and _nemark
     function CommitmentBase(
+        IAccessPolicy accessPolicy,
         EtherToken _ethToken,
         LockedAccount _lockedAccount,
         Neumark _neumark
     )
+        AccessControlled(accessPolicy)
+        Reclaimable()
     {
         require(address(_ethToken) == address(_lockedAccount.assetToken()));
         lockedAccount = _lockedAccount;
