@@ -1,6 +1,5 @@
 import { expect } from "chai";
-import gasCost from "./helpers/gasCost";
-import { eventValue } from "./helpers/events";
+import { gasCost, prettyPrintGasCost } from "./helpers/gasUtils";
 
 const CurveGas = artifacts.require("./test/CurveGas.sol");
 
@@ -8,7 +7,7 @@ const BigNumber = web3.BigNumber;
 const EUR_DECIMALS = new BigNumber(10).toPower(18);
 const NMK_DECIMALS = new BigNumber(10).toPower(18);
 
-contract("NeumarkIssuanceCurve", accounts => {
+contract("NeumarkIssuanceCurve", () => {
   let curveGas;
 
   beforeEach(async () => {
@@ -16,7 +15,8 @@ contract("NeumarkIssuanceCurve", accounts => {
   });
 
   it("should deploy", async () => {
-    console.log(`\tCurveGas took ${gasCost(curveGas)}.`);
+    prettyPrintGasCost("NeumarkIssuanceCurve deploy", curveGas);
+    expect(curveGas).to.respectGasLimit(292674);
   });
 
   it("should compute exactly over the whole range", async () => {
@@ -133,17 +133,18 @@ contract("NeumarkIssuanceCurve", accounts => {
       [80000000000, 1500000000],
       [90000000000, 1500000000]
     ];
-    const gas = await Promise.all(
+    const gasChunks = await Promise.all(
       correct.map(async ([i, v]) => {
         const [neumarkUlps, gas] = await curveGas.cumulativeWithGas.call(
           EUR_DECIMALS.mul(i)
         );
-        const neumarks = 0 | neumarkUlps.div(NMK_DECIMALS).floor().valueOf();
+        const neumarks = neumarkUlps.div(NMK_DECIMALS).floor().toNumber();
         assert.equal(neumarks, v, `Curve compute failed for value ${i}`);
-        return [i, 0 | gas.valueOf()];
+        return gas.toNumber();
       })
     );
-    const totalGas = gas.reduce((t, [_, gas]) => t + gas, 0);
-    console.log(`\t${correct.length} evaluations took ${gasCost(totalGas)}.`);
+    const totalGas = gasChunks.reduce((sum, gas) => sum + gas, 0);
+
+    expect(totalGas).to.respectGasLimit(136282);
   });
 });

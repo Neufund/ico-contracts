@@ -10,7 +10,7 @@ import {
 } from "./helpers/latestTime";
 import { setTimeTo } from "./helpers/increaseTime";
 import { etherToWei, shanToWei } from "./helpers/unitConverter";
-import { deployAllContracts } from "./helpers/deploy";
+import deployAllContracts from "./helpers/deploy";
 import {
   curveInEther,
   deployMutableCurve,

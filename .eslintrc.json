@@ -2,7 +2,10 @@
   "extends": ["airbnb", "prettier"],
   "plugins": ["prettier"],
   "rules": {
-    "prettier/prettier": ["error"]
+    "prettier/prettier": ["error"],
+    "import/no-named-as-default": ["off"],
+    "no-await-in-loop": ["off"],
+    "no-use-before-define": ["error", { "functions": false }]
   },
   "env": {
     "node": true,

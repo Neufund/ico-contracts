@@ -13,7 +13,10 @@ async function increaseTime(duration) {
         id
       },
       err1 => {
-        if (err1) return reject(err1);
+        if (err1) {
+          reject(err1);
+          return;
+        }
 
         web3.currentProvider.sendAsync(
           {

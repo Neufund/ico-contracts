@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import EvmError from "./helpers/EVMThrow";
 import { eventValue } from "./helpers/events";
-import { TriState } from "./helpers/triState.js";
+import { TriState } from "./helpers/triState";
 
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const TestAccessControlTruffleMixin = artifacts.require(

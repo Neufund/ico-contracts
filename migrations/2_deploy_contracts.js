@@ -10,18 +10,15 @@ const AccessRoles = artifacts.require("AccessRoles");
 // Needs to match contracts/AccessControl/RoleBasedAccessControl.sol:TriState
 const TriState = { Unset: 0, Allow: 1, Deny: 2 };
 const EVERYONE = "0x0";
-const GLOBAL = "0x0";
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const months = 30 * 24 * 60 * 60;
-const FP_SCALE = 10000;
 const ether = Wei => Wei * 10 ** 18;
 
 /* const minCap = new web3.BigNumber(web3.toWei(1, 'ether'));
 const maxCap = new web3.BigNumber(web3.toWei(30, 'ether'));
 const startDate = Date.now.getTime() / 1000; */
 
-module.exports = function(deployer, network, accounts) {
+module.exports = function deployContracts(deployer, network, accounts) {
   deployer.then(async () => {
     const lockedAccountAdmin = accounts[1];
     const whitelistAdmin = accounts[2];

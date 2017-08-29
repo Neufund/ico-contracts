@@ -1,4 +1,3 @@
-import gasCost from "./gasCost";
 import { TriState, EVERYONE } from "./triState.js";
 
 const LockedAccount = artifacts.require("LockedAccount");
@@ -11,6 +10,7 @@ const AccessRoles = artifacts.require("AccessRoles");
 
 const BigNumber = web3.BigNumber;
 
+/* eslint-disable */
 export let neumark;
 export let etherToken;
 export let lockedAccount;
@@ -19,6 +19,7 @@ export let commitment;
 export let feePool;
 export let accessControl;
 export let accessRoles;
+/* eslint-enable */
 export const operatorWallet = "0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c";
 
 export const days = 24 * 60 * 60;

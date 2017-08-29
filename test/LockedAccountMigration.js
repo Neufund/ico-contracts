@@ -1,6 +1,5 @@
 import { expect } from "chai";
 import moment from "moment";
-import gasCost from "./helpers/gasCost";
 import error from "./helpers/error";
 import { hasEvent, eventValue } from "./helpers/events";
 import * as chain from "./helpers/spawnContracts";

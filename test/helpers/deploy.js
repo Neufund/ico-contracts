@@ -1,17 +1,16 @@
 import invariant from "invariant";
-import { MONTH, closeFutureDate, furtherFutureDate } from "./latestTime";
+import { MONTH, closeFutureDate } from "./latestTime";
 import { etherToWei } from "./unitConverter";
 import { TriState, EVERYONE } from "./triState.js";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
 const Neumark = artifacts.require("Neumark");
-const TestCommitment = artifacts.require("TestCommitment");
 const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const AccessRoles = artifacts.require("AccessRoles");
 
-export async function deployAllContracts(
+export default async function deploy(
   lockAdminAccount,
   whitelistAdminAccount,
   { lockedAccountCfg = {}, commitmentCfg = {} } = {}

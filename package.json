@@ -43,7 +43,7 @@
     "format": "eslint --ignore-path .gitignore . --fix",
     "testrpc": "./scripts/testrpc.sh",
     "test": "truffle compile && truffle test",
-    "test:coverage": "solidity-coverage && codecov",
+    "test:coverage": "SKIP_GAS_CHECKS=true solidity-coverage && codecov",
     "build": "rm -rf ./build && truffle compile --all",
     "deploy": "truffle migrate --reset --compile-all"
   },
