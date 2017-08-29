@@ -746,6 +746,10 @@ contract(
       });
     });
 
+    describe("finalized comittment", () => {
+      it("should not reclaim Neumark token before finalization");
+    });
+
     async function shouldBurnUnusedNeumarks(minAbsCap) {
       const startingDate = closeFutureDate();
       const duration = MONTH;

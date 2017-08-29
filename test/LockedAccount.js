@@ -304,6 +304,8 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
     await unlockEtherWithCallbackUnknownToken(investor, ticket, neumarks);
   });
 
+  it("should not be able to reclaim assetToken");
+
   // it -> unlock after long stop
   // it -> unlock in release all
   // it -> unlock throws in prohibited states ()
