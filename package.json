@@ -38,6 +38,7 @@
     "lint": "eslint --ignore-path .gitignore .",
     "lint:fix": "yarn format",
     "lint:prettier": "prettier --list-different \"{,!(node_modules|coverage)/**/}*.js\"",
+    "lint:solium": "solium --dir contracts --reporter=pretty",
     "format": "eslint --ignore-path .gitignore . --fix",
     "testrpc": "./scripts/testrpc.sh",
     "test": "truffle compile && truffle test",
