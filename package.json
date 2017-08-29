@@ -29,14 +29,17 @@
     "lodash": "^4.17.4",
     "mocha": "^3.3.0",
     "moment": "^2.18.1",
+    "solium": "Neufund/Solium#neufund",
     "swarm-js": "^0.1.35",
     "truffle": "3.4.9",
     "web3": "0.20.1"
   },
   "scripts": {
-    "lint": "eslint --ignore-path .gitignore .",
+    "lint": "yarn lint:solium && yarn lint:eslint",
     "lint:fix": "yarn format",
+    "lint:eslint": "eslint --ignore-path .gitignore .",
     "lint:prettier": "prettier --list-different \"{,!(node_modules|coverage)/**/}*.js\"",
+    "lint:solium": "solium --dir contracts --reporter=pretty",
     "format": "eslint --ignore-path .gitignore . --fix",
     "testrpc": "./scripts/testrpc.sh",
     "test": "truffle compile && truffle test",

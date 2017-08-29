@@ -33,7 +33,8 @@ export async function spawnLockedAccount(
 ) {
   accessControl = await RoleBasedAccessControl.new();
   accessRoles = await AccessRoles.new();
-  etherToken = await EtherToken.new();
+  etherToken = await EtherToken.new(accessControl.address);
+  // console.log(`\tEtherToken took ${gasCost(etherToken)}.`);
   neumark = await Neumark.new(accessControl.address);
   lockedAccount = await LockedAccount.new(
     accessControl.address,
@@ -90,6 +91,7 @@ export async function spawnPublicCommitment(
   eurEthRate
 ) {
   commitment = await TestCommitment.new(
+    accessControl.address,
     etherToken.address,
     lockedAccount.address,
     neumark.address
@@ -100,7 +102,8 @@ export async function spawnPublicCommitment(
     minAbsCap,
     maxAbsCap,
     minTicket,
-    ether(eurEthRate)
+    ether(eurEthRate),
+    operatorWallet
   );
   // console.log(lockedAccount.setController);
   await lockedAccount.setController(commitment.address, {
@@ -130,7 +133,8 @@ export async function spawnWhitelistedCommitment(
     minAbsCap,
     maxAbsCap,
     minTicket,
-    ether(eurEthRate)
+    ether(eurEthRate),
+    operatorWallet
   );
   // console.log(lockedAccount.setController);
   const whitelistAdminRole = await accessRoles.ROLE_WHITELIST_ADMIN();

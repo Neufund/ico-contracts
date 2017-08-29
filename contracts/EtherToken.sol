@@ -1,11 +1,13 @@
 pragma solidity 0.4.15;
 
-import './Zeppelin/StandardToken.sol';
+import './AccessControl/AccessControlled.sol';
 import './Math.sol';
-import './Standards/ITokenWithDeposit.sol';
+import './Reclaimable.sol';
 import './Standards/IERC667Callback.sol';
+import './Standards/ITokenWithDeposit.sol';
+import './Zeppelin/StandardToken.sol';
 
-contract EtherToken is StandardToken, ITokenWithDeposit {
+contract EtherToken is AccessControlled, StandardToken, ITokenWithDeposit, Reclaimable {
 
     // Constant token specific fields
     string public constant name = "Ether Token";
@@ -14,6 +16,13 @@ contract EtherToken is StandardToken, ITokenWithDeposit {
 
     // disable default function
     function() { revert(); }
+
+    function EtherToken(IAccessPolicy accessPolicy)
+        AccessControlled(accessPolicy)
+        StandardToken()
+        Reclaimable()
+    {
+    }
 
     function approveAndCall(address _spender, uint256 _amount, bytes _extraData)
         returns (bool success)
@@ -54,4 +63,16 @@ contract EtherToken is StandardToken, ITokenWithDeposit {
         assert(msg.sender.send(amount));
         Withdrawal(msg.sender, amount);
     }
+
+    function reclaim(IBasicToken token)
+        public
+        returns (bool)
+    {
+        // This contract holds Ether
+        require(token != RECLAIM_ETHER);
+        return Reclaimable.reclaim(token);
+    }
+
+
+
 }

@@ -10,7 +10,8 @@ install:
   - yarn
 script:
   - yarn lint:prettier
-  - yarn lint; true
+  - yarn lint:solium; true
+  - yarn lint:eslint; true
   - yarn testrpc > /dev/null &
   - yarn test
   - yarn test:coverage

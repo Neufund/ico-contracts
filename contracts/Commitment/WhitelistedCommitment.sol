@@ -2,7 +2,8 @@ pragma solidity 0.4.15;
 
 import './PublicCommitment.sol';
 
-contract WhitelistedCommitment is AccessControlled, AccessRoles, CommitmentBase {
+
+contract WhitelistedCommitment is AccessRoles, CommitmentBase {
 
     // mapping of addresses allowed to participate
     mapping (address => bool) public whitelisted;
@@ -135,14 +136,26 @@ contract WhitelistedCommitment is AccessControlled, AccessRoles, CommitmentBase 
         return (whitelisted[msg.sender] || fixedCostTickets[msg.sender] > 0);
     }
 
+
+    function reclaim(IBasicToken token)
+        public
+        returns (bool)
+    {
+        // This contract holds Neumark during the commitment phase
+        if (!isFinalized()) {
+            require(token != neumark);
+        }
+        return Reclaimable.reclaim(token);
+    }
+
+
     function WhitelistedCommitment(
         IAccessPolicy _policy,
         EtherToken _ethToken,
         LockedAccount _lockedAccount,
         Neumark _neumark
     )
-         AccessControlled(_policy)
-         CommitmentBase(_ethToken, _lockedAccount, _neumark)
+         CommitmentBase(_policy, _ethToken, _lockedAccount, _neumark)
     {
     }
 }
