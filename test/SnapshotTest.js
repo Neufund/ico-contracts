@@ -3,7 +3,6 @@ import { gasCost, prettyPrintGasCost } from "./helpers/gasUtils";
 import { latestTimestamp } from "./helpers/latestTime";
 import increaseTime from "./helpers/increaseTime";
 import moment from "moment";
-import expectThrow from "./helpers/expectThrow";
 
 const SnapshotTest = artifacts.require("./test/SnapshotTest.sol");
 
@@ -110,6 +109,6 @@ contract("Snapshot", () => {
     const day1 = await snapshotTest.snapshotAt.call(
       latestTimestamp() + 1 * day
     );
-    await expectThrow(snapshotTest.getValueAt.call(day1, 41));
+    await expect(snapshotTest.getValueAt.call(day1, 41)).to.revert;
   });
 });
