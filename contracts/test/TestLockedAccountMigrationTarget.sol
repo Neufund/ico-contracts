@@ -52,9 +52,16 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
         return true;
     }
 
-    function TestLockedAccountMigrationTarget(IAccessPolicy _policy, IERC667Token _assetToken, Neumark _neumark,
-        uint _lockPeriod, uint _penaltyFraction)
-        LockedAccount(_policy, _assetToken, _neumark, _lockPeriod, _penaltyFraction)
+    function TestLockedAccountMigrationTarget(
+        IAccessPolicy _policy,
+        IEthereumForkArbiter _forkArbiter,
+        string _agreementUri,
+        IERC667Token _assetToken,
+        Neumark _neumark,
+        uint _lockPeriod,
+        uint _penaltyFraction
+    )
+        LockedAccount(_policy, _forkArbiter, _agreementUri, _assetToken, _neumark, _lockPeriod, _penaltyFraction)
     {
     }
 

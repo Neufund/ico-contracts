@@ -46,6 +46,8 @@ module.exports = function deployContracts(deployer, network, accounts) {
     await deployer.deploy(
       LockedAccount,
       accessControl.address,
+      ethereumForkArbiter.address,
+      "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT",
       etherToken.address,
       neumark.address,
       18 * months,

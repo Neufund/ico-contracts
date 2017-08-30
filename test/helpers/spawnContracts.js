@@ -46,6 +46,8 @@ export async function spawnLockedAccount(
   );
   lockedAccount = await LockedAccount.new(
     accessControl.address,
+    forkArbiter.address,
+    "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT",
     etherToken.address,
     neumark.address,
     unlockDateMonths * months,
