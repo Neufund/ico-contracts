@@ -20,32 +20,77 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
   });
 
   it("should announce forks", async () => {
+    const block = await web3.eth.getBlock("latest");
     const name = "Spurious Dragon";
     const url =
       "https://blog.ethereum.org/2016/11/18/hard-fork-no-4-spurious-dragon/";
+    const blockNumber = block.number + 10;
 
-    const tx = await ethereumForkArbiter.announceFork(name, url, {
+    const tx = await ethereumForkArbiter.announceFork(name, url, blockNumber, {
       from: arbiter
     });
 
     prettyPrintGasCost("Announce", tx);
     expect(eventValue(tx, "ForkAnnounced", "name")).to.equal(name);
     expect(eventValue(tx, "ForkAnnounced", "url")).to.equal(url);
+    expect(
+      eventValue(tx, "ForkAnnounced", "blockNumber")
+    ).to.be.bignumber.equal(blockNumber);
+    expect(tx).to.respectGasLimit(160000);
+  });
+
+  it("should not anounce past blocks", async () => {
+    const block = await web3.eth.getBlock("latest");
+    const name = "Spurious Dragon";
+    const url =
+      "https://blog.ethereum.org/2016/11/18/hard-fork-no-4-spurious-dragon/";
+    const blockNumber = block.number;
+
+    const tx = ethereumForkArbiter.announceFork(name, url, blockNumber, {
+      from: arbiter
+    });
+
+    await expect(tx).to.revert;
+  });
+
+  it("should anounce without a block", async () => {
+    const name = "Spurious Dragon";
+    const url =
+      "https://blog.ethereum.org/2016/11/18/hard-fork-no-4-spurious-dragon/";
+    const blockNumber = 0;
+
+    const tx = await ethereumForkArbiter.announceFork(name, url, blockNumber, {
+      from: arbiter
+    });
+
+    prettyPrintGasCost("Announce", tx);
+    expect(eventValue(tx, "ForkAnnounced", "name")).to.equal(name);
+    expect(eventValue(tx, "ForkAnnounced", "url")).to.equal(url);
+    expect(
+      eventValue(tx, "ForkAnnounced", "blockNumber")
+    ).to.be.bignumber.equal(blockNumber);
   });
 
   it("should remember last announced fork", async () => {
+    const block = await web3.eth.getBlock("latest");
     const expectedName = "Spurious Dragon";
     const expectedUrl =
       "https://blog.ethereum.org/2016/11/18/hard-fork-no-4-spurious-dragon/";
+    const expectedBlockNumber = block.number + 10;
 
-    await ethereumForkArbiter.announceFork(expectedName, expectedUrl, {
-      from: arbiter
-    });
+    await ethereumForkArbiter.announceFork(
+      expectedName,
+      expectedUrl,
+      expectedBlockNumber,
+      { from: arbiter }
+    );
     const actualName = await ethereumForkArbiter.nextForkName.call();
     const actualUrl = await ethereumForkArbiter.nextForkUrl.call();
+    const actualBlockNumber = await ethereumForkArbiter.nextForkBlockNumber.call();
 
     expect(actualName).to.equal(expectedName);
     expect(actualUrl).to.equal(expectedUrl);
+    expect(actualBlockNumber).to.be.bignumber.equal(expectedBlockNumber);
   });
 
   it("should sign forks", async () => {
@@ -60,6 +105,31 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
       block.number
     );
     expect(eventValue(tx, "ForkSigned", "blockHash")).to.be.equal(block.hash);
+  });
+
+  it("should reset anouncement on sign", async () => {
+    const block = await web3.eth.getBlock("latest");
+    const expectedName = "Spurious Dragon";
+    const expectedUrl =
+      "https://blog.ethereum.org/2016/11/18/hard-fork-no-4-spurious-dragon/";
+    const expectedBlockNumber = block.number + 10;
+
+    await ethereumForkArbiter.announceFork(
+      expectedName,
+      expectedUrl,
+      expectedBlockNumber,
+      { from: arbiter }
+    );
+    await ethereumForkArbiter.signFork(block.number, block.hash, {
+      from: arbiter
+    });
+    const actualName = await ethereumForkArbiter.nextForkName.call();
+    const actualUrl = await ethereumForkArbiter.nextForkUrl.call();
+    const actualBlockNumber = await ethereumForkArbiter.nextForkBlockNumber.call();
+
+    expect(actualName).to.equal("");
+    expect(actualUrl).to.equal("");
+    expect(actualBlockNumber).to.be.bignumber.equal(0);
   });
 
   it("should check hash of signed fork", async () => {
@@ -102,19 +172,20 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
     const name = "Spurious Dragon";
     const url =
       "https://blog.ethereum.org/2016/11/18/hard-fork-no-4-spurious-dragon/";
+    const blockNumber = 0;
 
     await expect(
-      ethereumForkArbiter.announceFork(name, url, {
+      ethereumForkArbiter.announceFork(name, url, blockNumber, {
         from: deployer
       })
     ).to.revert;
     await expect(
-      ethereumForkArbiter.announceFork(name, url, {
+      ethereumForkArbiter.announceFork(name, url, blockNumber, {
         from: other
       })
     ).to.revert;
     await expect(
-      ethereumForkArbiter.announceFork(name, url, {
+      ethereumForkArbiter.announceFork(name, url, blockNumber, {
         from: arbiter
       })
     ).to.not.revert;

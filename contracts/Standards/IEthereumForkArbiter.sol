@@ -5,7 +5,8 @@ contract IEthereumForkArbiter {
 
     event ForkAnnounced(
         string name,
-        string url
+        string url,
+        uint256 blockNumber
     );
 
     event ForkSigned(
@@ -21,16 +22,20 @@ contract IEthereumForkArbiter {
         public
         returns (string);
 
+    function nextForkBlockNumber()
+        public
+        returns (uint256);
+
     function lastSignedBlockNumber()
         public
-        returns (string);
+        returns (uint256);
 
     function lastSignedBlockHash()
         public
-        returns (string);
+        returns (bytes32);
 
     function lastSignedTimestamp()
         public
-        returns (string);
+        returns (uint256);
 
 }
