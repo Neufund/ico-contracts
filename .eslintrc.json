@@ -5,7 +5,14 @@
     "prettier/prettier": ["error"],
     "import/no-named-as-default": ["off"],
     "no-await-in-loop": ["off"],
-    "no-use-before-define": ["error", { "functions": false }]
+    "no-use-before-define": ["error", { "functions": false }],
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_$" }],
+    "no-restricted-syntax": [
+      "error",
+      "ForInStatement",
+      "LabeledStatement",
+      "WithStatement"
+    ]
   },
   "env": {
     "node": true,
