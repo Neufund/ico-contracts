@@ -26,7 +26,7 @@ contract LockedAccount is
     Reclaimable
 {
     // lock state
-    enum LockState {Uncontrolled, AcceptingLocks, AcceptingUnlocks, ReleaseAll }
+    enum LockState { Uncontrolled, AcceptingLocks, AcceptingUnlocks, ReleaseAll }
 
     // events
     event FundsLocked(address indexed investor, uint256 amount, uint256 neumarks);
@@ -129,6 +129,7 @@ contract LockedAccount is
                 neumark.burnNeumark(a.neumarksDue);
                 // take the penalty if before unlockDate
                 if (currentTime() < a.unlockDate) {
+                    require(penaltyDisbursalAddress != address(0));
                     uint256 penalty = fraction(a.balance, penaltyFraction);
                     // distribute penalty
                     if (isContract(penaltyDisbursalAddress)) {
@@ -244,8 +245,9 @@ contract LockedAccount is
         public
     {
         // do not let change controller that didn't yet finished
-        if (address(controller) != 0)
+        if (address(controller) != 0) {
             require(controller.isFinalized());
+        }
         controller = _controller;
         _changeState(LockState.AcceptingLocks);
     }
@@ -257,7 +259,8 @@ contract LockedAccount is
         only(ROLE_LOCKED_ACCOUNT_ADMIN)
         public
     {
-        // can be changed at any moment by owner
+        require(_penaltyDisbursalAddress != address(0));
+        // can be changed at any moment by admin
         penaltyDisbursalAddress = _penaltyDisbursalAddress;
     }
 
