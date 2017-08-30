@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import { prettyPrintGasCost } from "./helpers/gasUtils";
 import createAccessPolicy from "./helpers/createAccessPolicy";
-import forceEther from "./helpers/forceEther";
 import { eventValue } from "./helpers/events";
 
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
@@ -39,11 +38,9 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
     const expectedUrl =
       "https://blog.ethereum.org/2016/11/18/hard-fork-no-4-spurious-dragon/";
 
-    const tx = await ethereumForkArbiter.announceFork(
-      expectedName,
-      expectedUrl,
-      { from: arbiter }
-    );
+    await ethereumForkArbiter.announceFork(expectedName, expectedUrl, {
+      from: arbiter
+    });
     const actualName = await ethereumForkArbiter.nextForkName.call();
     const actualUrl = await ethereumForkArbiter.nextForkUrl.call();
 

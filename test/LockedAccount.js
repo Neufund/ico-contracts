@@ -3,8 +3,8 @@ import moment from "moment";
 import error from "./helpers/error";
 import { eventValue } from "./helpers/events";
 import * as chain from "./helpers/spawnContracts";
-import increaseTime, { setTimeTo } from "./helpers/increaseTime";
-import latestTime, { latestTimestamp } from "./helpers/latestTime";
+import increaseTime from "./helpers/increaseTime";
+import { latestTimestamp } from "./helpers/latestTime";
 import EvmError from "./helpers/EVMThrow";
 
 const TestFeeDistributionPool = artifacts.require("TestFeeDistributionPool");
@@ -36,36 +36,44 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
     );
   });
 
-  async function expectLockEvent(tx, investor, ticket, neumarks) {
+  async function expectLockEvent(tx, investorAddress, ticket, neumarks) {
     const event = eventValue(tx, "FundsLocked");
     expect(event).to.exist;
-    expect(event.args.investor).to.be.bignumber.equal(investor);
+    expect(event.args.investor).to.be.bignumber.equal(investorAddress);
     expect(event.args.amount).to.be.bignumber.equal(ticket);
     expect(event.args.neumarks).to.be.bignumber.equal(neumarks);
   }
 
-  async function lockEther(investor, ticket) {
+  async function lockEther(investorAddress, ticket) {
     // initial state of the lock
     const initialLockedAmount = await chain.lockedAccount.totalLockedAmount();
     const initialAssetSupply = await chain.etherToken.totalSupply();
     const initialNumberOfInvestors = await chain.lockedAccount.totalInvestors();
-    const initialNeumarksBalance = await chain.neumark.balanceOf(investor);
-    const initialLockedBalance = await chain.lockedAccount.balanceOf(investor);
+    const initialNeumarksBalance = await chain.neumark.balanceOf(
+      investorAddress
+    );
+    const initialLockedBalance = await chain.lockedAccount.balanceOf(
+      investorAddress
+    );
     // issue real neumarks and check against
-    let tx = await chain.neumark.issueForEuro(ticket, { from: investor });
+    let tx = await chain.neumark.issueForEuro(ticket, {
+      from: investorAddress
+    });
     const neumarks = eventValue(tx, "NeumarksIssued", "neumarkUlp");
     expect(
-      await chain.neumark.balanceOf(investor),
+      await chain.neumark.balanceOf(investorAddress),
       "neumarks must be allocated"
     ).to.be.bignumber.equal(neumarks.add(initialNeumarksBalance));
     // only controller can lock
-    tx = await chain.commitment._investFor(investor, ticket, neumarks, {
+    tx = await chain.commitment._investFor(investorAddress, ticket, neumarks, {
       value: ticket,
-      from: investor
+      from: investorAddress
     });
-    await expectLockEvent(tx, investor, ticket, neumarks);
+    await expectLockEvent(tx, investorAddress, ticket, neumarks);
     const timebase = latestTimestamp(); // timestamp of block _investFor was mined
-    const investorBalance = await chain.lockedAccount.balanceOf(investor);
+    const investorBalance = await chain.lockedAccount.balanceOf(
+      investorAddress
+    );
     expect(
       investorBalance[0],
       "investor balance should equal locked eth"
@@ -76,11 +84,11 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
     ).to.be.bignumber.equal(neumarks.add(initialLockedBalance[1]));
     // verify longstop date independently, value is convertable to int so do it
     let unlockDate = timebase + 18 * 30 * chain.days;
-    if (parseInt(initialLockedBalance[2]) > 0) {
+    if (parseInt(initialLockedBalance[2], 10) > 0) {
       // earliest date is preserved for repeated investor address
-      unlockDate = parseInt(initialLockedBalance[2]);
+      unlockDate = parseInt(initialLockedBalance[2], 10);
     }
-    expect(parseInt(investorBalance[2]), "18 months in future").to.equal(
+    expect(parseInt(investorBalance[2], 10), "18 months in future").to.equal(
       unlockDate
     );
     expect(
@@ -91,7 +99,7 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
       await chain.etherToken.totalSupply(),
       "lock should own locked amount"
     ).to.be.bignumber.equal(initialAssetSupply.add(ticket));
-    const newInvestors = parseInt(initialLockedBalance[2]) > 0 ? 0 : 1;
+    const newInvestors = parseInt(initialLockedBalance[2], 10) > 0 ? 0 : 1;
     expect(
       await chain.lockedAccount.totalInvestors(),
       "total number of investors"
@@ -114,26 +122,34 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
     await lockEther(investor, chain.ether(0.5));
   });
 
-  async function unlockEtherWithApprove(investor, ticket, neumarkToBurn) {
+  async function unlockEtherWithApprove(
+    investorAddress,
+    ticket,
+    neumarkToBurn
+  ) {
     // investor approves transfer to lock contract to burn neumarks
     // console.log(`investor has ${parseInt(await chain.neumark.balanceOf(investor))}`);
     let tx = await chain.neumark.approve(
       chain.lockedAccount.address,
       neumarkToBurn,
       {
-        from: investor
+        from: investorAddress
       }
     );
     expect(eventValue(tx, "Approval", "amount")).to.be.bignumber.equal(
       neumarkToBurn
     );
     // only investor can unlock and must burn tokens
-    tx = await chain.lockedAccount.unlock({ from: investor });
+    tx = await chain.lockedAccount.unlock({ from: investorAddress });
 
     return tx;
   }
 
-  async function unlockEtherWithCallback(investor, ticket, neumarkToBurn) {
+  async function unlockEtherWithCallback(
+    investorAddress,
+    ticket,
+    neumarkToBurn
+  ) {
     // investor approves transfer to lock contract to burn neumarks
     // console.log(`investor has ${await chain.neumark.balanceOf(investor)} against ${neumarkToBurn}`);
     // console.log(`${chain.lockedAccount.address} should spend`);
@@ -143,7 +159,7 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
       neumarkToBurn,
       "",
       {
-        from: investor
+        from: investorAddress
       }
     );
     expect(eventValue(tx, "Approval", "amount")).to.be.bignumber.equal(
@@ -154,7 +170,7 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
   }
 
   async function unlockEtherWithCallbackUnknownToken(
-    investor,
+    investorAddress,
     ticket,
     neumarkToBurn
   ) {
@@ -165,47 +181,39 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
         neumarkToBurn,
         "",
         {
-          from: investor
+          from: investorAddress
         }
       )
     ).to.be.rejectedWith(EvmError);
   }
 
-  async function expectPenaltyEvent(tx, investor, ticket) {
+  async function expectPenaltyEvent(tx, investorAddress, ticket) {
     const penalty = ticket
       .mul(await chain.lockedAccount.penaltyFraction())
       .div(chain.ether(1));
     const disbursalPool = await chain.lockedAccount.penaltyDisbursalAddress();
     const event = eventValue(tx, "PenaltyDisbursed");
     expect(event).to.exist;
-    expect(event.args.investor).to.be.bignumber.equal(investor);
+    expect(event.args.investor).to.be.bignumber.equal(investorAddress);
     expect(event.args.amount).to.be.bignumber.equal(penalty);
     expect(event.args.toPool).to.be.bignumber.equal(disbursalPool);
   }
 
-  async function expectLastTransferEvent(tx, from, to, val) {
-    const event = eventValue(tx, "Transfer");
-    // console.log(event);
-    expect(event).to.exist;
-    expect(event.args.from).to.equal(from);
-    expect(event.args.to).to.equal(to);
-    expect(event.args.amount).to.be.bignumber.equal(val);
-  }
-
-  async function expectUnlockEvent(tx, investor, ticket, withPenalty) {
+  async function expectUnlockEvent(tx, investorAddress, ticket, withPenalty) {
+    let expectedTicket = ticket;
     if (withPenalty) {
       const penalty = ticket
         .mul(await chain.lockedAccount.penaltyFraction())
         .div(chain.ether(1));
-      ticket = ticket.sub(penalty);
+      expectedTicket = ticket.sub(penalty);
     }
     const event = eventValue(tx, "FundsUnlocked");
     expect(event).to.exist;
-    expect(event.args.investor).to.be.bignumber.equal(investor);
-    expect(event.args.amount).to.be.bignumber.equal(ticket);
+    expect(event.args.investor).to.be.bignumber.equal(investorAddress);
+    expect(event.args.amount).to.be.bignumber.equal(expectedTicket);
   }
 
-  async function assertCorrectUnlock(tx, investor, ticket) {
+  async function assertCorrectUnlock(tx, investorAddress, ticket) {
     const disbursalPool = await chain.lockedAccount.penaltyDisbursalAddress();
     assert.equal(error(tx), 0, "Expected OK rc from unlock()");
     const penalty = ticket
@@ -221,7 +229,9 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
       "assetToken should still hold full ticket"
     ).to.be.bignumber.equal(ticket);
     // returns tuple as array
-    const investorBalance = await chain.lockedAccount.balanceOf(investor);
+    const investorBalance = await chain.lockedAccount.balanceOf(
+      investorAddress
+    );
     assert.equal(investorBalance[2], 0, "investor account deleted"); // checked by timestamp == 0
     assert.equal(
       await chain.lockedAccount.totalInvestors(),
@@ -229,7 +239,7 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
       "should have no investors"
     );
     expect(
-      (await chain.etherToken.balanceOf(investor)).plus(
+      (await chain.etherToken.balanceOf(investorAddress)).plus(
         await chain.etherToken.balanceOf(disbursalPool)
       ),
       "investor + penalty == 1 ether"
@@ -241,7 +251,7 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
     ).to.be.bignumber.equal(penalty);
     // 0 neumarks at the end
     expect(
-      await chain.neumark.balanceOf(investor),
+      await chain.neumark.balanceOf(investorAddress),
       "all investor neumarks burned"
     ).to.be.bignumber.equal(0);
   }
@@ -288,10 +298,8 @@ contract("LockedAccount", ([admin, investor, investor2]) => {
     // truffle will not return events that are not in ABI of called contract so line below uncommented
     // await expectPenaltyEvent(unlockTx, investor, penalty, disbursalPool);
     // instead look for transfer event of a pool
-    const disbursalPool = await chain.lockedAccount.penaltyDisbursalAddress();
-    const penalty = ticket
-      .mul(await chain.lockedAccount.penaltyFraction())
-      .div(chain.ether(1));
+    await chain.lockedAccount.penaltyDisbursalAddress();
+    ticket.mul(await chain.lockedAccount.penaltyFraction()).div(chain.ether(1));
     // todo: find correct transfer event, not last
     // await expectLastTransferEvent(unlockTx, chain.lockedAccount.address, disbursalPool, penalty);
   });

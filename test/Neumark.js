@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { gasCost, prettyPrintGasCost } from "./helpers/gasUtils";
+import { prettyPrintGasCost } from "./helpers/gasUtils";
 import { eventValue } from "./helpers/events";
 import { TriState } from "./helpers/triState";
 

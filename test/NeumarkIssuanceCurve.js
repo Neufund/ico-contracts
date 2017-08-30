@@ -1,5 +1,4 @@
-import { expect } from "chai";
-import { gasCost, prettyPrintGasCost } from "./helpers/gasUtils";
+import { prettyPrintGasCost } from "./helpers/gasUtils";
 
 const CurveGas = artifacts.require("./test/CurveGas.sol");
 
