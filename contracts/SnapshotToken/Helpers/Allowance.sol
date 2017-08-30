@@ -81,14 +81,14 @@ contract Allowance is
     {
         require(approve(_spender, _amount));
 
-        IERC667Callback(_spender).receiveApproval(
+        success = IERC667Callback(_spender).receiveApproval(
             msg.sender,
             _amount,
             this,
             _extraData
         );
 
-        return true;
+        return success;
     }
 
     /// @notice Send `_amount` tokens to `_to` from `_from` on the condition it
