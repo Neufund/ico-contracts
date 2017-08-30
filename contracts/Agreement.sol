@@ -8,6 +8,13 @@ contract Agreement {
     IEthereumForkArbiter ethereumForkArbiter;
     string public agreementUri;
 
+    event AgreementAccepted(address indexed accepter);
+
+    modifier acceptAgreement(address accepter) {
+        AgreementAccepted(accepter);
+        _;
+    }
+
     function Agreement(IEthereumForkArbiter forkArbiter, string uri) {
         require(forkArbiter != IEthereumForkArbiter(0x0));
         ethereumForkArbiter = forkArbiter;
