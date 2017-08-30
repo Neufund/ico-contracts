@@ -1,12 +1,9 @@
 import { expect } from "chai";
 import { prettyPrintGasCost } from "./helpers/gasUtils";
 import { eventValue } from "./helpers/events";
-import { TriState } from "./helpers/triState";
+import createAccessPolicy from "./helpers/createAccessPolicy";
 
-const RoleBasedAccessControl = artifacts.require(
-  "./AccessControl/RoleBasedAccessControl.sol"
-);
-const AccessRoles = artifacts.require("./AccessRoles");
+const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const Neumark = artifacts.require("./Neumark.sol");
 
 const BigNumber = web3.BigNumber;
@@ -14,53 +11,41 @@ const EUR_DECIMALS = new BigNumber(10).toPower(18);
 const NMK_DECIMALS = new BigNumber(10).toPower(18);
 
 contract("Neumark", accounts => {
+  const agreementUri = "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT";
   let rbac;
+  let forkArbiter;
   let neumark;
 
   beforeEach(async () => {
-    rbac = await RoleBasedAccessControl.new();
-    neumark = await Neumark.new(rbac.address);
-    const roles = await AccessRoles.new();
-    await rbac.setUserRole(
-      accounts[0],
-      await roles.ROLE_NEUMARK_ISSUER(),
-      neumark.address,
-      TriState.Allow
-    );
-    await rbac.setUserRole(
-      accounts[1],
-      await roles.ROLE_NEUMARK_ISSUER(),
-      neumark.address,
-      TriState.Allow
-    );
-    await rbac.setUserRole(
-      accounts[2],
-      await roles.ROLE_NEUMARK_ISSUER(),
-      neumark.address,
-      TriState.Allow
-    );
-    await rbac.setUserRole(
-      accounts[0],
-      await roles.ROLE_NEUMARK_BURNER(),
-      neumark.address,
-      TriState.Allow
-    );
-    await rbac.setUserRole(
-      accounts[1],
-      await roles.ROLE_NEUMARK_BURNER(),
-      neumark.address,
-      TriState.Allow
-    );
+    rbac = await createAccessPolicy([
+      { subject: accounts[0], role: "ROLE_NEUMARK_ISSUER" },
+      { subject: accounts[1], role: "ROLE_NEUMARK_ISSUER" },
+      { subject: accounts[2], role: "ROLE_NEUMARK_ISSUER" },
+      { subject: accounts[0], role: "ROLE_NEUMARK_BURNER" },
+      { subject: accounts[1], role: "ROLE_NEUMARK_BURNER" }
+    ]);
+    forkArbiter = await EthereumForkArbiter.new(rbac);
+    neumark = await Neumark.new(rbac, forkArbiter.address, agreementUri);
   });
 
   it("should deploy", async () => {
     prettyPrintGasCost("Neumark deploy", neumark);
   });
+
+  it("should have agreement and fork arbiter", async () => {
+    const actualAgreement = await neumark.agreementUri.call();
+    const actualForkArbiter = await neumark.ethereumForkArbiter.call();
+
+    expect(actualAgreement).to.equal(agreementUri);
+    expect(actualForkArbiter).to.equal(forkArbiter.address);
+  });
+
   it("should have name Neumark, symbol NMK and 18 decimals", async () => {
     assert.equal(await neumark.name.call(), "Neumark");
     assert.equal(await neumark.symbol.call(), "NMK");
     assert.equal(await neumark.decimals.call(), 18);
   });
+
   it("should start at zero", async () => {
     assert.equal(await neumark.totalSupply.call(), 0);
     assert.equal(await neumark.balanceOf.call(accounts[0]), 0);

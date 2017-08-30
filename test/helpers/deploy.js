@@ -8,6 +8,7 @@ const EtherToken = artifacts.require("EtherToken");
 const Neumark = artifacts.require("Neumark");
 const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
+const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const AccessRoles = artifacts.require("AccessRoles");
 
 export default async function deploy(
@@ -36,8 +37,13 @@ export default async function deploy(
 
   const accessControl = await RoleBasedAccessControl.new();
   const accessRoles = await AccessRoles.new();
+  const forkArbiter = await EthereumForkArbiter.new(accessControl.address);
   const etherToken = await EtherToken.new(accessControl.address);
-  const neumark = await Neumark.new(accessControl.address);
+  const neumark = await Neumark.new(
+    accessControl.address,
+    forkArbiter.address,
+    "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT"
+  );
 
   const lockedAccount = await LockedAccount.new(
     accessControl.address,
