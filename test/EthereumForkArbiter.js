@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import { prettyPrintGasCost } from "./helpers/gasUtils";
 import createAccessPolicy from "./helpers/createAccessPolicy";
-import forceEther from "./helpers/forceEther";
 import { eventValue } from "./helpers/events";
 
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
@@ -18,7 +17,6 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
 
   it("should deploy", async () => {
     prettyPrintGasCost("Deploy", ethereumForkArbiter);
-    expect(ethereumForkArbiter).to.respectGasLimit(140000);
   });
 
   it("should announce forks", async () => {
@@ -33,7 +31,6 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
     prettyPrintGasCost("Announce", tx);
     expect(eventValue(tx, "ForkAnnounced", "name")).to.equal(name);
     expect(eventValue(tx, "ForkAnnounced", "url")).to.equal(url);
-    expect(tx).to.respectGasLimit(140000);
   });
 
   it("should remember last announced fork", async () => {
@@ -41,11 +38,9 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
     const expectedUrl =
       "https://blog.ethereum.org/2016/11/18/hard-fork-no-4-spurious-dragon/";
 
-    const tx = await ethereumForkArbiter.announceFork(
-      expectedName,
-      expectedUrl,
-      { from: arbiter }
-    );
+    await ethereumForkArbiter.announceFork(expectedName, expectedUrl, {
+      from: arbiter
+    });
     const actualName = await ethereumForkArbiter.nextForkName.call();
     const actualUrl = await ethereumForkArbiter.nextForkUrl.call();
 
@@ -65,7 +60,6 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
       block.number
     );
     expect(eventValue(tx, "ForkSigned", "blockHash")).to.be.equal(block.hash);
-    expect(tx).to.respectGasLimit(100000);
   });
 
   it("should check hash of signed fork", async () => {

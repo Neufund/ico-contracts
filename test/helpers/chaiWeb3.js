@@ -9,7 +9,6 @@ export default function(chai) {
 
       // I would love to hear ideas for better implementation
 
-      // eslint-disable-next-line no-underscore-dangle
       const web3ArrayAccessor = this._obj;
 
       // negative indexes seems to not play nicely with web3 so we skip this case
@@ -35,7 +34,6 @@ export default function(chai) {
       return;
     }
 
-    // eslint-disable-next-line no-underscore-dangle
     const object = this._obj;
 
     const usedGas = gasCost(object);

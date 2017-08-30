@@ -30,7 +30,6 @@ module.exports = function deployContracts(deployer, network, accounts) {
     const accessControl = await RoleBasedAccessControl.deployed();
     console.log("EthereumForkArbiter deployment...");
     await deployer.deploy(EthereumForkArbiter, accessControl.address);
-    const ethereumForkArbiter = await EthereumForkArbiter.deployed();
     console.log("Neumark deploying...");
     await deployer.deploy(Neumark, accessControl.address);
     const neumark = await Neumark.deployed();
