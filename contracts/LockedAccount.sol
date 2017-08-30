@@ -1,19 +1,30 @@
 pragma solidity 0.4.15;
 
-import './IsContract.sol';
 import './AccessControl/AccessControlled.sol';
 import './AccessRoles.sol';
-import './ReturnsErrors.sol';
-import './TimeSource.sol';
-import './EtherToken.sol';
-import './Neumark.sol';
+import './Agreement.sol';
 import './Commitment/ITokenOffering.sol';
+import './EtherToken.sol';
+import './IsContract.sol';
 import './LockedAccountMigration.sol';
-import './Standards/IERC667Token.sol';
-import './Standards/IERC667Callback.sol';
+import './Neumark.sol';
 import './Reclaimable.sol';
+import './ReturnsErrors.sol';
+import './Standards/IERC667Callback.sol';
+import './Standards/IERC667Token.sol';
+import './TimeSource.sol';
 
-contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErrors, Math, IsContract, IERC667Callback, Reclaimable {
+contract LockedAccount is
+    AccessControlled,
+    AccessRoles,
+    Agreement,
+    TimeSource,
+    ReturnsErrors,
+    Math,
+    IsContract,
+    IERC667Callback,
+    Reclaimable
+{
     // lock state
     enum LockState {Uncontrolled, AcceptingLocks, AcceptingUnlocks, ReleaseAll }
 
@@ -76,6 +87,7 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
     // callable only from ICO contract that gets currency directly (ETH/EUR)
     function lock(address investor, uint256 amount, uint256 neumarks)
         onlycontroller
+        acceptAgreement(investor)
         onlyState(LockState.AcceptingLocks)
         public
     {
@@ -144,6 +156,7 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
     // if used before longstop date, calculates penalty and distributes it as revenue
     function unlock()
         onlyStates(LockState.AcceptingUnlocks, LockState.ReleaseAll)
+        acceptAgreement(msg.sender)
         public
         returns (Status)
     {
@@ -153,6 +166,7 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
     // this allows to unlock and allow neumarks to be burned in one transaction
     function receiveApproval(address from, uint256 _amount, address _token, bytes _data)
         onlyStates(LockState.AcceptingUnlocks, LockState.ReleaseAll)
+        acceptAgreement(from)
         public
         returns (bool)
     {
@@ -210,6 +224,7 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
 
     /// migrate single investor
     function migrate()
+        acceptAgreement(msg.sender)
         public
     {
         require(address(migration) != 0);
@@ -249,9 +264,17 @@ contract LockedAccount is AccessControlled, AccessRoles, TimeSource, ReturnsErro
 
     // _assetToken - token contract with resource locked by LockedAccount, where LockedAccount is allowed to make deposits
     //
-    function LockedAccount(IAccessPolicy _policy, IERC667Token _assetToken, Neumark _neumark,
-        uint _lockPeriod, uint _penaltyFraction)
+    function LockedAccount(
+        IAccessPolicy _policy,
+        IEthereumForkArbiter _forkArbiter,
+        string _agreementUri,
+        IERC667Token _assetToken,
+        Neumark _neumark,
+        uint _lockPeriod,
+        uint _penaltyFraction
+    )
         AccessControlled(_policy)
+        Agreement(_forkArbiter, _agreementUri)
         Reclaimable()
     {
         assetToken = _assetToken;
