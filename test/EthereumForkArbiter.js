@@ -18,7 +18,6 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
 
   it("should deploy", async () => {
     prettyPrintGasCost("Deploy", ethereumForkArbiter);
-    expect(ethereumForkArbiter).to.respectGasLimit(140000);
   });
 
   it("should announce forks", async () => {
@@ -33,7 +32,6 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
     prettyPrintGasCost("Announce", tx);
     expect(eventValue(tx, "ForkAnnounced", "name")).to.equal(name);
     expect(eventValue(tx, "ForkAnnounced", "url")).to.equal(url);
-    expect(tx).to.respectGasLimit(140000);
   });
 
   it("should remember last announced fork", async () => {
@@ -65,7 +63,6 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
       block.number
     );
     expect(eventValue(tx, "ForkSigned", "blockHash")).to.be.equal(block.hash);
-    expect(tx).to.respectGasLimit(100000);
   });
 
   it("should check hash of signed fork", async () => {

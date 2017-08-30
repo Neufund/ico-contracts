@@ -16,7 +16,6 @@ contract("NeumarkIssuanceCurve", () => {
 
   it("should deploy", async () => {
     prettyPrintGasCost("NeumarkIssuanceCurve deploy", curveGas);
-    expect(curveGas).to.respectGasLimit(292674);
   });
 
   it("should compute exactly over the whole range", async () => {
@@ -145,6 +144,6 @@ contract("NeumarkIssuanceCurve", () => {
     );
     const totalGas = gasChunks.reduce((sum, gas) => sum + gas, 0);
 
-    expect(totalGas).to.respectGasLimit(136282);
+    prettyPrintGasCost("Total", totalGas);
   });
 });
