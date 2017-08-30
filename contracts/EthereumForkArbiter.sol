@@ -3,9 +3,15 @@ pragma solidity 0.4.15;
 import './AccessControl/AccessControlled.sol';
 import './AccessRoles.sol';
 import './Reclaimable.sol';
+import './Standards/IEthereumForkArbiter.sol';
 
 
-contract EthereumForkArbiter is AccessControlled, AccessRoles, Reclaimable {
+contract EthereumForkArbiter is
+    IEthereumForkArbiter,
+    AccessControlled,
+    AccessRoles,
+    Reclaimable
+{
 
     string public nextForkName;
     string public nextForkUrl;
