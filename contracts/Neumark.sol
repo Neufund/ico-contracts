@@ -2,6 +2,7 @@ pragma solidity 0.4.15;
 
 import './AccessControl/AccessControlled.sol';
 import './AccessRoles.sol';
+import './Agreement.sol';
 import './SnapshotToken/SnapshotToken.sol';
 import './NeumarkIssuanceCurve.sol';
 import './Reclaimable.sol';
@@ -9,6 +10,7 @@ import './Reclaimable.sol';
 contract Neumark is
     AccessControlled,
     AccessRoles,
+    Agreement,
     SnapshotToken,
     NeumarkIssuanceCurve,
     Reclaimable
@@ -31,9 +33,14 @@ contract Neumark is
         uint256 euroUlp,
         uint256 neumarkUlp);
 
-    function Neumark(IAccessPolicy accessPolicy)
+    function Neumark(
+        IAccessPolicy accessPolicy,
+        IEthereumForkArbiter forkArbiter,
+        string agreementUrl
+    )
         AccessControlled(accessPolicy)
         AccessRoles()
+        Agreement(forkArbiter, agreementUrl)
         SnapshotToken(
             ISnapshotTokenParent(0x0), // Address of the parent token, set to 0x0 if it is a new token
             0, // Snapshot of the parent token, set to 0 if it is a new token
@@ -51,6 +58,7 @@ contract Neumark is
     function issueForEuro(uint256 euroUlps)
         public
         only(ROLE_NEUMARK_ISSUER)
+        acceptAgreement(msg.sender)
         returns (uint256)
     {
         require(totalEuroUlps + euroUlps >= totalEuroUlps);
@@ -68,6 +76,7 @@ contract Neumark is
     function burnNeumark(uint256 neumarkUlps)
         public
         only(ROLE_NEUMARK_BURNER)
+        acceptAgreement(msg.sender)
         returns (uint256)
     {
         address owner = msg.sender;
@@ -108,6 +117,8 @@ contract Neumark is
         uint amount
     )
         internal
+        acceptAgreement(from)
+        acceptAgreement(to)
         returns (bool allow)
     {
         return transferEnabled;
@@ -125,6 +136,8 @@ contract Neumark is
         uint amount
     )
         internal
+        acceptAgreement(owner)
+        acceptAgreement(spender)
         returns (bool allow)
     {
         return true;
