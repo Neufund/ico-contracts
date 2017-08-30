@@ -5,7 +5,7 @@ import './Standards/IEthereumForkArbiter.sol';
 
 contract Agreement {
 
-    IEthereumForkArbiter ethereumForkArbiter;
+    IEthereumForkArbiter public ethereumForkArbiter;
     string public agreementUri;
 
     event AgreementAccepted(address indexed accepter);

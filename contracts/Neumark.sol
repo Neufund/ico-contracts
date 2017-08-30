@@ -42,8 +42,6 @@ contract Neumark is
         AccessRoles()
         Agreement(forkArbiter, agreementUrl)
         SnapshotToken(
-            ISnapshotTokenParent(0x0), // Address of the parent token, set to 0x0 if it is a new token
-            0, // Snapshot of the parent token, set to 0 if it is a new token
             TOKEN_NAME,
             TOKEN_DECIMALS,
             TOKEN_SYMBOL
