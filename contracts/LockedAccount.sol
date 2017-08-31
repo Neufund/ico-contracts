@@ -156,7 +156,6 @@ contract LockedAccount is
     // if used before longstop date, calculates penalty and distributes it as revenue
     function unlock()
         onlyStates(LockState.AcceptingUnlocks, LockState.ReleaseAll)
-        acceptAgreement(msg.sender)
         public
         returns (Status)
     {
@@ -166,7 +165,6 @@ contract LockedAccount is
     // this allows to unlock and allow neumarks to be burned in one transaction
     function receiveApproval(address from, uint256 _amount, address _token, bytes _data)
         onlyStates(LockState.AcceptingUnlocks, LockState.ReleaseAll)
-        acceptAgreement(from)
         public
         returns (bool)
     {
@@ -224,7 +222,6 @@ contract LockedAccount is
 
     /// migrate single investor
     function migrate()
-        acceptAgreement(msg.sender)
         public
     {
         require(address(migration) != 0);
