@@ -5,6 +5,7 @@ const EtherToken = artifacts.require("EtherToken");
 const Neumark = artifacts.require("Neumark");
 const TestCommitment = artifacts.require("TestCommitment");
 const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
+const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const AccessRoles = artifacts.require("AccessRoles");
 
@@ -19,6 +20,8 @@ export let commitment;
 export let feePool;
 export let accessControl;
 export let accessRoles;
+export let forkArbiter;
+
 /* eslint-enable */
 export const operatorWallet = "0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c";
 
@@ -33,11 +36,18 @@ export async function spawnLockedAccount(
 ) {
   accessControl = await RoleBasedAccessControl.new();
   accessRoles = await AccessRoles.new();
+  forkArbiter = await EthereumForkArbiter.new(accessControl.address);
   etherToken = await EtherToken.new(accessControl.address);
   // console.log(`\tEtherToken took ${gasCost(etherToken)}.`);
-  neumark = await Neumark.new(accessControl.address);
+  neumark = await Neumark.new(
+    accessControl.address,
+    forkArbiter.address,
+    "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT"
+  );
   lockedAccount = await LockedAccount.new(
     accessControl.address,
+    forkArbiter.address,
+    "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT",
     etherToken.address,
     neumark.address,
     unlockDateMonths * months,

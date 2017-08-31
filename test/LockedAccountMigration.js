@@ -27,6 +27,8 @@ contract("TestLockedAccountMigrationTarget", ([admin, investor, investor2]) => {
     );
     migrationTarget = await TestLockedAccountMigrationTarget.new(
       chain.accessControl.address,
+      chain.forkArbiter.address,
+      "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT",
       chain.etherToken.address,
       chain.neumark.address,
       18 * chain.months,

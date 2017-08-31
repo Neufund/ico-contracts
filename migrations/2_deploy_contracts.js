@@ -30,8 +30,14 @@ module.exports = function deployContracts(deployer, network, accounts) {
     const accessControl = await RoleBasedAccessControl.deployed();
     console.log("EthereumForkArbiter deployment...");
     await deployer.deploy(EthereumForkArbiter, accessControl.address);
+    const ethereumForkArbiter = await EthereumForkArbiter.deployed();
     console.log("Neumark deploying...");
-    await deployer.deploy(Neumark, accessControl.address);
+    await deployer.deploy(
+      Neumark,
+      accessControl.address,
+      ethereumForkArbiter.address,
+      "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT"
+    );
     const neumark = await Neumark.deployed();
     console.log("EtherToken deploying...");
     await deployer.deploy(EtherToken, accessControl.address);
@@ -40,6 +46,8 @@ module.exports = function deployContracts(deployer, network, accounts) {
     await deployer.deploy(
       LockedAccount,
       accessControl.address,
+      ethereumForkArbiter.address,
+      "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT",
       etherToken.address,
       neumark.address,
       18 * months,

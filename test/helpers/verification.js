@@ -4,12 +4,18 @@ import { TriState, EVERYONE } from "./triState";
 
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const AccessRoles = artifacts.require("AccessRoles");
+const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const Neumark = artifacts.require("Neumark");
 
 async function deployNeumark() {
   const rbac = await RoleBasedAccessControl.new();
   const roles = await AccessRoles.new();
-  const neumark = await Neumark.new(rbac.address);
+  const ethereumForkArbiter = await EthereumForkArbiter.new(rbac.address);
+  const neumark = await Neumark.new(
+    rbac.address,
+    ethereumForkArbiter.address,
+    "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT"
+  );
 
   // TODO: more specific rights
   await rbac.setUserRole(

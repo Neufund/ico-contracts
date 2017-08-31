@@ -61,22 +61,16 @@ contract SnapshotToken is
 ////////////////
 
     /// @notice Constructor to create a MiniMeToken
-    /// @param parentToken Address of the parent token, set to 0x0 if it is a
-    ///  new token
-    /// @param parentSnapshot Block of the parent token that will
-    ///  determine the initial distribution of the clone token, set to 0 if it
     ///  is a new token
     /// @param tokenName Name of the new token
     /// @param decimalUnits Number of decimals of the new token
     /// @param tokenSymbol Token Symbol for the new token
     function SnapshotToken(
-        ISnapshotTokenParent parentToken,
-        uint parentSnapshot,
         string tokenName,
         uint8 decimalUnits,
         string tokenSymbol
     )
-        BasicSnapshotToken(parentToken, parentSnapshot)
+        BasicSnapshotToken(ISnapshotTokenParent(0x0), 0)
         DailyAndSnapshotable()
         Allowance()
         TokenInfo(tokenName, decimalUnits, tokenSymbol, VERSION)
