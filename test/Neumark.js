@@ -3,6 +3,7 @@ import { prettyPrintGasCost } from "./helpers/gasUtils";
 import { eventValue } from "./helpers/events";
 import createAccessPolicy from "./helpers/createAccessPolicy";
 import roles from "./helpers/roles";
+import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
 
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const Neumark = artifacts.require("./Neumark.sol");
@@ -13,11 +14,12 @@ const NMK_DECIMALS = new BigNumber(10).toPower(18);
 
 contract("Neumark", accounts => {
   const agreementUri = "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT";
+  let snapshot;
   let rbac;
   let forkArbiter;
   let neumark;
 
-  beforeEach(async () => {
+  before(async () => {
     rbac = await createAccessPolicy([
       { subject: accounts[0], role: roles.transferAdmin },
       { subject: accounts[0], role: roles.neumarkIssuer },
@@ -28,6 +30,12 @@ contract("Neumark", accounts => {
     ]);
     forkArbiter = await EthereumForkArbiter.new(rbac);
     neumark = await Neumark.new(rbac, forkArbiter.address, agreementUri);
+    snapshot = await saveBlockchain();
+  });
+
+  beforeEach(async () => {
+    await restoreBlockchain(snapshot);
+    snapshot = await saveBlockchain();
   });
 
   it("should deploy", async () => {
