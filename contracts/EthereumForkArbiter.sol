@@ -69,7 +69,6 @@ contract EthereumForkArbiter is
         return lastSignedTimestamp;
     }
 
-
     /// @notice Announce that a particular future Ethereum fork will the one taken by the contract. The contract on the other branch should be considered invalid. Once the fork has happened, it will additionally be confirmed by signing a block on the fork. Notice that forks may happen unannounced.
     function announceFork(
         string name,

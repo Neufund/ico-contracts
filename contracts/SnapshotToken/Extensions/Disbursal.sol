@@ -229,12 +229,14 @@ contract Disbursal is IERC677Callback {
 
         // Create disbursal
         uint256 index = disbursments.length;
-        disbursments.push(Disbursment({
-            snapshot: snapshot,
-            disbursedToken: token,
-            remainingAmount: amount,
-            remainingShares: totalShares
-        }));
+        disbursments.push(
+            Disbursment({
+                snapshot: snapshot,
+                disbursedToken: token,
+                remainingAmount: amount,
+                remainingShares: totalShares
+            })
+        );
 
         // Log
         Disbursed(index, token, amount, snapshot, totalShares);

@@ -202,9 +202,7 @@ contract RoleBasedAccessControl is
         // contract. This prevents access controlers from locking themselves
         // out. We also require the current contract to be its own policy for
         // this to work. This is enforced elsewhere.
-        require(role != ROLE_ACCESS_CONTROLER
-            || subject != msg.sender
-            || object != this);
+        require(role != ROLE_ACCESS_CONTROLER || subject != msg.sender || object != this);
 
         // Fetch old value and short-circuit no-ops
         TriState oldValue = access[subject][role][object];

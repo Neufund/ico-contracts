@@ -26,7 +26,6 @@ contract SnapshotTest is
         return hasValue(val);
     }
 
-
     function getValue(uint256 def)
         public
         constant
