@@ -90,7 +90,7 @@ contract Neumark is
 
     function enableTransfer(bool enabled)
         public
-        only(ROLE_TRANSFERS_ADMIN)
+        only(ROLE_TRANSFER_ADMIN)
     {
         transferEnabled = enabled;
     }
