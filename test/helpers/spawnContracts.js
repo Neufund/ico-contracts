@@ -1,13 +1,13 @@
-import { TriState, EVERYONE } from './triState';
-import roles from './roles';
+import { TriState, EVERYONE } from "./triState";
+import roles from "./roles";
 
-const LockedAccount = artifacts.require('LockedAccount');
-const EtherToken = artifacts.require('EtherToken');
-const Neumark = artifacts.require('Neumark');
-const TestCommitment = artifacts.require('TestCommitment');
-const WhitelistedCommitment = artifacts.require('WhitelistedCommitment');
-const EthereumForkArbiter = artifacts.require('EthereumForkArbiter');
-const RoleBasedAccessControl = artifacts.require('RoleBasedAccessControl');
+const LockedAccount = artifacts.require("LockedAccount");
+const EtherToken = artifacts.require("EtherToken");
+const Neumark = artifacts.require("Neumark");
+const TestCommitment = artifacts.require("TestCommitment");
+const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
+const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
+const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 
 const BigNumber = web3.BigNumber;
 
@@ -22,7 +22,7 @@ export let accessControl;
 export let forkArbiter;
 
 /* eslint-enable */
-export const operatorWallet = '0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c';
+export const operatorWallet = "0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c";
 
 export const days = 24 * 60 * 60;
 export const months = 30 * 24 * 60 * 60;
@@ -48,12 +48,12 @@ export async function spawnLockedAccount(
   neumark = await Neumark.new(
     accessControl.address,
     forkArbiter.address,
-    'ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT'
+    "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT"
   );
   lockedAccount = await LockedAccount.new(
     accessControl.address,
     forkArbiter.address,
-    'ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT',
+    "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT",
     etherToken.address,
     neumark.address,
     unlockDateMonths * months,
