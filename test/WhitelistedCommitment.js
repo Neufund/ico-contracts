@@ -775,6 +775,7 @@ contract(
         });
 
         await setTimeTo(startingDate + duration + HOUR);
+        await commitment.finalize();
 
         expect(await lockedAccount.balanceOf(investor1)).to.be.balanceWith({
           ether: actualInvestor1Commitment,
