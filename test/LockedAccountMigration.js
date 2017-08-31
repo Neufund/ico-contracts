@@ -3,6 +3,7 @@ import { hasEvent, eventValue } from "./helpers/events";
 import * as chain from "./helpers/spawnContracts";
 import { latestTimestamp } from "./helpers/latestTime";
 import EvmError from "./helpers/EVMThrow";
+import roles from "./helpers/roles";
 
 const TestLockedAccountMigrationTarget = artifacts.require(
   "TestLockedAccountMigrationTarget"
@@ -36,7 +37,7 @@ contract("TestLockedAccountMigrationTarget", ([admin, investor, investor2]) => {
     );
     await chain.accessControl.setUserRole(
       admin,
-      web3.sha3("LockedAccountAdmin"),
+      roles.lockedAccountAdmin,
       migrationTarget.address,
       1
     );

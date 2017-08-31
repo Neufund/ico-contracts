@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { prettyPrintGasCost } from "./helpers/gasUtils";
 import createAccessPolicy from "./helpers/createAccessPolicy";
 import { eventValue } from "./helpers/events";
+import roles from "./helpers/roles";
 
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 
@@ -10,7 +11,7 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
 
   beforeEach(async () => {
     const accessPolicy = await createAccessPolicy([
-      { subject: arbiter, role: "ForkArbiter" }
+      { subject: arbiter, role: roles.forkArbiter }
     ]);
     ethereumForkArbiter = await EthereumForkArbiter.new(accessPolicy);
   });

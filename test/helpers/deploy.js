@@ -2,6 +2,7 @@ import invariant from "invariant";
 import { MONTH, closeFutureDate } from "./latestTime";
 import { etherToWei } from "./unitConverter";
 import { TriState, EVERYONE } from "./triState";
+import roles from "./roles";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
@@ -54,7 +55,7 @@ export default async function deploy(
   );
   await accessControl.setUserRole(
     lockAdminAccount,
-    web3.sha3("LockedAccountAdmin"),
+    roles.lockedAccountAdmin,
     lockedAccount.address,
     TriState.Allow
   );
@@ -64,13 +65,13 @@ export default async function deploy(
 
   await accessControl.setUserRole(
     EVERYONE,
-    web3.sha3("NeumarkBurner"),
+    roles.neumarkBurner,
     neumark.address,
     TriState.Allow
   );
   await accessControl.setUserRole(
     EVERYONE,
-    web3.sha3("SnapshotCreator"),
+    roles.snapshotCreator,
     neumark.address,
     TriState.Allow
   );
@@ -92,20 +93,20 @@ export default async function deploy(
   );
   await accessControl.setUserRole(
     commitment.address,
-    web3.sha3("NeumarkIssuer"),
+    roles.neumarkIssuer,
     neumark.address,
     TriState.Allow
   );
   await accessControl.setUserRole(
     commitment.address,
-    web3.sha3("TransferAdmin"),
+    roles.transferAdmin,
     neumark.address,
     TriState.Allow
   );
 
   await accessControl.setUserRole(
     whitelistAdminAccount,
-    web3.sha3("WhitelistAdmin"),
+    roles.whitelistAdmin,
     commitment.address,
     TriState.Allow
   );

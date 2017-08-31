@@ -1,6 +1,7 @@
 import { etherToWei, DIGITS } from "./unitConverter";
 import { eventValue } from "./events";
 import { TriState, EVERYONE } from "./triState";
+import roles from "./roles";
 
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
@@ -18,19 +19,19 @@ async function deployNeumark() {
   // TODO: more specific rights
   await rbac.setUserRole(
     EVERYONE,
-    web3.sha3("NeumarkIssuer"),
+    roles.neumarkIssuer,
     neumark.address,
     TriState.Allow
   );
   await rbac.setUserRole(
     EVERYONE,
-    web3.sha3("NeumarkBurner"),
+    roles.neumarkBurner,
     neumark.address,
     TriState.Allow
   );
   await rbac.setUserRole(
     EVERYONE,
-    web3.sha3("TransferAdmin"),
+    roles.transferAdmin,
     neumark.address,
     TriState.Allow
   );

@@ -16,8 +16,7 @@ export default async roles => {
         },
         policy
       );
-      const roleHash = web3.sha3(role);
-      await rbac.setUserRole(subject, roleHash, object, state);
+      await rbac.setUserRole(subject, role, object, state);
     })
   );
   return rbac.address;

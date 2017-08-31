@@ -1,4 +1,5 @@
 import { TriState, EVERYONE } from "./triState";
+import roles from "./roles";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
@@ -52,7 +53,7 @@ export async function spawnLockedAccount(
   );
   await accessControl.setUserRole(
     lockAdminAccount,
-    web3.sha3("LockedAccountAdmin"),
+    roles.lockedAccountAdmin,
     lockedAccount.address,
     TriState.Allow
   );
@@ -63,25 +64,25 @@ export async function spawnLockedAccount(
   // TODO: Restrict to correct spawened contracts
   await accessControl.setUserRole(
     EVERYONE,
-    web3.sha3("SnapshotCreator"),
+    roles.snapshotCreator,
     neumark.address,
     TriState.Allow
   );
   await accessControl.setUserRole(
     EVERYONE,
-    web3.sha3("NeumarkIssuer"),
+    roles.neumarkIssuer,
     neumark.address,
     TriState.Allow
   );
   await accessControl.setUserRole(
     EVERYONE,
-    web3.sha3("NeumarkBurner"),
+    roles.neumarkBurner,
     neumark.address,
     TriState.Allow
   );
   await accessControl.setUserRole(
     EVERYONE,
-    web3.sha3("TransferAdmin"),
+    roles.transferAdmin,
     neumark.address,
     TriState.Allow
   );
@@ -145,7 +146,7 @@ export async function spawnWhitelistedCommitment(
   // console.log(lockedAccount.setController);
   await accessControl.setUserRole(
     whitelistAdminAccount,
-    web3.sha3("WhitelistAdmin"),
+    roles.whitelistAdmin,
     commitment.address,
     TriState.Allow
   );
