@@ -13,7 +13,7 @@ contract("PublicCommitment", ([lockAdmin, investor]) => {
   beforeEach(async () => {
     await chain.spawnLockedAccount(lockAdmin, 18, 0.1);
     // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurrate
-    startTimestamp = latestTimestamp() + chain.days;
+    startTimestamp = (await latestTimestamp()) + chain.days;
     // apply time limit to ICO
     await chain.spawnPublicCommitment(
       lockAdmin,

@@ -1,5 +1,4 @@
 import invariant from "invariant";
-import { gasCost } from "./gasUtils";
 
 export default function(chai) {
   chai.Assertion.addMethod(
@@ -36,7 +35,7 @@ export default function(chai) {
 
     const object = this._obj;
 
-    const usedGas = gasCost(object);
+    const usedGas = object.receipt.gasUsed;
     this.assert(
       usedGas <= gasLimit,
       `Consumed gas ${usedGas} is more than ${gasLimit} limit.`
