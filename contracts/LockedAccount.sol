@@ -8,10 +8,10 @@ import './EtherToken.sol';
 import './IsContract.sol';
 import './LockedAccountMigration.sol';
 import './Neumark.sol';
+import './Standards/IERC677Token.sol';
+import './Standards/IERC677Callback.sol';
 import './Reclaimable.sol';
 import './ReturnsErrors.sol';
-import './Standards/IERC667Callback.sol';
-import './Standards/IERC667Token.sol';
 import './TimeSource.sol';
 
 contract LockedAccount is
@@ -22,7 +22,7 @@ contract LockedAccount is
     ReturnsErrors,
     Math,
     IsContract,
-    IERC667Callback,
+    IERC677Callback,
     Reclaimable
 {
     // lock state
@@ -41,7 +41,7 @@ contract LockedAccount is
     // total number of locked investors
     uint public totalInvestors;
     // a token controlled by LockedAccount, read ERC20 + extensions to read what token is it (ETH/EUR etc.)
-    IERC667Token public assetToken;
+    IERC677Token public assetToken;
     // current state of the locking contract
     LockState public lockState;
     // longstop period in seconds
@@ -265,7 +265,7 @@ contract LockedAccount is
         IAccessPolicy _policy,
         IEthereumForkArbiter _forkArbiter,
         string _agreementUri,
-        IERC667Token _assetToken,
+        IERC677Token _assetToken,
         Neumark _neumark,
         uint _lockPeriod,
         uint _penaltyFraction

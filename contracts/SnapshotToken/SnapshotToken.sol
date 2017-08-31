@@ -1,8 +1,8 @@
 pragma solidity 0.4.15;
 
 import '../Snapshot/DailyAndSnapshotable.sol';
-import '../Standards/IERC667Token.sol';
-import '../Standards/IERC667Callback.sol';
+import '../Standards/IERC677Token.sol';
+import '../Standards/IERC677Callback.sol';
 import '../Standards/IERC20Token.sol';
 import '../Standards/ISnapshotToken.sol';
 import '../Standards/ISnapshotTokenParent.sol';
@@ -45,7 +45,7 @@ import './MTokenController.sol';
 // Consumes the MMint mixin from SnapshotToken
 contract SnapshotToken is
     IERC20Token,
-    IERC667Token,
+    IERC677Token,
     ISnapshotToken,
     MMint,
     MTokenController,
@@ -124,7 +124,7 @@ contract SnapshotToken is
     {
         require(approve(_spender, _amount));
 
-        success = IERC667Callback(_spender).receiveApproval(
+        success = IERC677Callback(_spender).receiveApproval(
             msg.sender,
             _amount,
             this,

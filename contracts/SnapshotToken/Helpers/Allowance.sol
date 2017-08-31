@@ -1,12 +1,12 @@
 pragma solidity 0.4.15;
 
-import '../../Standards/IERC667Token.sol';
-import '../../Standards/IERC667Callback.sol';
+import '../../Standards/IERC677Token.sol';
+import '../../Standards/IERC677Callback.sol';
 import './MAllowance.sol';
 
 // Consumes the MAllowance mixin
 contract Allowance is
-    IERC667Token,
+    IERC677Token,
     MAllowance
 {
 
@@ -81,7 +81,7 @@ contract Allowance is
     {
         require(approve(_spender, _amount));
 
-        success = IERC667Callback(_spender).receiveApproval(
+        success = IERC677Callback(_spender).receiveApproval(
             msg.sender,
             _amount,
             this,

@@ -3,7 +3,7 @@ pragma solidity 0.4.15;
 import './AccessControl/AccessControlled.sol';
 import './Math.sol';
 import './Reclaimable.sol';
-import './Standards/IERC667Callback.sol';
+import './Standards/IERC677Callback.sol';
 import './Standards/ITokenWithDeposit.sol';
 import './Zeppelin/StandardToken.sol';
 
@@ -29,7 +29,7 @@ contract EtherToken is AccessControlled, StandardToken, ITokenWithDeposit, Recla
     {
         require(approve(_spender, _amount));
 
-        success = IERC667Callback(_spender).receiveApproval(
+        success = IERC677Callback(_spender).receiveApproval(
             msg.sender,
             _amount,
             this,
