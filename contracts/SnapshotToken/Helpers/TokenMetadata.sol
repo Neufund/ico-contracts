@@ -4,10 +4,10 @@ import '../../Standards/ITokenMetadata.sol';
 
 contract TokenMetadata is ITokenMetadata {
 
-    string public tokenName;                //The Token's name: e.g. DigixDAO Tokens
-    uint8 public tokenDecimals;             //Number of decimals of the smallest unit
-    string public tokenSymbol;              //An identifier: e.g. REP
-    string public tokenVersion;             //An arbitrary versioning scheme
+    string private tokenName;                //The Token's name: e.g. DigixDAO Tokens
+    uint8 private tokenDecimals;             //Number of decimals of the smallest unit
+    string private tokenSymbol;              //An identifier: e.g. REP
+    string private tokenVersion;             //An arbitrary versioning scheme
 
     /// @notice Constructor to create a MiniMeToken
     /// @param _tokenName Name of the new token
