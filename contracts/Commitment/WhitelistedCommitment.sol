@@ -139,6 +139,7 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
 
     function reclaim(IBasicToken token)
         public
+        only(ROLE_RECLAIMER)
         returns (bool)
     {
         // This contract holds Neumark during the commitment phase

@@ -1,6 +1,6 @@
 {
   "extends": ["airbnb", "prettier"],
-  "plugins": ["prettier"],
+  "plugins": ["prettier", "mocha"],
   "rules": {
     "prettier/prettier": ["error"],
     "import/no-named-as-default": ["off"],
@@ -14,7 +14,8 @@
       "WithStatement"
     ],
     "no-underscore-dangle": ["off"],
-    "import/prefer-default-export": ["off"]
+    "import/prefer-default-export": ["off"],
+    "mocha/no-exclusive-tests": "error"
   },
   "env": {
     "node": true,
