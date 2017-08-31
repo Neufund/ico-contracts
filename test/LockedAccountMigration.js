@@ -4,6 +4,7 @@ import * as chain from "./helpers/spawnContracts";
 import { latestTimestamp } from "./helpers/latestTime";
 import EvmError from "./helpers/EVMThrow";
 import roles from "./helpers/roles";
+import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
 
 const TestLockedAccountMigrationTarget = artifacts.require(
   "TestLockedAccountMigrationTarget"
@@ -15,6 +16,7 @@ const gasPrice = new web3.BigNumber(0x01);
 contract(
   "TestLockedAccountMigrationTarget",
   ([_, admin, investor, investor2]) => {
+    let snapshot;
     let startTimestamp;
     let migrationTarget;
     let assetToken;
@@ -39,7 +41,7 @@ contract(
       return target;
     }
 
-    beforeEach(async () => {
+    before(async () => {
       await chain.spawnLockedAccount(admin, 18, 0.1);
       // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurrate
       startTimestamp = latestTimestamp();
@@ -54,6 +56,12 @@ contract(
       );
       assetToken = chain.etherToken;
       migrationTarget = await deployMigrationTarget();
+      snapshot = await saveBlockchain();
+    });
+
+    beforeEach(async () => {
+      await restoreBlockchain(snapshot);
+      snapshot = await saveBlockchain();
     });
 
     // it -> check in invalid states in enableMigration

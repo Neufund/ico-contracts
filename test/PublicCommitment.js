@@ -3,8 +3,10 @@ import * as chain from "./helpers/spawnContracts";
 import { eventValue } from "./helpers/events";
 import { setTimeTo } from "./helpers/increaseTime";
 import { latestTimestamp } from "./helpers/latestTime";
+import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
 
 contract("PublicCommitment", ([lockAdmin, investor]) => {
+  let snapshot;
   let startTimestamp;
   const commitmentDuration = chain.months;
 
@@ -22,6 +24,12 @@ contract("PublicCommitment", ([lockAdmin, investor]) => {
       chain.ether(1),
       218.1192809
     );
+    snapshot = await saveBlockchain();
+  });
+
+  beforeEach(async () => {
+    await restoreBlockchain(snapshot);
+    snapshot = await saveBlockchain();
   });
 
   it("should be able to read Commitment parameters", async () => {

@@ -2,11 +2,13 @@ import { expect } from "chai";
 import createAccessPolicy from "./helpers/createAccessPolicy";
 import forceEther from "./helpers/forceEther";
 import roles from "./helpers/roles";
+import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
 
 const TestReclaimable = artifacts.require("TestReclaimable");
 const TestToken = artifacts.require("TestToken");
 
 contract("Reclaimable", ([deployer, reclaimer, other]) => {
+  let snapshot;
   let reclaimable;
   const RECLAIM_ETHER = "0x0";
 
@@ -15,6 +17,12 @@ contract("Reclaimable", ([deployer, reclaimer, other]) => {
       { subject: reclaimer, role: roles.reclaimer }
     ]);
     reclaimable = await TestReclaimable.new(accessPolicy);
+    snapshot = await saveBlockchain();
+  });
+
+  beforeEach(async () => {
+    await restoreBlockchain(snapshot);
+    snapshot = await saveBlockchain();
   });
 
   it("should reclaim ether", async () => {

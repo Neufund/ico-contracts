@@ -3,12 +3,14 @@ import moment from "moment";
 import { prettyPrintGasCost } from "./helpers/gasUtils";
 import { latestTimestamp } from "./helpers/latestTime";
 import increaseTime from "./helpers/increaseTime";
+import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
 
 const SnapshotTest = artifacts.require("./test/SnapshotTest.sol");
 
 const day = 24 * 3600;
 
 contract("Snapshot", () => {
+  let snapshot;
   let snapshotTest;
 
   const createSnapshot = async () => {
@@ -20,6 +22,12 @@ contract("Snapshot", () => {
 
   beforeEach(async () => {
     snapshotTest = await SnapshotTest.new();
+    snapshot = await saveBlockchain();
+  });
+
+  beforeEach(async () => {
+    await restoreBlockchain(snapshot);
+    snapshot = await saveBlockchain();
   });
 
   it("should deploy", async () => {

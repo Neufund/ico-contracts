@@ -9,6 +9,7 @@ import EvmError from "./helpers/EVMThrow";
 import { TriState } from "./helpers/triState";
 import forceEther from "./helpers/forceEther";
 import roles from "./helpers/roles";
+import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
 
 const TestFeeDistributionPool = artifacts.require("TestFeeDistributionPool");
 const TestNullContract = artifacts.require("TestNullContract");
@@ -25,9 +26,10 @@ const LockState = {
 const gasPrice = new web3.BigNumber(0x01);
 
 contract("LockedAccount", ([_, admin, investor, investor2]) => {
+  let snapshot;
   let startTimestamp;
 
-  beforeEach(async () => {
+  before(async () => {
     await chain.spawnLockedAccount(admin, 18, 0.1);
     // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurrate
     startTimestamp = latestTimestamp();
@@ -40,6 +42,12 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
       chain.ether(1),
       300.1219871
     );
+    snapshot = await saveBlockchain();
+  });
+
+  beforeEach(async () => {
+    await restoreBlockchain(snapshot);
+    snapshot = await saveBlockchain();
   });
 
   it("should be able to read lock parameters", async () => {

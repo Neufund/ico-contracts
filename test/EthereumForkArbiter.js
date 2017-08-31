@@ -3,17 +3,25 @@ import { prettyPrintGasCost } from "./helpers/gasUtils";
 import createAccessPolicy from "./helpers/createAccessPolicy";
 import { eventValue } from "./helpers/events";
 import roles from "./helpers/roles";
+import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
 
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 
 contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
+  let snapshot;
   let ethereumForkArbiter;
 
-  beforeEach(async () => {
+  before(async () => {
     const accessPolicy = await createAccessPolicy([
       { subject: arbiter, role: roles.forkArbiter }
     ]);
     ethereumForkArbiter = await EthereumForkArbiter.new(accessPolicy);
+    snapshot = await saveBlockchain();
+  });
+
+  beforeEach(async () => {
+    await restoreBlockchain(snapshot);
+    snapshot = await saveBlockchain();
   });
 
   it("should deploy", async () => {
