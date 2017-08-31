@@ -3,6 +3,7 @@ import { hasEvent, eventValue } from "./helpers/events";
 import * as chain from "./helpers/spawnContracts";
 import { latestTimestamp } from "./helpers/latestTime";
 import EvmError from "./helpers/EVMThrow";
+import roles from "./helpers/roles";
 
 const TestLockedAccountMigrationTarget = artifacts.require(
   "TestLockedAccountMigrationTarget"
@@ -34,10 +35,9 @@ contract("TestLockedAccountMigrationTarget", ([admin, investor, investor2]) => {
       18 * chain.months,
       chain.ether(1).mul(0.1).round()
     );
-    const lockedAccountAdminRole = await chain.accessRoles.ROLE_LOCKED_ACCOUNT_ADMIN();
     await chain.accessControl.setUserRole(
       admin,
-      lockedAccountAdminRole,
+      roles.lockedAccountAdmin,
       migrationTarget.address,
       1
     );

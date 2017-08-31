@@ -2,6 +2,7 @@ import { expect } from "chai";
 import EvmError from "./helpers/EVMThrow";
 import { eventValue } from "./helpers/events";
 import { TriState } from "./helpers/triState";
+import roles from "./helpers/roles";
 
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const TestAccessControlTruffleMixin = artifacts.require(
@@ -19,7 +20,7 @@ contract("AccessControl", ([accessController, owner1, owner2]) => {
       accessControl.address
     );
 
-    exampleRole = await accessControlled.ROLE_EXAMPLE();
+    exampleRole = roles.example;
   });
 
   function expectAccessChangedEvent(

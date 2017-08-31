@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { prettyPrintGasCost } from "./helpers/gasUtils";
 import { eventValue } from "./helpers/events";
 import createAccessPolicy from "./helpers/createAccessPolicy";
+import roles from "./helpers/roles";
 
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const Neumark = artifacts.require("./Neumark.sol");
@@ -18,12 +19,12 @@ contract("Neumark", accounts => {
 
   beforeEach(async () => {
     rbac = await createAccessPolicy([
-      { subject: accounts[0], role: "ROLE_TRANSFERS_ADMIN" },
-      { subject: accounts[0], role: "ROLE_NEUMARK_ISSUER" },
-      { subject: accounts[1], role: "ROLE_NEUMARK_ISSUER" },
-      { subject: accounts[2], role: "ROLE_NEUMARK_ISSUER" },
-      { subject: accounts[0], role: "ROLE_NEUMARK_BURNER" },
-      { subject: accounts[1], role: "ROLE_NEUMARK_BURNER" }
+      { subject: accounts[0], role: roles.transferAdmin },
+      { subject: accounts[0], role: roles.neumarkIssuer },
+      { subject: accounts[1], role: roles.neumarkIssuer },
+      { subject: accounts[2], role: roles.neumarkIssuer },
+      { subject: accounts[0], role: roles.neumarkBurner },
+      { subject: accounts[1], role: roles.neumarkBurner }
     ]);
     forkArbiter = await EthereumForkArbiter.new(rbac);
     neumark = await Neumark.new(rbac, forkArbiter.address, agreementUri);

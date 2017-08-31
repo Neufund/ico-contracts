@@ -2,6 +2,7 @@ import invariant from "invariant";
 import { MONTH, closeFutureDate } from "./latestTime";
 import { etherToWei } from "./unitConverter";
 import { TriState, EVERYONE } from "./triState";
+import roles from "./roles";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
@@ -9,7 +10,6 @@ const Neumark = artifacts.require("Neumark");
 const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
-const AccessRoles = artifacts.require("AccessRoles");
 
 export default async function deploy(
   lockAdminAccount,
@@ -36,7 +36,6 @@ export default async function deploy(
   } = commitmentCfg;
 
   const accessControl = await RoleBasedAccessControl.new();
-  const accessRoles = await AccessRoles.new();
   const forkArbiter = await EthereumForkArbiter.new(accessControl.address);
   const etherToken = await EtherToken.new(accessControl.address);
   const neumark = await Neumark.new(
@@ -54,10 +53,9 @@ export default async function deploy(
     unlockDateMonths * MONTH,
     etherToWei(1).mul(unlockPenalty).round()
   );
-  const lockedAccountAdminRole = await accessRoles.ROLE_LOCKED_ACCOUNT_ADMIN();
   await accessControl.setUserRole(
     lockAdminAccount,
-    lockedAccountAdminRole,
+    roles.lockedAccountAdmin,
     lockedAccount.address,
     TriState.Allow
   );
@@ -67,13 +65,13 @@ export default async function deploy(
 
   await accessControl.setUserRole(
     EVERYONE,
-    await accessRoles.ROLE_NEUMARK_BURNER(),
+    roles.neumarkBurner,
     neumark.address,
     TriState.Allow
   );
   await accessControl.setUserRole(
     EVERYONE,
-    await accessRoles.ROLE_SNAPSHOT_CREATOR(),
+    roles.snapshotCreator,
     neumark.address,
     TriState.Allow
   );
@@ -95,21 +93,20 @@ export default async function deploy(
   );
   await accessControl.setUserRole(
     commitment.address,
-    await accessRoles.ROLE_NEUMARK_ISSUER(),
+    roles.neumarkIssuer,
     neumark.address,
     TriState.Allow
   );
   await accessControl.setUserRole(
     commitment.address,
-    await accessRoles.ROLE_TRANSFERS_ADMIN(),
+    roles.transferAdmin,
     neumark.address,
     TriState.Allow
   );
 
-  const whitelistAdminRole = await accessRoles.ROLE_WHITELIST_ADMIN();
   await accessControl.setUserRole(
     whitelistAdminAccount,
-    whitelistAdminRole,
+    roles.whitelistAdmin,
     commitment.address,
     TriState.Allow
   );

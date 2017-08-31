@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import createAccessPolicy from "./helpers/createAccessPolicy";
 import forceEther from "./helpers/forceEther";
+import roles from "./helpers/roles";
 
 const TestReclaimable = artifacts.require("TestReclaimable");
 const TestToken = artifacts.require("TestToken");
@@ -11,7 +12,7 @@ contract("Reclaimable", ([deployer, reclaimer, other]) => {
 
   beforeEach(async () => {
     const accessPolicy = await createAccessPolicy([
-      { subject: reclaimer, role: "ROLE_RECLAIMER" }
+      { subject: reclaimer, role: roles.reclaimer }
     ]);
     reclaimable = await TestReclaimable.new(accessPolicy);
     RECLAIM_ETHER = await reclaimable.RECLAIM_ETHER();
