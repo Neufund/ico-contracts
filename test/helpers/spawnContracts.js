@@ -30,7 +30,6 @@ export const ether = wei => new BigNumber(wei).mul(10 ** 18);
 
 export async function spawnAccessControl() {
   accessControl = await RoleBasedAccessControl.new();
-  accessRoles = await AccessRoles.new();
 }
 
 export async function spawnEtherToken() {

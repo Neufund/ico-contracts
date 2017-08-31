@@ -8,6 +8,7 @@ import { latestTimestamp } from "./helpers/latestTime";
 import EvmError from "./helpers/EVMThrow";
 import { TriState } from "./helpers/triState";
 import forceEther from "./helpers/forceEther";
+import roles from "./helpers/roles";
 
 const TestFeeDistributionPool = artifacts.require("TestFeeDistributionPool");
 const TestNullContract = artifacts.require("TestNullContract");
@@ -558,7 +559,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
   async function allowToReclaim(account) {
     await chain.accessControl.setUserRole(
       account,
-      await chain.accessRoles.ROLE_RECLAIMER(),
+      roles.reclaimer,
       chain.lockedAccount.address,
       TriState.Allow
     );
