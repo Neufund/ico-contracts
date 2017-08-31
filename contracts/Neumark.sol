@@ -135,7 +135,6 @@ contract Neumark is
     )
         internal
         acceptAgreement(owner)
-        acceptAgreement(spender)
         returns (bool allow)
     {
         return true;
