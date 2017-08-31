@@ -39,7 +39,7 @@ contract NeumarkIssuanceCurve {
         returns(uint256 neumarkUlps)
     {
         uint256 cap = 1500000000000000000000000000;
-        uint256 D = 230769230769230769230769231;
+        uint256 d = 230769230769230769230769231;
         uint256 nLim = 8300000000000000000000000000;
 
         // Return the cap if n is above the limit.
@@ -50,16 +50,16 @@ contract NeumarkIssuanceCurve {
         // Approximate cap-cap·(1-1/D)^n using the Binomial theorem
         uint256 term = cap;
         uint256 sum = 0;
-        uint256 denom = D;
+        uint256 denom = d;
         do assembly {
             // We use assembler primarily to avoid the expensive
             // divide-by-zero check solc inserts for the / operator.
             term  := div(mul(term, euroUlps), denom)
             sum   := add(sum, term)
-            denom := add(denom, D)
+            denom := add(denom, d)
             term  := div(mul(term, euroUlps), denom)
             sum   := sub(sum, term)
-            denom := add(denom, D)
+            denom := add(denom, d)
         } while (term != 0);
         return sum;
     }

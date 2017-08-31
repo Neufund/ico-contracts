@@ -32,7 +32,7 @@ contract CommitmentBase is AccessControlled, TimeSource, Math, ITokenOffering, R
     // wallet that keeps Platform Operator share of neumarks
     address public platformOperatorWallet;
     // share of Neumark reward platform operator gets
-    uint256 public constant neumarkRewardPlatformOperatorDivisor = 2;
+    uint256 public constant NEUMARK_REWARD_PLATFORM_OPERATOR_DIVISOR = 2;
 
     function setCommitmentTerms(
         uint256 _startDate,
@@ -161,7 +161,7 @@ contract CommitmentBase is AccessControlled, TimeSource, Math, ITokenOffering, R
         returns (uint256)
     {
         // distribute half half
-        uint256 investorNeumarks = divRound(neumarks, neumarkRewardPlatformOperatorDivisor);
+        uint256 investorNeumarks = divRound(neumarks, NEUMARK_REWARD_PLATFORM_OPERATOR_DIVISOR);
         // @ remco is there a better way to distribute?
         bool isEnabled = neumark.transferEnabled();
         if (!isEnabled)
