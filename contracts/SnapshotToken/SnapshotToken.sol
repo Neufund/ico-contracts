@@ -114,8 +114,6 @@ contract SnapshotToken is
         if (isContract(to)) {
             IERC223Callback(to).tokenFallback(msg.sender, amount, data);
         }
-
-        Transfer(msg.sender, to, amount, data);
         return success;
     }
 
