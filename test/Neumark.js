@@ -18,6 +18,7 @@ contract("Neumark", accounts => {
 
   beforeEach(async () => {
     rbac = await createAccessPolicy([
+      { subject: accounts[0], role: "ROLE_TRANSFERS_ADMIN" },
       { subject: accounts[0], role: "ROLE_NEUMARK_ISSUER" },
       { subject: accounts[1], role: "ROLE_NEUMARK_ISSUER" },
       { subject: accounts[2], role: "ROLE_NEUMARK_ISSUER" },
@@ -131,5 +132,32 @@ contract("Neumark", accounts => {
     tx = await neumark.issueForEuro(new BigNumber(100).mul(eurRate));
     const p2NMK = eventValue(tx, "NeumarksIssued", "neumarkUlp");
     expect(totNMK).to.be.bignumber.equal(p1NMK.plus(p2NMK));
+  });
+
+  it("should transfer Neumarks", async () => {
+    const from = accounts[1];
+    await neumark.issueForEuro(EUR_DECIMALS.mul(100), { from });
+    const amount = await neumark.balanceOf.call(accounts[1]);
+    await neumark.enableTransfer(true);
+
+    const tx = await neumark.transfer(accounts[3], amount, { from });
+    const balance1 = await neumark.balanceOf.call(accounts[1]);
+    const balance3 = await neumark.balanceOf.call(accounts[3]);
+
+    prettyPrintGasCost("Transfer", tx);
+    expect(amount).to.be.bignumber.not.equal(0);
+    expect(balance1).to.be.bignumber.equal(0);
+    expect(balance3).to.be.bignumber.equal(amount);
+  });
+
+  it("should transfer Neumarks only when enabled", async () => {
+    const from = accounts[1];
+    await neumark.issueForEuro(EUR_DECIMALS.mul(100), { from });
+    const amount = await neumark.balanceOf.call(accounts[1]);
+    await neumark.enableTransfer(false);
+
+    const tx = neumark.transfer(accounts[3], amount, { from });
+
+    await expect(tx).to.revert;
   });
 });
