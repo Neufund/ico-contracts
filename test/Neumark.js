@@ -97,6 +97,18 @@ contract("Neumark", accounts => {
     );
   });
 
+  it("should accept agreement on issue", async () => {
+    const from = accounts[1];
+
+    const tx = await neumark.issueForEuro(EUR_DECIMALS.mul(100), { from });
+
+    const agreements = tx.logs
+      .filter(e => e.event === "AgreementAccepted")
+      .map(({ args: { accepter } }) => accepter);
+    expect(agreements).to.have.length(1);
+    expect(agreements).to.contain(from);
+  });
+
   it("should issue and then burn Neumarks", async () => {
     // Issue Neumarks for 1 mln Euros
     const euroUlps = EUR_DECIMALS.mul(1000000);
@@ -117,6 +129,20 @@ contract("Neumark", accounts => {
         .valueOf(),
       neumarks - toBurn
     );
+  });
+
+  it("should accept agreement on burn", async () => {
+    const from = accounts[1];
+    await neumark.issueForEuro(EUR_DECIMALS.mul(100), { from });
+    const toBurnUlps = await neumark.balanceOf.call(from);
+
+    const tx = await neumark.burnNeumark(toBurnUlps, { from: accounts[1] });
+
+    const agreements = tx.logs
+      .filter(e => e.event === "AgreementAccepted")
+      .map(({ args: { accepter } }) => accepter);
+    expect(agreements).to.have.length(1);
+    expect(agreements).to.contain(from);
   });
 
   it("should issue same amount in multiple issuances", async () => {
@@ -148,6 +174,22 @@ contract("Neumark", accounts => {
     expect(amount).to.be.bignumber.not.equal(0);
     expect(balance1).to.be.bignumber.equal(0);
     expect(balance3).to.be.bignumber.equal(amount);
+  });
+
+  it("should accept agreement on transfer", async () => {
+    const from = accounts[1];
+    await neumark.issueForEuro(EUR_DECIMALS.mul(100), { from });
+    const amount = await neumark.balanceOf.call(accounts[1]);
+    await neumark.enableTransfer(true);
+
+    const tx = await neumark.transfer(accounts[3], amount, { from });
+
+    const agreements = tx.logs
+      .filter(e => e.event === "AgreementAccepted")
+      .map(({ args: { accepter } }) => accepter);
+    expect(agreements).to.have.length(2);
+    expect(agreements).to.contain(accounts[1]);
+    expect(agreements).to.contain(accounts[3]);
   });
 
   it("should transfer Neumarks only when enabled", async () => {
