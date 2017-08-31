@@ -3,6 +3,7 @@ pragma solidity 0.4.15;
 import '../Standards/IERC677Callback.sol';
 import '../Standards/IERC677Token.sol';
 
+
 contract TestFeeDistributionPool is IERC677Callback {
 
     event TEST_receiveApproval(address from, uint256 amount);

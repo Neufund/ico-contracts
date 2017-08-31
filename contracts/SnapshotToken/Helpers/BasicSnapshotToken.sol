@@ -4,6 +4,7 @@ import '../../Snapshot/Snapshot.sol';
 import '../../Standards/ISnapshotToken.sol';
 import './MMint.sol';
 
+
 contract BasicSnapshotToken is
     ISnapshotToken,
     MMint,

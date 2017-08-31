@@ -3,6 +3,7 @@ pragma solidity 0.4.15;
 import './IAccessControlled.sol';
 import './StandardRoles.sol';
 
+
 contract AccessControlled is IAccessControlled, StandardRoles {
 
     IAccessPolicy public accessPolicy;

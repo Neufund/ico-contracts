@@ -4,6 +4,7 @@ import '../../Standards/IERC677Token.sol';
 import '../../Standards/IERC677Callback.sol';
 import './MAllowance.sol';
 
+
 // Consumes the MAllowance mixin
 contract Allowance is
     IERC677Token,

@@ -1,5 +1,6 @@
 pragma solidity 0.4.15;
 
+
 /// Base class for any token offering on Neufund platform
 contract ITokenOffering {
     /// on every investment transaction

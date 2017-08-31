@@ -2,6 +2,7 @@ pragma solidity 0.4.15;
 
 import './IAccessPolicy.sol';
 
+
 contract IAccessControlled {
 
     event AccessPolicyChanged(

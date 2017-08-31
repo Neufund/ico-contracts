@@ -5,12 +5,12 @@ import '../../Standards/IBasicToken.sol';
 import '../../Standards/IERC20Token.sol';
 import '../../Standards/IERC677Callback.sol';
 
+
 // TODO: Anyone can create a token and disburse it, but then everyone
 //       needs to pay extra gas for claim(). It is not possible to skip
 //       these mallicious disbursals. Some solution strategies:
 //        * Limit the people who can disburse to a trusted set
 //        * Allow claims in any order
-
 contract Disbursal is IERC677Callback {
 
 ////////////////

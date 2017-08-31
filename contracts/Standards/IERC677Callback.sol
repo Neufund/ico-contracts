@@ -1,5 +1,6 @@
 pragma solidity 0.4.15;
 
+
 contract IERC677Callback {
 
     function receiveApproval(

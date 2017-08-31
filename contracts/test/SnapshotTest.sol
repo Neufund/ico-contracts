@@ -3,6 +3,7 @@ pragma solidity 0.4.15;
 import '../Snapshot/Snapshot.sol';
 import '../Snapshot/DailyAndSnapshotable.sol';
 
+
 contract SnapshotTest is
     Snapshot,
     DailyAndSnapshotable

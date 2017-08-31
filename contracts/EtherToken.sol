@@ -7,6 +7,7 @@ import './Standards/IERC677Callback.sol';
 import './Standards/ITokenWithDeposit.sol';
 import './Zeppelin/StandardToken.sol';
 
+
 contract EtherToken is AccessControlled, StandardToken, ITokenWithDeposit, Reclaimable {
 
     // Constant token specific fields

@@ -3,6 +3,7 @@ pragma solidity 0.4.15;
 import './IBasicToken.sol';
 import './ITokenMetadata.sol';
 
+
 contract IERC223Token is IBasicToken, ITokenMetadata {
 
     /// @dev Departure: We do not log data, it has no advantage over a standard

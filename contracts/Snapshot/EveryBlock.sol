@@ -2,6 +2,7 @@ pragma solidity 0.4.15;
 
 import './MPolicy.sol';
 
+
 contract EveryBlock is MPolicy {
 
     function mNextSnapshotId()

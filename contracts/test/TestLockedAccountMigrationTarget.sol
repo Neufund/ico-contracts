@@ -4,6 +4,7 @@ import "../LockedAccount.sol";
 import "../LockedAccountMigration.sol";
 import '../Standards/IERC677Token.sol';
 
+
 contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigration {
     LockedAccount public migrationSource;
     bool public shouldMigrationFail;
