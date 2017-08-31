@@ -9,7 +9,7 @@ import '../Standards/ISnapshotTokenParent.sol';
 import './Helpers/Allowance.sol';
 import './Helpers/BasicSnapshotToken.sol';
 import './Helpers/MMint.sol';
-import './Helpers/TokenInfo.sol';
+import './Helpers/TokenMetadata.sol';
 import './MTokenController.sol';
 
 /*
@@ -52,7 +52,7 @@ contract SnapshotToken is
     BasicSnapshotToken,
     DailyAndSnapshotable,
     Allowance,
-    TokenInfo
+    TokenMetadata
 {
     string private constant VERSION = "ST_1.0";
 
@@ -73,7 +73,7 @@ contract SnapshotToken is
         BasicSnapshotToken(ISnapshotTokenParent(0x0), 0)
         DailyAndSnapshotable()
         Allowance()
-        TokenInfo(tokenName, decimalUnits, tokenSymbol, VERSION)
+        TokenMetadata(tokenName, decimalUnits, tokenSymbol, VERSION)
     {
     }
 
