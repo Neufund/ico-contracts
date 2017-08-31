@@ -12,7 +12,7 @@ contract Snapshotable is
     uint256 nextSnapshotId;
     bool nextSnapshotModified;
 
-    function SnapshotOndemand(uint256 start)
+    function Snapshotable(uint256 start)
         internal
     {
         nextSnapshotId = start;
