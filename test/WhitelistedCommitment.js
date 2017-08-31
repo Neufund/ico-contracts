@@ -671,7 +671,7 @@ contract(
       });
     });
 
-    describe("failed comittment", () => {
+    describe("failed commitment", () => {
       it("should unlock all accounts", async () => {
         const startingDate = closeFutureDate();
         const duration = MONTH;
@@ -726,15 +726,64 @@ contract(
       });
     });
 
-    describe("successful comittment", () => {
+    describe("successful commitment", () => {
       it("should burn unused neumarks from fixed pool", async () => {
         // sets min cap so commitment is successful
         await shouldBurnUnusedNeumarks(etherToWei(0.5));
       });
-    });
 
-    describe("finalized comittment", () => {
-      it("should not reclaim Neumark token before finalization");
+      it("should not reclaim Neumark token before finalization", async () => {
+        const { commitment, neumark } = await deployAllContracts(
+          lockAdminAccount,
+          whitelistAdminAccount
+        );
+
+        await expect(commitment.reclaim(neumark.address)).to.revert;
+      });
+
+      it("should not allow neumark trading", async () => {
+        const startingDate = closeFutureDate();
+        const duration = MONTH;
+        const mutableCurve = await deployMutableCurve();
+        const investor1 = accounts[0];
+        const investor2 = accounts[1];
+        const fixedInvestors = [investor1];
+        const fixedDeclaredTickets = [etherToWei(1.21981798)];
+        const actualInvestor1Commitment = etherToWei(1.21981798);
+        const expectedNeumarkAmmount = (await mutableCurve.issueInEth(
+          actualInvestor1Commitment
+        ))
+          .div(2)
+          .round(0, 4);
+
+        const {
+          commitment,
+          neumark,
+          lockedAccount
+        } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
+          commitmentCfg: {
+            fixedInvestors,
+            fixedTickets: fixedDeclaredTickets,
+            startTimestamp: startingDate,
+            duration
+          }
+        });
+        await setTimeTo(startingDate);
+        await commitment.commit({
+          value: actualInvestor1Commitment,
+          from: investor1
+        });
+
+        await setTimeTo(startingDate + duration + HOUR);
+
+        expect(await lockedAccount.balanceOf(investor1)).to.be.balanceWith({
+          ether: actualInvestor1Commitment,
+          neumarks: expectedNeumarkAmmount
+        });
+
+        await expect(neumark.transfer(investor2, expectedNeumarkAmmount)).to
+          .revert;
+      });
     });
 
     async function shouldBurnUnusedNeumarks(minAbsCap) {

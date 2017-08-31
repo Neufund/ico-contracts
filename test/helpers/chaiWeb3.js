@@ -51,7 +51,7 @@ export default function(chai) {
       const invalidOpcode = error.message.search("invalid opcode") >= 0;
       this.assert(
         invalidOpcode,
-        "Transaction did not revert with the right error."
+        `Transaction did not revert with the right error. Error message was: ${error.message}`
       );
     }
   });
