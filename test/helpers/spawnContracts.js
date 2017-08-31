@@ -7,7 +7,6 @@ const TestCommitment = artifacts.require("TestCommitment");
 const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
-const AccessRoles = artifacts.require("AccessRoles");
 
 const BigNumber = web3.BigNumber;
 
@@ -19,7 +18,6 @@ export let curve;
 export let commitment;
 export let feePool;
 export let accessControl;
-export let accessRoles;
 export let forkArbiter;
 
 /* eslint-enable */
@@ -35,7 +33,6 @@ export async function spawnLockedAccount(
   unlockPenalty
 ) {
   accessControl = await RoleBasedAccessControl.new();
-  accessRoles = await AccessRoles.new();
   forkArbiter = await EthereumForkArbiter.new(accessControl.address);
   etherToken = await EtherToken.new(accessControl.address);
   // console.log(`\tEtherToken took ${gasCost(etherToken)}.`);
@@ -53,10 +50,9 @@ export async function spawnLockedAccount(
     unlockDateMonths * months,
     ether(1).mul(unlockPenalty).round()
   );
-  const lockedAccountAdminRole = await accessRoles.ROLE_LOCKED_ACCOUNT_ADMIN();
   await accessControl.setUserRole(
     lockAdminAccount,
-    lockedAccountAdminRole,
+    web3.sha3("LockedAccountAdmin"),
     lockedAccount.address,
     TriState.Allow
   );
@@ -67,25 +63,25 @@ export async function spawnLockedAccount(
   // TODO: Restrict to correct spawened contracts
   await accessControl.setUserRole(
     EVERYONE,
-    await accessRoles.ROLE_SNAPSHOT_CREATOR(),
+    web3.sha3("SnapshotCreator"),
     neumark.address,
     TriState.Allow
   );
   await accessControl.setUserRole(
     EVERYONE,
-    await accessRoles.ROLE_NEUMARK_ISSUER(),
+    web3.sha3("NeumarkIssuer"),
     neumark.address,
     TriState.Allow
   );
   await accessControl.setUserRole(
     EVERYONE,
-    await accessRoles.ROLE_NEUMARK_BURNER(),
+    web3.sha3("NeumarkBurner"),
     neumark.address,
     TriState.Allow
   );
   await accessControl.setUserRole(
     EVERYONE,
-    await accessRoles.ROLE_TRANSFERS_ADMIN(),
+    web3.sha3("TransferAdmin"),
     neumark.address,
     TriState.Allow
   );
@@ -147,10 +143,9 @@ export async function spawnWhitelistedCommitment(
     operatorWallet
   );
   // console.log(lockedAccount.setController);
-  const whitelistAdminRole = await accessRoles.ROLE_WHITELIST_ADMIN();
   await accessControl.setUserRole(
     whitelistAdminAccount,
-    whitelistAdminRole,
+    web3.sha3("WhitelistAdmin"),
     commitment.address,
     TriState.Allow
   );

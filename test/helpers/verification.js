@@ -3,13 +3,11 @@ import { eventValue } from "./events";
 import { TriState, EVERYONE } from "./triState";
 
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
-const AccessRoles = artifacts.require("AccessRoles");
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const Neumark = artifacts.require("Neumark");
 
 async function deployNeumark() {
   const rbac = await RoleBasedAccessControl.new();
-  const roles = await AccessRoles.new();
   const ethereumForkArbiter = await EthereumForkArbiter.new(rbac.address);
   const neumark = await Neumark.new(
     rbac.address,
@@ -20,19 +18,19 @@ async function deployNeumark() {
   // TODO: more specific rights
   await rbac.setUserRole(
     EVERYONE,
-    await roles.ROLE_NEUMARK_ISSUER(),
+    web3.sha3("NeumarkIssuer"),
     neumark.address,
     TriState.Allow
   );
   await rbac.setUserRole(
     EVERYONE,
-    await roles.ROLE_NEUMARK_BURNER(),
+    web3.sha3("NeumarkBurner"),
     neumark.address,
     TriState.Allow
   );
   await rbac.setUserRole(
     EVERYONE,
-    await roles.ROLE_TRANSFERS_ADMIN(),
+    web3.sha3("TransferAdmin"),
     neumark.address,
     TriState.Allow
   );

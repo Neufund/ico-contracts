@@ -1,7 +1,6 @@
 require("babel-register");
 
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
-const AccessRoles = artifacts.require("AccessRoles");
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const Neumark = artifacts.require("Neumark");
 const LockedAccount = artifacts.require("LockedAccount");
@@ -75,35 +74,33 @@ module.exports = function deployContracts(deployer, network, accounts) {
     );
     console.log("Commitment terms set");
     console.log("Seting permissions");
-    await deployer.deploy(AccessRoles);
-    const accessRoles = await AccessRoles.deployed();
     await accessControl.setUserRole(
       publicCommitment.address,
-      await accessRoles.ROLE_NEUMARK_ISSUER(),
+      web3.sha3("NeumarkIssuer"),
       neumark.address,
       TriState.Allow
     );
     await accessControl.setUserRole(
       EVERYONE,
-      await accessRoles.ROLE_NEUMARK_BURNER(),
+      web3.sha3("NeumarkBurner"),
       neumark.address,
       TriState.Allow
     );
     await accessControl.setUserRole(
       EVERYONE,
-      await accessRoles.ROLE_SNAPSHOT_CREATOR(),
+      web3.sha3("SnapshotCreator"),
       neumark.address,
       TriState.Allow
     );
     await accessControl.setUserRole(
       publicCommitment.address,
-      await accessRoles.ROLE_TRANSFERS_ADMIN(),
+      web3.sha3("TransfersAdmin"),
       neumark.address,
       TriState.Allow
     );
     await accessControl.setUserRole(
       lockedAccountAdmin,
-      await accessRoles.ROLE_LOCKED_ACCOUNT_ADMIN(),
+      web3.sha3("LockedAccountAdmin"),
       lock.address,
       TriState.Allow
     );
@@ -112,7 +109,7 @@ module.exports = function deployContracts(deployer, network, accounts) {
     });
     await accessControl.setUserRole(
       whitelistAdmin,
-      await accessRoles.ROLE_WHITELIST_ADMIN(),
+      web3.sha3("WhitelistAdmin"),
       PublicCommitment.address,
       TriState.Allow
     );

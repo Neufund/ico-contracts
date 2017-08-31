@@ -19,7 +19,7 @@ contract("AccessControl", ([accessController, owner1, owner2]) => {
       accessControl.address
     );
 
-    exampleRole = await accessControlled.ROLE_EXAMPLE();
+    exampleRole = web3.sha3("Example");
   });
 
   function expectAccessChangedEvent(

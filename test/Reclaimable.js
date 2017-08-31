@@ -11,7 +11,7 @@ contract("Reclaimable", ([deployer, reclaimer, other]) => {
 
   beforeEach(async () => {
     const accessPolicy = await createAccessPolicy([
-      { subject: reclaimer, role: "ROLE_RECLAIMER" }
+      { subject: reclaimer, role: "Reclaimer" }
     ]);
     reclaimable = await TestReclaimable.new(accessPolicy);
     RECLAIM_ETHER = await reclaimable.RECLAIM_ETHER();

@@ -10,7 +10,7 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
 
   beforeEach(async () => {
     const accessPolicy = await createAccessPolicy([
-      { subject: arbiter, role: "ROLE_FORK_ARBITER" }
+      { subject: arbiter, role: "ForkArbiter" }
     ]);
     ethereumForkArbiter = await EthereumForkArbiter.new(accessPolicy);
   });

@@ -18,12 +18,12 @@ contract("Neumark", accounts => {
 
   beforeEach(async () => {
     rbac = await createAccessPolicy([
-      { subject: accounts[0], role: "ROLE_TRANSFERS_ADMIN" },
-      { subject: accounts[0], role: "ROLE_NEUMARK_ISSUER" },
-      { subject: accounts[1], role: "ROLE_NEUMARK_ISSUER" },
-      { subject: accounts[2], role: "ROLE_NEUMARK_ISSUER" },
-      { subject: accounts[0], role: "ROLE_NEUMARK_BURNER" },
-      { subject: accounts[1], role: "ROLE_NEUMARK_BURNER" }
+      { subject: accounts[0], role: "TransferAdmin" },
+      { subject: accounts[0], role: "NeumarkIssuer" },
+      { subject: accounts[1], role: "NeumarkIssuer" },
+      { subject: accounts[2], role: "NeumarkIssuer" },
+      { subject: accounts[0], role: "NeumarkBurner" },
+      { subject: accounts[1], role: "NeumarkBurner" }
     ]);
     forkArbiter = await EthereumForkArbiter.new(rbac);
     neumark = await Neumark.new(rbac, forkArbiter.address, agreementUri);
