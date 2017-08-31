@@ -2,7 +2,7 @@ pragma solidity 0.4.15;
 
 import "../LockedAccount.sol";
 import "../LockedAccountMigration.sol";
-import '../Standards/IERC667Token.sol';
+import '../Standards/IERC677Token.sol';
 
 contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigration {
     LockedAccount public migrationSource;
@@ -56,7 +56,7 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
         IAccessPolicy _policy,
         IEthereumForkArbiter _forkArbiter,
         string _agreementUri,
-        IERC667Token _assetToken,
+        IERC677Token _assetToken,
         Neumark _neumark,
         uint _lockPeriod,
         uint _penaltyFraction

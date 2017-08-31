@@ -1,6 +1,6 @@
 pragma solidity 0.4.15;
 
-contract IERC667Callback {
+contract IERC677Callback {
 
     function receiveApproval(
         address from,

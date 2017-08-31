@@ -3,7 +3,7 @@ pragma solidity 0.4.15;
 import '../../Standards/ISnapshotableToken.sol';
 import '../../Standards/IBasicToken.sol';
 import '../../Standards/IERC20Token.sol';
-import '../../Standards/IERC667Callback.sol';
+import '../../Standards/IERC677Callback.sol';
 
 // TODO: Anyone can create a token and disburse it, but then everyone
 //       needs to pay extra gas for claim(). It is not possible to skip
@@ -11,7 +11,7 @@ import '../../Standards/IERC667Callback.sol';
 //        * Limit the people who can disburse to a trusted set
 //        * Allow claims in any order
 
-contract Disbursal is IERC667Callback {
+contract Disbursal is IERC677Callback {
 
 ////////////////
 // Types
@@ -187,7 +187,7 @@ contract Disbursal is IERC667Callback {
         disburse(IBasicToken(token), amount);
     }
 
-    // IERC667Callback receiver
+    // IERC677Callback receiver
     function receiveApproval(
         address from,
         uint256 amount,

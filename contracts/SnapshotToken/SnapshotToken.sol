@@ -1,15 +1,18 @@
 pragma solidity 0.4.15;
 
 import '../Snapshot/DailyAndSnapshotable.sol';
-import '../Standards/IERC667Token.sol';
-import '../Standards/IERC667Callback.sol';
+import '../Standards/IERC223Token.sol';
+import '../Standards/IERC223Callback.sol';
+import '../Standards/IERC677Token.sol';
+import '../Standards/IERC677Callback.sol';
 import '../Standards/IERC20Token.sol';
 import '../Standards/ISnapshotToken.sol';
 import '../Standards/ISnapshotTokenParent.sol';
+import '../IsContract.sol';
 import './Helpers/Allowance.sol';
 import './Helpers/BasicSnapshotToken.sol';
 import './Helpers/MMint.sol';
-import './Helpers/TokenInfo.sol';
+import './Helpers/TokenMetadata.sol';
 import './MTokenController.sol';
 
 /*
@@ -45,14 +48,16 @@ import './MTokenController.sol';
 // Consumes the MMint mixin from SnapshotToken
 contract SnapshotToken is
     IERC20Token,
-    IERC667Token,
+    IERC223Token,
+    IERC677Token,
     ISnapshotToken,
     MMint,
     MTokenController,
     BasicSnapshotToken,
     DailyAndSnapshotable,
     Allowance,
-    TokenInfo
+    TokenMetadata,
+    IsContract
 {
     string private constant VERSION = "ST_1.0";
 
@@ -73,7 +78,7 @@ contract SnapshotToken is
         BasicSnapshotToken(ISnapshotTokenParent(0x0), 0)
         DailyAndSnapshotable()
         Allowance()
-        TokenInfo(tokenName, decimalUnits, tokenSymbol, VERSION)
+        TokenMetadata(tokenName, decimalUnits, tokenSymbol, VERSION)
     {
     }
 
@@ -90,7 +95,26 @@ contract SnapshotToken is
         public
         returns (bool success)
     {
+        // NOTE: We do not call the ERC223 callback
+        // here for compatibility reasons. Please use
+        // tranfser(_to, _amount, bytes()) instead.
         return transfer(msg.sender, _to, _amount);
+    }
+
+    function transfer(address to, uint amount, bytes data)
+        public
+        returns (bool success)
+    {
+        success = transfer(msg.sender, to, amount);
+        if (!success) {
+            return success;
+        }
+
+        // Notify the receiving contract.
+        if (isContract(to)) {
+            IERC223Callback(to).tokenFallback(msg.sender, amount, data);
+        }
+        return success;
     }
 
     /// @notice `msg.sender` approves `_spender` to spend `_amount` tokens on
@@ -124,7 +148,7 @@ contract SnapshotToken is
     {
         require(approve(_spender, _amount));
 
-        success = IERC667Callback(_spender).receiveApproval(
+        success = IERC677Callback(_spender).receiveApproval(
             msg.sender,
             _amount,
             this,
