@@ -170,6 +170,7 @@ contract LockedAccount is
         public
         returns (bool)
     {
+        require(msg.sender == _token);
         require(_data.length == 0);
         // only from neumarks
         require(_token == address(neumark));

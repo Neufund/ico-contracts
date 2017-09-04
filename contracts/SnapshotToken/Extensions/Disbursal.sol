@@ -197,6 +197,7 @@ contract Disbursal is IERC677Callback {
         public
         returns (bool)
     {
+        require(msg.sender == token);
         require(data.length == 0);
         disburseAllowance(IERC20Token(token), from, amount);
     }

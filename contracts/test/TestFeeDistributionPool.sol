@@ -12,6 +12,7 @@ contract TestFeeDistributionPool is IERC677Callback {
         public
         returns (bool)
     {
+        require(msg.sender == _token);
         require(IERC677Token(_token).transferFrom(from, address(this), _amount));
         TestReceiveApproval(from, _amount);
         return true;
