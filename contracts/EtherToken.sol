@@ -69,19 +69,15 @@ contract EtherToken is
         require(balances[msg.sender] >= amount);
         balances[msg.sender] -= amount;
         totalSupply -= amount;
-        assert(msg.sender.send(amount));
+        msg.sender.transfer(amount);
         Withdrawal(msg.sender, amount);
     }
 
     function reclaim(IBasicToken token)
         public
-        returns (bool)
     {
         // This contract holds Ether
         require(token != RECLAIM_ETHER);
-        return Reclaimable.reclaim(token);
+        Reclaimable.reclaim(token);
     }
-
-
-
 }
