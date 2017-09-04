@@ -7,32 +7,95 @@ import '../Neumark.sol';
 import '../Standards/ITokenWithDeposit.sol';
 import '../TimeSource.sol';
 import './ITokenOffering.sol';
+import './MCommitment.sol';
 import "../AccessControl/AccessControlled.sol";
 import "../Reclaimable.sol";
 
 
-contract CommitmentBase is AccessControlled, TimeSource, Math, ITokenOffering, Reclaimable {
+// Consumes MCommitment
+contract CommitmentBase is
+    MCommitment,
+    AccessControlled,
+    TimeSource,
+    Math,
+    ITokenOffering,
+    Reclaimable
+{
+    ////////////////////////
+    // Constants
+    ////////////////////////
+
+    // share of Neumark reward platform operator gets
+    uint256 public constant NEUMARK_REWARD_PLATFORM_OPERATOR_DIVISOR = 2;
+
+    ////////////////////////
+    // Immutable state variables
+    ////////////////////////
+
     // locks investors capital
     LockedAccount public lockedAccount;
+
     ITokenWithDeposit public paymentToken;
+
     Neumark public neumark;
 
+    ////////////////////////
+    // State variables
+    ////////////////////////
+
+    //
+    // Set only once
+    //
+
     uint256 public startDate;
+
     uint256 public endDate;
 
     uint256 public minTicket;
+
     uint256 public minAbsCap;
+
     uint256 public maxAbsCap;
+
     uint256 public ethEURFraction;
 
+    //
+    // Mutable
+    //
+
     bool public finalized;
+
     // amount stored in LockedAccount on finalized
     uint256 public finalCommitedAmount;
 
     // wallet that keeps Platform Operator share of neumarks
     address public platformOperatorWallet;
-    // share of Neumark reward platform operator gets
-    uint256 public constant NEUMARK_REWARD_PLATFORM_OPERATOR_DIVISOR = 2;
+
+    ////////////////////////
+    // Constructor
+    ////////////////////////
+
+    /// declare capital commitment into Neufund ecosystem
+    /// store funds in _ethToken and lock funds in _lockedAccount while issuing Neumarks along _curve
+    /// commitments can be chained via long lived _lockedAccount and _nemark
+    function CommitmentBase(
+        IAccessPolicy accessPolicy,
+        EtherToken _ethToken,
+        LockedAccount _lockedAccount,
+        Neumark _neumark
+    )
+        AccessControlled(accessPolicy)
+        Reclaimable()
+    {
+        require(address(_ethToken) == address(_lockedAccount.assetToken()));
+        lockedAccount = _lockedAccount;
+        neumark = _neumark;
+        paymentToken = _ethToken;
+    }
+
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     function setCommitmentTerms(
         uint256 _startDate,
@@ -44,6 +107,7 @@ contract CommitmentBase is AccessControlled, TimeSource, Math, ITokenOffering, R
         address _platformOperatorWallet
     )
         public
+        // TODO: Access control
     {
         // set only once
         require(endDate == 0);
@@ -65,38 +129,67 @@ contract CommitmentBase is AccessControlled, TimeSource, Math, ITokenOffering, R
     }
 
     function commit()
-        payable
         public
+        payable
     {
-        // must controll locked account
+        // must control locked account
         require(address(lockedAccount.controller()) == address(this));
+
         // must have terms set
         require(startDate > 0);
         require(currentTime() >= startDate);
         require(msg.value >= minTicket);
         require(!hasEnded());
         uint256 total = add(lockedAccount.totalLockedAmount(), msg.value);
+
         // we are not sending back the difference - only full tickets
         require(total <= maxAbsCap);
         require(validCommitment());
 
         // get neumarks
         uint256 neumarks = giveNeumarks(msg.sender, msg.value);
+
         //send Money to ETH-T contract
         paymentToken.deposit.value(msg.value)(address(this), msg.value);
+
         // make allowance for lock
         paymentToken.approve(address(lockedAccount), msg.value);
+
         // lock in lock
         lockedAccount.lock(msg.sender, msg.value, neumarks);
+
         // convert weis into euro
         uint256 euroUlps = convertToEUR(msg.value);
         FundsInvested(msg.sender, msg.value, paymentToken, euroUlps, neumarks, neumark);
     }
 
+    /// when commitment end criteria are met ANYONE can finalize
+    /// can be called only once, not intended for override
+    function finalize()
+        public
+    {
+        // must end
+        require(hasEnded());
+
+        // must not be finalized
+        require(!isFinalized());
+
+        // public commitment ends ETH locking
+        if (wasSuccessful()) {
+            onCommitmentSuccessful();
+            CommitmentCompleted(true);
+        } else {
+            onCommitmentFailed();
+            CommitmentCompleted(false);
+        }
+        finalCommitedAmount = lockedAccount.totalLockedAmount();
+        finalized = true;
+    }
+
     /// overrides TokenOffering
     function wasSuccessful()
-        constant
         public
+        constant
         returns (bool)
     {
         uint256 amount = finalized ? finalCommitedAmount : lockedAccount.totalLockedAmount();
@@ -105,8 +198,8 @@ contract CommitmentBase is AccessControlled, TimeSource, Math, ITokenOffering, R
 
     /// overrides TokenOffering
     function hasEnded()
-        constant
         public
+        constant
         returns(bool)
     {
         uint256 amount = finalized ? finalCommitedAmount : lockedAccount.totalLockedAmount();
@@ -115,8 +208,8 @@ contract CommitmentBase is AccessControlled, TimeSource, Math, ITokenOffering, R
 
     /// overrides TokenOffering
     function isFinalized()
-        constant
         public
+        constant
         returns (bool)
     {
         return finalized;
@@ -133,26 +226,9 @@ contract CommitmentBase is AccessControlled, TimeSource, Math, ITokenOffering, R
         return fraction(amount, ethEURFraction);
     }
 
-    /// when commitment end criteria are met ANYONE can finalize
-    /// can be called only once, not intended for override
-    function finalize()
-        public
-    {
-        // must end
-        require(hasEnded());
-        // must not be finalized
-        require(!isFinalized());
-        // public commitment ends ETH locking
-        if (wasSuccessful()) {
-            onCommitmentSuccessful();
-            CommitmentCompleted(true);
-        } else {
-            onCommitmentFailed();
-            CommitmentCompleted(false);
-        }
-        finalCommitedAmount = lockedAccount.totalLockedAmount();
-        finalized = true;
-    }
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
 
     /// distributes neumarks on `this` balance to investor and platform operator: half half
     /// returns amount of investor part
@@ -162,6 +238,7 @@ contract CommitmentBase is AccessControlled, TimeSource, Math, ITokenOffering, R
     {
         // distribute half half
         uint256 investorNeumarks = divRound(neumarks, NEUMARK_REWARD_PLATFORM_OPERATOR_DIVISOR);
+
         // @ remco is there a better way to distribute?
         bool isEnabled = neumark.transferEnabled();
         if (!isEnabled)
@@ -171,40 +248,5 @@ contract CommitmentBase is AccessControlled, TimeSource, Math, ITokenOffering, R
         neumark.enableTransfer(isEnabled);
         return investorNeumarks;
     }
-
-    /// default function not callable. prevent investors without transaction data
-    function () { revert(); }
-
-    /// called by finalize() so may be called by ANYONE
-    /// intended to be overriden
-    function onCommitmentSuccessful() internal;
-    /// called by finalize() so may be called by ANYONE
-    /// intended to be overriden
-    function onCommitmentFailed() internal;
-    /// awards investor with Neumarks computed along curve for `amount`
-    /// this function modifies state of curve
-    /// return amount of investor's Neumark reward
-    function giveNeumarks(address investor, uint256 amount) internal returns (uint256);
-    /// tells if commitment may be executed ie. investor is whitelisted
-    function validCommitment() internal constant returns (bool);
-
-    /// declare capital commitment into Neufund ecosystem
-    /// store funds in _ethToken and lock funds in _lockedAccount while issuing Neumarks along _curve
-    /// commitments can be chained via long lived _lockedAccount and _nemark
-    function CommitmentBase(
-        IAccessPolicy accessPolicy,
-        EtherToken _ethToken,
-        LockedAccount _lockedAccount,
-        Neumark _neumark
-    )
-        AccessControlled(accessPolicy)
-        Reclaimable()
-    {
-        require(address(_ethToken) == address(_lockedAccount.assetToken()));
-        lockedAccount = _lockedAccount;
-        neumark = _neumark;
-        paymentToken = _ethToken;
-    }
-
 
 }
