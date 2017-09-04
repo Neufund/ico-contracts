@@ -2,6 +2,7 @@ pragma solidity 0.4.15;
 
 import '../NeumarkIssuanceCurve.sol';
 
+
 contract CurveGas is NeumarkIssuanceCurve {
 
     function cumulativeWithGas(uint256 n)

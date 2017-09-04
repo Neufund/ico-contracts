@@ -2,6 +2,7 @@ pragma solidity 0.4.15;
 
 import "./CommitmentBase.sol";
 
+
 /// public capital commitment for general public
 contract PublicCommitment is CommitmentBase {
 

@@ -3,6 +3,7 @@ pragma solidity 0.4.15;
 import '../Standards/ISnapshotable.sol';
 import './MPolicy.sol';
 
+
 contract DailyAndSnapshotable is
     MPolicy,
     ISnapshotable

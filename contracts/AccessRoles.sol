@@ -1,5 +1,6 @@
 pragma solidity 0.4.15;
 
+
 contract AccessRoles {
 
     // NOTE: All roles are set to the keccak256 hash of the

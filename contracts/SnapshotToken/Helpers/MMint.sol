@@ -1,5 +1,6 @@
 pragma solidity 0.4.15;
 
+
 contract MMint {
 
     /// @dev This is the actual transfer function in the token contract, it can

@@ -2,6 +2,7 @@ pragma solidity 0.4.15;
 
 import '../../Standards/ITokenMetadata.sol';
 
+
 contract TokenMetadata is ITokenMetadata {
 
     string private tokenName;                //The Token's name: e.g. DigixDAO Tokens

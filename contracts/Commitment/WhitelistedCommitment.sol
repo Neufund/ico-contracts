@@ -24,7 +24,7 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
         // before commitment starts
         require(currentTime() < startDate);
         // move to storage
-        for(uint256 idx=0; idx < addresses.length; idx++) {
+        for (uint256 idx = 0; idx < addresses.length; idx++) {
             uint256 ticket = tickets[idx];
             // tickets of size 0 will not be accepted
             require(ticket > 0);
@@ -52,7 +52,7 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
         // before commitment starts
         require(currentTime() < startDate);
         // move to storage
-        for(uint256 idx=0; idx < addresses.length; idx++) {
+        for (uint256 idx = 0; idx < addresses.length; idx++) {
             whitelisted[addresses[idx]] = true;
         }
         // leave array for easy enumeration
@@ -136,7 +136,6 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
         return (whitelisted[msg.sender] || fixedCostTickets[msg.sender] > 0);
     }
 
-
     function reclaim(IBasicToken token)
         public
         only(ROLE_RECLAIMER)
@@ -148,7 +147,6 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
         }
         return Reclaimable.reclaim(token);
     }
-
 
     function WhitelistedCommitment(
         IAccessPolicy _policy,

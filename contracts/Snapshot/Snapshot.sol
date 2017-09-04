@@ -2,6 +2,7 @@ pragma solidity 0.4.15;
 
 import './MPolicy.sol';
 
+
 // Snapshot consumes MPolicy
 contract Snapshot is MPolicy {
 
@@ -127,10 +128,12 @@ contract Snapshot is MPolicy {
         if (empty) {
 
             // Create a new entry
-            values.push(Values({
-                snapshot: nextSnapshot,
-                value: _value
-            }));
+            values.push(
+                Values({
+                    snapshot: nextSnapshot,
+                    value: _value
+                })
+            );
 
             // Flag next snapshot as modified
             mFlagSnapshotModified();
@@ -148,10 +151,12 @@ contract Snapshot is MPolicy {
             }
 
             // Create new entry
-            values.push(Values({
-                snapshot: nextSnapshot,
-                value: _value
-            }));
+            values.push(
+                Values({
+                    snapshot: nextSnapshot,
+                    value: _value
+                })
+            );
 
             // Flag next snapshot as modified
             mFlagSnapshotModified();

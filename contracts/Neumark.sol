@@ -7,6 +7,7 @@ import './SnapshotToken/SnapshotToken.sol';
 import './NeumarkIssuanceCurve.sol';
 import './Reclaimable.sol';
 
+
 contract Neumark is
     AccessControlled,
     AccessRoles,

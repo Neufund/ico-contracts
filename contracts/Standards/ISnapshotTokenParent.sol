@@ -1,5 +1,6 @@
 pragma solidity 0.4.15;
 
+
 contract ISnapshotTokenParent {
 
     /// @notice Total amount of tokens at a specific `_snapshot`.

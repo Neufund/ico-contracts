@@ -15,6 +15,7 @@ import './Helpers/MMint.sol';
 import './Helpers/TokenMetadata.sol';
 import './MTokenController.sol';
 
+
 /*
     Copyright 2016, Remco Bloemen, Jordi Baylina
 
@@ -31,7 +32,6 @@ import './MTokenController.sol';
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 /// @title SnapshotToken Contract
 /// @author Remco Bloemen, Jordi Baylina
 /// @dev This token contract's goal is to make it easy for anyone to clone this
@@ -39,12 +39,9 @@ import './MTokenController.sol';
 ///  and DApps to upgrade their features in a decentralized manner without
 ///  affecting the original token
 /// @dev It is ERC20 compliant, but still needs to under go further testing.
-
-
 /// @dev The actual token contract, the default controller is the msg.sender
 ///  that deploys the contract, so usually this token will be deployed by a
 ///  token controller contract, which Giveth will call a "Campaign"
-
 // Consumes the MMint mixin from SnapshotToken
 contract SnapshotToken is
     IERC20Token,

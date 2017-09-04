@@ -1,5 +1,6 @@
 pragma solidity 0.4.15;
 
+
 contract NeumarkIssuanceCurve {
 
     function incremental(uint256 totalEuroUlps, uint256 euroUlps)
@@ -20,7 +21,7 @@ contract NeumarkIssuanceCurve {
         constant
         returns (uint256 euroUlps)
     {
-        if(neumarkUlps == 0) {
+        if (neumarkUlps == 0) {
             return 0;
         }
         uint256 to = cumulative(totalEuroUlps);
@@ -37,29 +38,29 @@ contract NeumarkIssuanceCurve {
         constant
         returns(uint256 neumarkUlps)
     {
-        uint256 cap   = 1500000000000000000000000000;
-        uint256 D     =  230769230769230769230769231;
-        uint256 nLim  = 8300000000000000000000000000;
+        uint256 cap = 1500000000000000000000000000;
+        uint256 d = 230769230769230769230769231;
+        uint256 nLim = 8300000000000000000000000000;
 
         // Return the cap if n is above the limit.
-        if(euroUlps >= nLim) {
+        if (euroUlps >= nLim) {
             return cap;
         }
 
         // Approximate cap-cap·(1-1/D)^n using the Binomial theorem
         uint256 term = cap;
         uint256 sum = 0;
-        uint256 denom = D;
+        uint256 denom = d;
         do assembly {
             // We use assembler primarily to avoid the expensive
             // divide-by-zero check solc inserts for the / operator.
             term  := div(mul(term, euroUlps), denom)
             sum   := add(sum, term)
-            denom := add(denom, D)
+            denom := add(denom, d)
             term  := div(mul(term, euroUlps), denom)
             sum   := sub(sum, term)
-            denom := add(denom, D)
-        } while(term != 0);
+            denom := add(denom, d)
+        } while (term != 0);
         return sum;
     }
 
@@ -77,10 +78,10 @@ contract NeumarkIssuanceCurve {
         while (max > min) {
             uint256 mid = (max + min + 1) / 2;
             uint256 val = cumulative(mid);
-            if(val == neumarkUlps) {
+            if (val == neumarkUlps) {
                 return mid;
             }
-            if(val < neumarkUlps) {
+            if (val < neumarkUlps) {
                 min = mid;
             } else {
                 max = mid - 1;
@@ -89,7 +90,7 @@ contract NeumarkIssuanceCurve {
         assert(max == min);
 
         // Did we find an exact solution?
-        if(cumulative(max) == neumarkUlps) {
+        if (cumulative(max) == neumarkUlps) {
             return max;
         }
 

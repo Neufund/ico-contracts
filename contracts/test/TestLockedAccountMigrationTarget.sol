@@ -4,7 +4,9 @@ import "../LockedAccount.sol";
 import "../LockedAccountMigration.sol";
 import '../Standards/IERC677Token.sol';
 
+
 contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigration {
+
     LockedAccount public migrationSource;
     bool public shouldMigrationFail;
 
@@ -44,7 +46,7 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
             balance: balance,
             neumarksDue: neumarksDue,
             unlockDate: unlockDate
-            });
+        });
         // minimal bookkeeping
         _addBalance(balance, balance);
         totalInvestors += 1;

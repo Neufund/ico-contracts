@@ -2,6 +2,7 @@ pragma solidity 0.4.15;
 
 import './IERC20Allowance.sol';
 
+
 contract IERC677Allowance is IERC20Allowance {
 
     /// @notice `msg.sender` approves `_spender` to send `_amount` tokens on

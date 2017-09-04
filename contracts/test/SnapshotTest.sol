@@ -3,6 +3,7 @@ pragma solidity 0.4.15;
 import '../Snapshot/Snapshot.sol';
 import '../Snapshot/DailyAndSnapshotable.sol';
 
+
 contract SnapshotTest is
     Snapshot,
     DailyAndSnapshotable
@@ -24,7 +25,6 @@ contract SnapshotTest is
     {
         return hasValue(val);
     }
-
 
     function getValue(uint256 def)
         public

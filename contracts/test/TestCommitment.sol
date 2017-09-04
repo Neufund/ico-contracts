@@ -2,6 +2,7 @@ pragma solidity 0.4.15;
 
 import '../Commitment/PublicCommitment.sol';
 
+
 contract TestCommitment is PublicCommitment {
 
     // this will make truffle to find this event in receipt

@@ -5,14 +5,22 @@ import './Math.sol';
 import './Reclaimable.sol';
 import './Standards/IERC677Callback.sol';
 import './Standards/ITokenWithDeposit.sol';
+import './SnapshotToken/Helpers/TokenMetadata.sol';
 import './Zeppelin/StandardToken.sol';
 
-contract EtherToken is AccessControlled, StandardToken, ITokenWithDeposit, Reclaimable {
+
+contract EtherToken is
+    AccessControlled,
+    StandardToken,
+    ITokenWithDeposit,
+    TokenMetadata,
+    Reclaimable
+{
 
     // Constant token specific fields
-    string public constant name = "Ether Token";
-    string public constant symbol = "ETH-T";
-    uint public constant decimals = 18;
+    string public constant NAME = "Ether Token";
+    string public constant SYMBOL = "ETH-T";
+    uint8 public constant DECIMALS = 18;
 
     // disable default function
     function() { revert(); }
@@ -20,6 +28,7 @@ contract EtherToken is AccessControlled, StandardToken, ITokenWithDeposit, Recla
     function EtherToken(IAccessPolicy accessPolicy)
         AccessControlled(accessPolicy)
         StandardToken()
+        TokenMetadata(NAME, DECIMALS, SYMBOL, "")
         Reclaimable()
     {
     }
