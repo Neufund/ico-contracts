@@ -23,17 +23,17 @@ contract RoleBasedAccessControl is
         Deny
     }
 
-    ////////////////
+    ////////////////////////
     // Constants
-    ////////////////
+    ////////////////////////
 
     IAccessControlled public constant GLOBAL = IAccessControlled(0x0);
 
     address public constant EVERYONE = 0x0;
 
-    ////////////////
-    // State
-    ////////////////
+    ////////////////////////
+    // Mutable state
+    ////////////////////////
 
     // subject → role → object → allowed
     mapping (address => mapping(bytes32 => mapping(address => TriState))) access;
@@ -41,9 +41,9 @@ contract RoleBasedAccessControl is
     // object → role → addresses
     mapping (address => mapping(bytes32 => address[])) accessList;
 
-    ////////////////
+    ////////////////////////
     // Events
-    ////////////////
+    ////////////////////////
 
     event AccessChanged(
         address controller,
@@ -62,9 +62,9 @@ contract RoleBasedAccessControl is
         bool granted
     );
 
-    ////////////////
+    ////////////////////////
     // Constructor
-    ////////////////
+    ////////////////////////
 
     function RoleBasedAccessControl()
         AccessControlled(this) // We are our own policy. This is immutable.
@@ -74,9 +74,9 @@ contract RoleBasedAccessControl is
         access[msg.sender][ROLE_ACCESS_CONTROLER][GLOBAL] = TriState.Allow;
     }
 
-    ////////////////
+    ////////////////////////
     // Public functions
-    ////////////////
+    ////////////////////////
 
     // Overrides `AccessControlled.setAccessPolicy(IAccessPolicy)`
     function setAccessPolicy(IAccessPolicy)
@@ -186,9 +186,9 @@ contract RoleBasedAccessControl is
         return accessList[object][role];
     }
 
-    ////////////////
+    ////////////////////////
     // Private functions
-    ////////////////
+    ////////////////////////
 
     function setUserRolePrivate(
         address subject,
