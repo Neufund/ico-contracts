@@ -4,6 +4,11 @@ import "../LockedAccount.sol";
 
 
 contract TestLockedAccount is LockedAccount {
+
+    ////////////////////////
+    // Public functions
+    ////////////////////////
+
     // invests in equity token ICO
     function invest(address ico, uint256 amount)
         onlyState(LockState.AcceptingUnlocks)

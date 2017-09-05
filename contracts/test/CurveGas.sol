@@ -5,6 +5,10 @@ import '../NeumarkIssuanceCurve.sol';
 
 contract CurveGas is NeumarkIssuanceCurve {
 
+    ////////////////////////
+    // External functions
+    ////////////////////////
+
     function cumulativeWithGas(uint256 n)
         external
         returns (uint256, uint256)

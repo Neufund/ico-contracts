@@ -8,7 +8,21 @@ contract SnapshotTest is
     Snapshot,
     DailyAndSnapshotable
 {
+    ////////////////////////
+    // Mutable state
+    ////////////////////////
+
     Values[] val;
+
+    ////////////////////////
+    // Public functions
+    ////////////////////////}
+
+    function setValue(uint256 x)
+        public
+    {
+        setValue(val, x);
+    }
 
     function curDays()
         public
@@ -48,11 +62,5 @@ contract SnapshotTest is
         returns (uint256)
     {
         return getValueAt(val, snapshot, def);
-    }
-
-    function setValue(uint256 x)
-        public
-    {
-        setValue(val, x);
     }
 }
