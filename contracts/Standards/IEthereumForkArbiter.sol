@@ -7,13 +7,13 @@ contract IEthereumForkArbiter {
     // Events
     ////////////////////////
 
-    event ForkAnnounced(
+    event LogForkAnnounced(
         string name,
         string url,
         uint256 blockNumber
     );
 
-    event ForkSigned(
+    event LogForkSigned(
         uint256 blockNumber,
         bytes32 blockHash
     );

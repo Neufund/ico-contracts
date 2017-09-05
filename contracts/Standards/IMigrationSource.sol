@@ -14,7 +14,7 @@ contract IMigrationSource {
     // Events
     ////////////////////////
 
-    event MigrationEnabled(
+    event LogMigrationEnabled(
         address target
     );
 

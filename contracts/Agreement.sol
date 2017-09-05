@@ -17,7 +17,7 @@ contract Agreement {
     // Events
     ////////////////////////
 
-    event AgreementAccepted(
+    event LogAgreementAccepted(
         address indexed accepter
     );
 
@@ -26,7 +26,7 @@ contract Agreement {
     ////////////////////////
 
     modifier acceptAgreement(address accepter) {
-        AgreementAccepted(accepter);
+        LogAgreementAccepted(accepter);
         _;
     }
 

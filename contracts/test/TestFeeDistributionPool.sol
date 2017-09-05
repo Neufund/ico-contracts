@@ -10,7 +10,7 @@ contract TestFeeDistributionPool is IERC677Callback {
     // Events
     ////////////////////////
 
-    event TestReceiveApproval(
+    event LogTestReceiveApproval(
         address from,
         uint256 amount
     );
@@ -34,7 +34,7 @@ contract TestFeeDistributionPool is IERC677Callback {
     {
         require(msg.sender == _token);
         require(IERC677Token(_token).transferFrom(from, address(this), _amount));
-        TestReceiveApproval(from, _amount);
+        LogTestReceiveApproval(from, _amount);
         return true;
     }
 }

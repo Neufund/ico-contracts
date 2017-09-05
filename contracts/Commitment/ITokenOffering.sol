@@ -10,7 +10,7 @@ contract ITokenOffering {
 
     /// on every investment transaction
     /// `investor` invested `amount` in `paymentToken` currency which was converted to `eurEquivalent` that purchases `purchasedAmount` of `ofToken`
-    event FundsInvested(
+    event LogFundsInvested(
         address indexed investor,
         uint256 amount,
         address paymentToken,
@@ -20,7 +20,7 @@ contract ITokenOffering {
     );
 
     /// on completed offering
-    event CommitmentCompleted(
+    event LogCommitmentCompleted(
         bool isSuccess
     );
 

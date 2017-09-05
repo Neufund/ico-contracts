@@ -9,7 +9,7 @@ contract IAccessControlled {
     // Events
     ////////////////////////
 
-    event AccessPolicyChanged(
+    event LogAccessPolicyChanged(
         address controler,
         IAccessPolicy oldPolicy,
         IAccessPolicy newPolicy

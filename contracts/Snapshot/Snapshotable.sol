@@ -45,7 +45,7 @@ contract Snapshotable is
 
             // Log the event anyway, some logic may depend
             // depend on it.
-            SnapshotCreated(previousSnapshot);
+            LogSnapshotCreated(previousSnapshot);
             return previousSnapshot;
         }
 
@@ -55,7 +55,7 @@ contract Snapshotable is
         _nextSnapshotModified = false;
 
         // Log and return
-        SnapshotCreated(snapshotId);
+        LogSnapshotCreated(snapshotId);
         return snapshotId;
     }
 

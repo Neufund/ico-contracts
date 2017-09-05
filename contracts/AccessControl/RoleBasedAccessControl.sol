@@ -48,7 +48,7 @@ contract RoleBasedAccessControl is
     // Events
     ////////////////////////
 
-    event AccessChanged(
+    event LogAccessChanged(
         address controller,
         address indexed subject,
         bytes32 role,
@@ -57,7 +57,7 @@ contract RoleBasedAccessControl is
         TriState newValue
     );
 
-    event Access(
+    event LogAccess(
         address indexed subject,
         bytes32 role,
         IAccessControlled indexed object,
@@ -131,7 +131,7 @@ contract RoleBasedAccessControl is
         }
 
         // Log and return
-        Access(subject, role, object, verb, allow);
+        LogAccess(subject, role, object, verb, allow);
         return allow;
     }
 
@@ -232,6 +232,6 @@ contract RoleBasedAccessControl is
         }
 
         // Log
-        AccessChanged(msg.sender, subject, role, object, oldValue, newValue);
+        LogAccessChanged(msg.sender, subject, role, object, oldValue, newValue);
     }
 }

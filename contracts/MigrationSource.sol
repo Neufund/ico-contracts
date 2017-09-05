@@ -73,6 +73,6 @@ contract MigrationSource is
         // we must be the source
         require(migration.currentMigrationSource() == address(this));
         _migration = migration;
-        MigrationEnabled(_migration);
+        LogMigrationEnabled(_migration);
     }
 }

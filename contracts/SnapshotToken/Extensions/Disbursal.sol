@@ -42,7 +42,7 @@ contract Disbursal is IERC677Callback {
     // Events
     ////////////////////////
 
-    event Disbursed(
+    event LogDisbursed(
         uint256 disbursalIndex,
         IBasicToken disbursedToken,
         uint256 amount,
@@ -50,7 +50,7 @@ contract Disbursal is IERC677Callback {
         uint256 totalShares
     );
 
-    event Claimed(
+    event LogClaimed(
         address beneficiary,
         uint256 disbursalIndex,
         IBasicToken disbursedToken,
@@ -169,7 +169,7 @@ contract Disbursal is IERC677Callback {
         require(success);
 
         // Log and return
-        Claimed(beneficiary, index, token, amount);
+        LogClaimed(beneficiary, index, token, amount);
     }
 
     function disburseAllowance(IERC20Token token)
@@ -252,7 +252,7 @@ contract Disbursal is IERC677Callback {
         );
 
         // Log
-        Disbursed(index, token, amount, snapshot, totalShares);
+        LogDisbursed(index, token, amount, snapshot, totalShares);
     }
 
     function mulDiv(

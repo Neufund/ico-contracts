@@ -54,7 +54,7 @@ contract EtherToken is
         require(msg.value == amount);
         _balances[to] = add(_balances[to], amount);
         _totalSupply = add(_totalSupply, amount);
-        Deposit(to, amount);
+        LogDeposit(to, amount);
         return true;
     }
 
@@ -66,7 +66,7 @@ contract EtherToken is
         _balances[msg.sender] -= amount;
         _totalSupply -= amount;
         msg.sender.transfer(amount);
-        Withdrawal(msg.sender, amount);
+        LogWithdrawal(msg.sender, amount);
     }
 
     //

@@ -90,36 +90,36 @@ contract LockedAccount is
     // Events
     ////////////////////////
 
-    event FundsLocked(
+    event LogFundsLocked(
         address indexed investor,
         uint256 amount,
         uint256 neumarks
     );
 
-    event FundsUnlocked(
+    event LogFundsUnlocked(
         address indexed investor,
         uint256 amount
     );
 
-    event PenaltyDisbursed(
+    event LogPenaltyDisbursed(
         address indexed investor,
         uint256 amount,
         address toPool
     );
 
-    event LockStateTransition(
+    event LogLockStateTransition(
         LockState oldState,
         LockState newState
     );
 
-    event InvestorMigrated(
+    event LogInvestorMigrated(
         address indexed investor,
         uint256 amount,
         uint256 neumarks,
         uint256 unlockDate
     );
 
-    event MigrationEnabled(
+    event LogMigrationEnabled(
         address target
     );
 
@@ -198,7 +198,7 @@ contract LockedAccount is
             a.unlockDate = currentTime() + LOCK_PERIOD;
         }
         _accounts[investor] = a;
-        FundsLocked(investor, amount, neumarks);
+        LogFundsLocked(investor, amount, neumarks);
     }
 
     // unlocks msg.sender tokens by making them withdrawable in assetToken
@@ -275,7 +275,7 @@ contract LockedAccount is
         // we must be the source
         require(migration.getMigrationFrom() == address(this));
         _migration = migration;
-        MigrationEnabled(_migration);
+        LogMigrationEnabled(_migration);
     }
 
     /// migrate single investor
@@ -302,7 +302,7 @@ contract LockedAccount is
                 a.unlockDate
             );
             assert(migrated);
-            InvestorMigrated(msg.sender, a.balance, a.neumarksDue, a.unlockDate);
+            LogInvestorMigrated(msg.sender, a.balance, a.neumarksDue, a.unlockDate);
         }
     }
 
@@ -459,7 +459,7 @@ contract LockedAccount is
         internal
     {
         if (newState != _lockState) {
-            LockStateTransition(_lockState, newState);
+            LogLockStateTransition(_lockState, newState);
             _lockState = newState;
         }
     }
@@ -508,7 +508,7 @@ contract LockedAccount is
                         // transfer to address
                         require(ASSET_TOKEN.transfer(_penaltyDisbursalAddress, penalty));
                     }
-                    PenaltyDisbursed(investor, penalty, _penaltyDisbursalAddress);
+                    LogPenaltyDisbursed(investor, penalty, _penaltyDisbursalAddress);
                     a.balance = subBalance(a.balance, penalty);
                 }
             }
@@ -517,7 +517,7 @@ contract LockedAccount is
             require(ASSET_TOKEN.transfer(investor, a.balance));
 
             // remove balance, investor and
-            FundsUnlocked(investor, a.balance);
+            LogFundsUnlocked(investor, a.balance);
             removeInvestor(investor, a.balance);
         }
         return Status.SUCCESS;

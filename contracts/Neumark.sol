@@ -39,13 +39,13 @@ contract Neumark is
     // Events
     ////////////////////////
 
-    event NeumarksIssued(
+    event LogNeumarksIssued(
         address indexed owner,
         uint256 euroUlp,
         uint256 neumarkUlp
     );
 
-    event NeumarksBurned(
+    event LogNeumarksBurned(
         address indexed owner,
         uint256 euroUlp,
         uint256 neumarkUlp
@@ -93,7 +93,7 @@ contract Neumark is
 
         assert(mGenerateTokens(beneficiary, neumarkUlps));
 
-        NeumarksIssued(beneficiary, euroUlps, neumarkUlps);
+        LogNeumarksIssued(beneficiary, euroUlps, neumarkUlps);
         return neumarkUlps;
     }
 
@@ -110,7 +110,7 @@ contract Neumark is
 
         assert(mDestroyTokens(owner, neumarkUlps));
 
-        NeumarksBurned(owner, euroUlps, neumarkUlps);
+        LogNeumarksBurned(owner, euroUlps, neumarkUlps);
         return euroUlps;
     }
 

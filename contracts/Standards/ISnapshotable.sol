@@ -7,7 +7,7 @@ contract ISnapshotable {
     // Events
     ////////////////////////
 
-    event SnapshotCreated(uint256 snapshot);
+    event LogSnapshotCreated(uint256 snapshot);
 
     ////////////////////////
     // Public functions
