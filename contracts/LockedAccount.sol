@@ -217,7 +217,7 @@ contract LockedAccount is
     // this allows to unlock and allow neumarks to be burned in one transaction
     function receiveApproval(
         address from,
-        uint256 _amount,
+        uint256, // _amount,
         address _token,
         bytes _data
     )

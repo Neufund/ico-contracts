@@ -23,7 +23,12 @@ contract TestFeeDistributionPool is IERC677Callback {
     // Implements IERC677Callback
     //
 
-    function receiveApproval(address from, uint256 _amount, address _token, bytes _data)
+    function receiveApproval(
+        address from,
+        uint256 _amount,
+        address _token,
+        bytes // _data
+    )
         public
         returns (bool)
     {

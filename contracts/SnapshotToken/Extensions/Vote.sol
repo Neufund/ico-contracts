@@ -71,7 +71,9 @@ contract Vote {
         choices[index] = choice;
     }
 
-    function vote(uint256[] votes)
+    function vote(
+        uint256[] // votes
+    )
         public
     {
     }
