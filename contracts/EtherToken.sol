@@ -3,6 +3,7 @@ pragma solidity 0.4.15;
 import './AccessControl/AccessControlled.sol';
 import './Math.sol';
 import './Reclaimable.sol';
+import './Standards/IERC677Token.sol';
 import './Standards/IERC677Callback.sol';
 import './Standards/ITokenWithDeposit.sol';
 import './SnapshotToken/Helpers/TokenMetadata.sol';
@@ -10,20 +11,26 @@ import './Zeppelin/StandardToken.sol';
 
 
 contract EtherToken is
+    ITokenWithDeposit,
+    IERC677Token,
     AccessControlled,
     StandardToken,
-    ITokenWithDeposit,
     TokenMetadata,
     Reclaimable
 {
+    ////////////////////////
+    // Constants
+    ////////////////////////
 
-    // Constant token specific fields
-    string public constant NAME = "Ether Token";
-    string public constant SYMBOL = "ETH-T";
-    uint8 public constant DECIMALS = 18;
+    string private constant NAME = "Ether Token";
 
-    // disable default function
-    function() { revert(); }
+    string private constant SYMBOL = "ETH-T";
+
+    uint8 private constant DECIMALS = 18;
+
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     function EtherToken(IAccessPolicy accessPolicy)
         AccessControlled(accessPolicy)
@@ -33,20 +40,9 @@ contract EtherToken is
     {
     }
 
-    function approveAndCall(address _spender, uint256 _amount, bytes _extraData)
-        returns (bool success)
-    {
-        require(approve(_spender, _amount));
-
-        success = IERC677Callback(_spender).receiveApproval(
-            msg.sender,
-            _amount,
-            this,
-            _extraData
-        );
-
-        return success;
-    }
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     /// deposit 'amount' of Ether to account 'to'
     function deposit(address to, uint256 amount)
@@ -72,6 +68,29 @@ contract EtherToken is
         msg.sender.transfer(amount);
         Withdrawal(msg.sender, amount);
     }
+
+    //
+    // Implements IERC677Token
+    //
+
+    function approveAndCall(address _spender, uint256 _amount, bytes _extraData)
+        returns (bool success)
+    {
+        require(approve(_spender, _amount));
+
+        success = IERC677Callback(_spender).receiveApproval(
+            msg.sender,
+            _amount,
+            this,
+            _extraData
+        );
+
+        return success;
+    }
+
+    //
+    // Overrides Reclaimable
+    //
 
     function reclaim(IBasicToken token)
         public

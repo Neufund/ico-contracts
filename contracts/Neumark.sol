@@ -17,22 +17,43 @@ contract Neumark is
     Reclaimable
 {
 
-    string constant TOKEN_NAME     = "Neumark";
-    uint8  constant TOKEN_DECIMALS = 18;
-    string constant TOKEN_SYMBOL   = "NMK";
+    ////////////////////////
+    // Constants
+    ////////////////////////
+
+    string private constant TOKEN_NAME = "Neumark";
+
+    uint8  private constant TOKEN_DECIMALS = 18;
+
+    string private constant TOKEN_SYMBOL = "NMK";
+
+    ////////////////////////
+    // Mutable state
+    ////////////////////////
 
     bool public transferEnabled;
+
     uint256 public totalEuroUlps;
+
+    ////////////////////////
+    // Events
+    ////////////////////////
 
     event NeumarksIssued(
         address indexed owner,
         uint256 euroUlp,
-        uint256 neumarkUlp);
+        uint256 neumarkUlp
+    );
 
     event NeumarksBurned(
         address indexed owner,
         uint256 euroUlp,
-        uint256 neumarkUlp);
+        uint256 neumarkUlp
+    );
+
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     function Neumark(
         IAccessPolicy accessPolicy,
@@ -53,6 +74,10 @@ contract Neumark is
         transferEnabled = false;
         totalEuroUlps = 0;
     }
+
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     function issueForEuro(uint256 euroUlps)
         public
@@ -104,6 +129,14 @@ contract Neumark is
         return DailyAndSnapshotable.createSnapshot();
     }
 
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
+
+    //
+    // Implements MTokenController
+    //
+
     /// @notice Notifies the controller about a token transfer allowing the
     ///  controller to react if desired
     /// @param from The origin of the transfer
@@ -140,5 +173,4 @@ contract Neumark is
     {
         return true;
     }
-
 }

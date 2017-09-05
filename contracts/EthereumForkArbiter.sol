@@ -12,14 +12,25 @@ contract EthereumForkArbiter is
     AccessRoles,
     Reclaimable
 {
+    ////////////////////////
+    // Mutable state
+    ////////////////////////
 
-    string public nextForkName;
-    string public nextForkUrl;
-    uint256 public nextForkBlockNumber;
+    string private nextForkName;
 
-    uint256 public lastSignedBlockNumber;
-    bytes32 public lastSignedBlockHash;
-    uint256 public lastSignedTimestamp;
+    string private nextForkUrl;
+
+    uint256 private nextForkBlockNumber;
+
+    uint256 private lastSignedBlockNumber;
+
+    bytes32 private lastSignedBlockHash;
+
+    uint256 private lastSignedTimestamp;
+
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     function EthereumForkArbiter(IAccessPolicy accessPolicy)
         AccessControlled(accessPolicy)
@@ -27,47 +38,9 @@ contract EthereumForkArbiter is
     {
     }
 
-    function nextForkName()
-        public
-        returns (string)
-    {
-        return nextForkName;
-    }
-
-    function nextForkUrl()
-        public
-        returns (string)
-    {
-        return nextForkUrl;
-    }
-
-    function nextForkBlockNumber()
-        public
-        returns (uint256)
-    {
-        return nextForkBlockNumber;
-    }
-
-    function lastSignedBlockNumber()
-        public
-        returns (uint256)
-    {
-        return lastSignedBlockNumber;
-    }
-
-    function lastSignedBlockHash()
-        public
-        returns (bytes32)
-    {
-        return lastSignedBlockHash;
-    }
-
-    function lastSignedTimestamp()
-        public
-        returns (uint256)
-    {
-        return lastSignedTimestamp;
-    }
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     /// @notice Announce that a particular future Ethereum fork will the one taken by the contract. The contract on the other branch should be considered invalid. Once the fork has happened, it will additionally be confirmed by signing a block on the fork. Notice that forks may happen unannounced.
     function announceFork(
@@ -108,5 +81,53 @@ contract EthereumForkArbiter is
 
         // Log
         ForkSigned(lastSignedBlockNumber, lastSignedBlockHash);
+    }
+
+    function nextForkName()
+        public
+        constant
+        returns (string)
+    {
+        return nextForkName;
+    }
+
+    function nextForkUrl()
+        public
+        constant
+        returns (string)
+    {
+        return nextForkUrl;
+    }
+
+    function nextForkBlockNumber()
+        public
+        constant
+        returns (uint256)
+    {
+        return nextForkBlockNumber;
+    }
+
+    function lastSignedBlockNumber()
+        public
+        constant
+        returns (uint256)
+    {
+        return lastSignedBlockNumber;
+    }
+
+    function lastSignedBlockHash()
+        public
+        constant
+        returns (bytes32)
+    {
+        return lastSignedBlockHash;
+    }
+
+    function lastSignedTimestamp()
+        public
+        constant
+        returns (uint256)
+    {
+        return lastSignedTimestamp;
     }
 }
