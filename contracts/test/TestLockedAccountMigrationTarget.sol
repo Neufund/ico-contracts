@@ -8,6 +8,12 @@ import '../Standards/IERC677Token.sol';
 contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigration {
 
     ////////////////////////
+    // Immutable state
+    ////////////////////////
+
+    IERC677Token private ASSET_TOKEN;
+
+    ////////////////////////
     // Mutable state
     ////////////////////////
 
@@ -30,6 +36,7 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
     )
         LockedAccount(_policy, _forkArbiter, _agreementUri, _assetToken, _neumark, _lockPeriod, _penaltyFraction)
     {
+        ASSET_TOKEN = _assetToken;
     }
 
     ////////////////////////
@@ -57,7 +64,8 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
     {
         if (_shouldMigrationFail)
             return false;
-
+        // transfer assets
+        require(ASSET_TOKEN.transferFrom(msg.sender, address(this), balance));
         // just move account
         _accounts[investor] = Account({
             balance: balance,
