@@ -13,15 +13,15 @@ contract DailyAndSnapshotable is
     ////////////////////////
 
     // Floor[2**128 / 1 days]
-    uint256 MAX_TIMESTAMP = 3938453320844195178974243141571391;
+    uint256 private MAX_TIMESTAMP = 3938453320844195178974243141571391;
 
     ////////////////////////
     // Mutable state
     ////////////////////////
 
-    uint256 nextSnapshotId;
+    uint256 private _nextSnapshotId;
 
-    bool nextSnapshotModified;
+    bool private _nextSnapshotModified;
 
     ////////////////////////
     // Constructor
@@ -29,8 +29,8 @@ contract DailyAndSnapshotable is
 
     function DailyAndSnapshotable() {
         uint256 dayBase = 2**128 * (block.timestamp / 1 days);
-        nextSnapshotId = dayBase + 1;
-        nextSnapshotModified = false;
+        _nextSnapshotId = dayBase + 1;
+        _nextSnapshotModified = false;
     }
 
     ////////////////////////
@@ -55,17 +55,17 @@ contract DailyAndSnapshotable is
         uint256 dayBase = 2**128 * (block.timestamp / 1 days);
 
         // New day has started, create snapshot for midnight
-        if (dayBase > nextSnapshotId) {
-            nextSnapshotId = dayBase + 1;
-            nextSnapshotModified = false;
+        if (dayBase > _nextSnapshotId) {
+            _nextSnapshotId = dayBase + 1;
+            _nextSnapshotModified = false;
 
             SnapshotCreated(dayBase);
             return dayBase;
         }
 
         // Same day, no modifications
-        if (!nextSnapshotModified) {
-            uint256 previousSnapshot = nextSnapshotId - 1;
+        if (!_nextSnapshotModified) {
+            uint256 previousSnapshot = _nextSnapshotId - 1;
 
             // Log the event anyway, some logic may depend
             // depend on it.
@@ -74,9 +74,9 @@ contract DailyAndSnapshotable is
         }
 
         // Increment the snapshot counter
-        uint256 snapshotId = nextSnapshotId;
-        nextSnapshotId += 1;
-        nextSnapshotModified = false;
+        uint256 snapshotId = _nextSnapshotId;
+        _nextSnapshotId += 1;
+        _nextSnapshotModified = false;
 
         // Log and return
         SnapshotCreated(snapshotId);
@@ -98,23 +98,23 @@ contract DailyAndSnapshotable is
         uint256 dayBase = 2**128 * (block.timestamp / 1 days);
 
         // New day has started
-        if (dayBase > nextSnapshotId) {
-            nextSnapshotId = dayBase + 1;
-            nextSnapshotModified = false;
+        if (dayBase > _nextSnapshotId) {
+            _nextSnapshotId = dayBase + 1;
+            _nextSnapshotModified = false;
 
             SnapshotCreated(dayBase);
-            return nextSnapshotId;
+            return _nextSnapshotId;
         }
 
         // Within same day
-        return nextSnapshotId;
+        return _nextSnapshotId;
     }
 
     function mFlagSnapshotModified()
         internal
     {
-        if (!nextSnapshotModified) {
-            nextSnapshotModified = true;
+        if (!_nextSnapshotModified) {
+            _nextSnapshotModified = true;
         }
     }
 }

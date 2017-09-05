@@ -26,18 +26,18 @@ contract CommitmentBase is
     ////////////////////////
 
     // share of Neumark reward platform operator gets
-    uint256 public constant NEUMARK_REWARD_PLATFORM_OPERATOR_DIVISOR = 2;
+    uint256 private constant NEUMARK_REWARD_PLATFORM_OPERATOR_DIVISOR = 2;
 
     ////////////////////////
     // Immutable state
     ////////////////////////
 
     // locks investors capital
-    LockedAccount public LOCKED_ACCOUNT;
+    LockedAccount internal LOCKED_ACCOUNT;
 
-    ITokenWithDeposit public PAYMENT_TOKEN;
+    Neumark internal NEUMARK;
 
-    Neumark public NEUMARK;
+    ITokenWithDeposit internal PAYMENT_TOKEN;
 
     ////////////////////////
     // Mutable state
@@ -47,29 +47,29 @@ contract CommitmentBase is
     // Set only once
     //
 
-    uint256 public startDate;
+    uint256 internal _startDate;
 
-    uint256 public endDate;
+    uint256 internal _endDate;
 
-    uint256 public minTicket;
+    uint256 internal _minTicket;
 
-    uint256 public minAbsCap;
+    uint256 internal _minAbsCap;
 
-    uint256 public maxAbsCap;
+    uint256 internal _maxAbsCap;
 
-    uint256 public ethEURFraction;
+    uint256 internal _ethEURFraction;
 
     //
     // Mutable
     //
 
-    bool public finalized;
+    bool internal _finalized;
 
     // amount stored in LockedAccount on finalized
-    uint256 public finalCommitedAmount;
+    uint256 private _finalCommitedAmount;
 
     // wallet that keeps Platform Operator share of neumarks
-    address public platformOperatorWallet;
+    address private _platformOperatorWallet;
 
     ////////////////////////
     // Constructor
@@ -80,18 +80,18 @@ contract CommitmentBase is
     /// commitments can be chained via long lived _lockedAccount and _nemark
     function CommitmentBase(
         IAccessPolicy accessPolicy,
-        EtherToken _ethToken,
-        LockedAccount _lockedAccount,
-        Neumark _neumark
+        ITokenWithDeposit paymentToken,
+        LockedAccount lockedAccount,
+        Neumark neumark
     )
         AccessControlled(accessPolicy)
         Reclaimable()
     {
-        require(address(_ethToken) == address(_lockedAccount.assetToken()));
-        require(_neumark == _lockedAccount.neumark());
-        LOCKED_ACCOUNT = _lockedAccount;
-        NEUMARK = _neumark;
-        PAYMENT_TOKEN = _ethToken;
+        require(address(paymentToken) == address(lockedAccount.assetToken()));
+        require(neumark == lockedAccount.neumark());
+        LOCKED_ACCOUNT = lockedAccount;
+        NEUMARK = neumark;
+        PAYMENT_TOKEN = paymentToken;
     }
 
     ////////////////////////
@@ -99,34 +99,35 @@ contract CommitmentBase is
     ////////////////////////
 
     function setCommitmentTerms(
-        uint256 _startDate,
-        uint256 _endDate,
-        uint256 _minAbsCap,
-        uint256 _maxAbsCap,
-        uint256 _minTicket,
-        uint256 _ethEurFraction,
-        address _platformOperatorWallet
+        uint256 startDate,
+        uint256 endDate,
+        uint256 minAbsCap,
+        uint256 maxAbsCap,
+        uint256 minTicket,
+        uint256 ethEurFraction,
+        address platformOperatorWallet
     )
         public
         // TODO: Access control
     {
         // set only once
-        require(endDate == 0);
-        require(_startDate > 0);
-        require(_endDate >= _startDate);
-        require(_maxAbsCap > 0);
-        require(_maxAbsCap >= _minAbsCap);
-        require(_platformOperatorWallet != address(0));
+        require(_endDate == 0);
 
-        startDate = _startDate;
-        endDate = _endDate;
+        // Validate
+        require(startDate > 0);
+        require(endDate >= _startDate);
+        require(maxAbsCap > 0);
+        require(maxAbsCap >= _minAbsCap);
+        require(platformOperatorWallet != address(0));
 
-        minAbsCap = _minAbsCap;
-        maxAbsCap = _maxAbsCap;
-
-        minTicket = _minTicket;
-        ethEURFraction = _ethEurFraction;
-        platformOperatorWallet = _platformOperatorWallet;
+        // Set
+        _startDate = startDate;
+        _endDate = endDate;
+        _minAbsCap = minAbsCap;
+        _maxAbsCap = maxAbsCap;
+        _minTicket = minTicket;
+        _ethEURFraction = ethEurFraction;
+        _platformOperatorWallet = platformOperatorWallet;
     }
 
     function commit()
@@ -137,14 +138,14 @@ contract CommitmentBase is
         require(address(LOCKED_ACCOUNT.controller()) == address(this));
 
         // must have terms set
-        require(startDate > 0);
-        require(currentTime() >= startDate);
-        require(msg.value >= minTicket);
+        require(_startDate > 0);
+        require(currentTime() >= _startDate);
+        require(msg.value >= _minTicket);
         require(!hasEnded());
         uint256 total = add(LOCKED_ACCOUNT.totalLockedAmount(), msg.value);
 
         // we are not sending back the difference - only full tickets
-        require(total <= maxAbsCap);
+        require(total <= _maxAbsCap);
         require(validCommitment());
 
         // get neumarks
@@ -183,8 +184,8 @@ contract CommitmentBase is
             onCommitmentFailed();
             CommitmentCompleted(false);
         }
-        finalCommitedAmount = LOCKED_ACCOUNT.totalLockedAmount();
-        finalized = true;
+        _finalCommitedAmount = LOCKED_ACCOUNT.totalLockedAmount();
+        _finalized = true;
     }
 
     function lockedAccount()
@@ -211,14 +212,62 @@ contract CommitmentBase is
         return NEUMARK;
     }
 
+    function startDate()
+        public
+        constant
+        returns (uint256)
+    {
+        return _startDate;
+    }
+
+    function endDate()
+        public
+        constant
+        returns (uint256)
+    {
+        return _endDate;
+    }
+
+    function minTicket()
+        public
+        constant
+        returns (uint256)
+    {
+        return _minTicket;
+    }
+
+    function minAbsCap()
+        public
+        constant
+        returns (uint256)
+    {
+        return _minAbsCap;
+    }
+
+    function maxAbsCap()
+        public
+        constant
+        returns (uint256)
+    {
+        return _maxAbsCap;
+    }
+
+    function ethEURFraction()
+        public
+        constant
+        returns (uint256)
+    {
+        return _ethEURFraction;
+    }
+
     /// overrides TokenOffering
     function wasSuccessful()
         public
         constant
         returns (bool)
     {
-        uint256 amount = finalized ? finalCommitedAmount : LOCKED_ACCOUNT.totalLockedAmount();
-        return amount >= minAbsCap;
+        uint256 amount = _finalized ? _finalCommitedAmount : LOCKED_ACCOUNT.totalLockedAmount();
+        return amount >= _minAbsCap;
     }
 
     /// overrides TokenOffering
@@ -227,8 +276,8 @@ contract CommitmentBase is
         constant
         returns(bool)
     {
-        uint256 amount = finalized ? finalCommitedAmount : LOCKED_ACCOUNT.totalLockedAmount();
-        return amount >= maxAbsCap || currentTime() >= endDate;
+        uint256 amount = _finalized ? _finalCommitedAmount : LOCKED_ACCOUNT.totalLockedAmount();
+        return amount >= _maxAbsCap || currentTime() >= _endDate;
     }
 
     /// overrides TokenOffering
@@ -237,7 +286,7 @@ contract CommitmentBase is
         constant
         returns (bool)
     {
-        return finalized;
+        return _finalized;
     }
 
     /// converts `amount` in wei into EUR with 18 decimals required by Curve
@@ -248,7 +297,7 @@ contract CommitmentBase is
         constant
         returns (uint256)
     {
-        return fraction(amount, ethEURFraction);
+        return fraction(amount, _ethEURFraction);
     }
 
     ////////////////////////
@@ -269,9 +318,8 @@ contract CommitmentBase is
         if (!isEnabled)
             NEUMARK.enableTransfer(true);
         require(NEUMARK.transfer(investor, investorNeumarks));
-        require(NEUMARK.transfer(platformOperatorWallet, neumarks - investorNeumarks));
+        require(NEUMARK.transfer(_platformOperatorWallet, neumarks - investorNeumarks));
         NEUMARK.enableTransfer(isEnabled);
         return investorNeumarks;
     }
-
 }

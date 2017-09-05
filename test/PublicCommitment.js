@@ -103,7 +103,10 @@ contract("PublicCommitment", ([lockAdmin, investor]) => {
       false,
       "commitment should run"
     );
-    const tx = await chain.commitment.commit({ value: ticket, from: investor });
+    const tx = await chain.commitment.commit({
+      value: ticket,
+      from: investor
+    });
     // check event
     const event = eventValue(tx, "FundsInvested");
     expect(event).to.exist;
@@ -157,7 +160,7 @@ contract("PublicCommitment", ([lockAdmin, investor]) => {
     await chain.commitment.commit({ value: ticket, from: investor });
     // decrease max cap so it is exactly ticket
     await setTimeTo(startTimestamp + chain.days); // day forward
-    await chain.commitment._changeMaxCap(ticket);
+    await chain.commitment.changeMaxCap(ticket);
     assert.equal(
       await chain.commitment.hasEnded.call(),
       true,

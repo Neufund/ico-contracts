@@ -18,7 +18,7 @@ contract StandardToken is IERC20Token, BasicToken {
     // Mutable state
     ////////////////////////
 
-    mapping (address => mapping (address => uint256)) allowed;
+    mapping (address => mapping (address => uint256)) private _allowed;
 
     ////////////////////////
     // Public functions
@@ -26,32 +26,32 @@ contract StandardToken is IERC20Token, BasicToken {
 
     /**
     * @dev Transfer tokens from one address to another
-    * @param _from address The address which you want to send tokens from
-    * @param _to address The address which you want to transfer to
-    * @param _value uint256 the amout of tokens to be transfered
+    * @param from address The address which you want to send tokens from
+    * @param to address The address which you want to transfer to
+    * @param value uint256 the amout of tokens to be transfered
     */
-    function transferFrom(address _from, address _to, uint256 _value)
+    function transferFrom(address from, address to, uint256 value)
         public
         returns (bool)
     {
-        var _allowance = allowed[_from][msg.sender];
+        var allowance = _allowed[from][msg.sender];
 
         // Check is not needed because sub(_allowance, _value) will already throw if this condition is not met
         // require (_value <= _allowance);
 
-        balances[_to] = add(balances[_to], _value);
-        balances[_from] = sub(balances[_from], _value);
-        allowed[_from][msg.sender] = sub(_allowance, _value);
-        Transfer(_from, _to, _value);
+        _balances[to] = add(_balances[to], value);
+        _balances[from] = sub(_balances[from], value);
+        _allowed[from][msg.sender] = sub(allowance, value);
+        Transfer(from, to, value);
         return true;
     }
 
     /**
     * @dev Aprove the passed address to spend the specified amount of tokens on behalf of msg.sender.
-    * @param _spender The address which will spend the funds.
-    * @param _value The amount of tokens to be spent.
+    * @param spender The address which will spend the funds.
+    * @param value The amount of tokens to be spent.
     */
-    function approve(address _spender, uint256 _value)
+    function approve(address spender, uint256 value)
         public
         returns (bool)
     {
@@ -60,24 +60,24 @@ contract StandardToken is IERC20Token, BasicToken {
         //  allowance to zero by calling `approve(_spender, 0)` if it is not
         //  already 0 to mitigate the race condition described here:
         //  https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-        require((_value == 0) || (allowed[msg.sender][_spender] == 0));
+        require((value == 0) || (_allowed[msg.sender][spender] == 0));
 
-        allowed[msg.sender][_spender] = _value;
-        Approval(msg.sender, _spender, _value);
+        _allowed[msg.sender][spender] = value;
+        Approval(msg.sender, spender, value);
         return true;
     }
 
     /**
     * @dev Function to check the amount of tokens that an owner allowed to a spender.
-    * @param _owner address The address which owns the funds.
-    * @param _spender address The address which will spend the funds.
+    * @param owner address The address which owns the funds.
+    * @param spender address The address which will spend the funds.
     * @return A uint256 specifing the amount of tokens still avaible for the spender.
     */
-    function allowance(address _owner, address _spender)
+    function allowance(address owner, address spender)
         public
         constant
         returns (uint256 remaining)
     {
-        return allowed[_owner][_spender];
+        return _allowed[owner][spender];
     }
 }

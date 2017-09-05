@@ -15,9 +15,9 @@ contract BasicToken is IBasicToken, Math {
     // Mutable state
     ////////////////////////
 
-    mapping(address => uint256) balances;
+    mapping(address => uint256) internal _balances;
 
-    uint256 public totalSupply;
+    uint256 internal _totalSupply;
 
     ////////////////////////
     // Public functions
@@ -25,16 +25,16 @@ contract BasicToken is IBasicToken, Math {
 
     /**
     * @dev transfer token for a specified address
-    * @param _to The address to transfer to.
-    * @param _value The amount to be transferred.
+    * @param to The address to transfer to.
+    * @param value The amount to be transferred.
     */
-    function transfer(address _to, uint256 _value)
+    function transfer(address to, uint256 value)
         public
         returns (bool)
     {
-        balances[msg.sender] = sub(balances[msg.sender], _value);
-        balances[_to] = add(balances[_to], _value);
-        Transfer(msg.sender, _to, _value);
+        _balances[msg.sender] = sub(_balances[msg.sender], value);
+        _balances[to] = add(_balances[to], value);
+        Transfer(msg.sender, to, value);
         return true;
     }
 
@@ -45,19 +45,19 @@ contract BasicToken is IBasicToken, Math {
         constant
         returns (uint256)
     {
-        return totalSupply;
+        return _totalSupply;
     }
 
     /**
     * @dev Gets the balance of the specified address.
-    * @param _owner The address to query the the balance of.
+    * @param owner The address to query the the balance of.
     * @return An uint256 representing the amount owned by the passed address.
     */
-    function balanceOf(address _owner)
+    function balanceOf(address owner)
         public
         constant
         returns (uint256 balance)
     {
-        return balances[_owner];
+        return _balances[owner];
     }
 }

@@ -51,40 +51,40 @@ contract LockedAccount is
 
     // a token controlled by LockedAccount, read ERC20 + extensions to read what
     // token is it (ETH/EUR etc.)
-    IERC677Token public ASSET_TOKEN;
+    IERC677Token private ASSET_TOKEN;
 
-    Neumark internal NEUMARK;
+    Neumark private NEUMARK;
 
     // longstop period in seconds
-    uint public LOCK_PERIOD;
+    uint private LOCK_PERIOD;
 
     // penalty: fraction of stored amount on escape hatch
-    uint public PENALTY_FRACTION;
+    uint private PENALTY_FRACTION;
 
     ////////////////////////
     // Mutable state
     ////////////////////////
 
     // total amount of tokens locked
-    uint public totalLockedAmount;
+    uint private _totalLockedAmount;
 
     // total number of locked investors
-    uint public totalInvestors;
+    uint internal _totalInvestors;
 
     // current state of the locking contract
-    LockState public lockState;
+    LockState private _lockState;
 
     // govering ICO contract that may lock money or unlock all account if fails
-    ITokenOffering public controller;
+    ITokenOffering private _controller;
 
     // fee distribution pool
-    address public penaltyDisbursalAddress;
+    address private _penaltyDisbursalAddress;
 
     // migration target contract
-    LockedAccountMigration public migration;
+    LockedAccountMigration private _migration;
 
     // LockedAccountMigration private migration;
-    mapping(address => Account) internal accounts;
+    mapping(address => Account) internal _accounts;
 
     ////////////////////////
     // Events
@@ -128,17 +128,17 @@ contract LockedAccount is
     ////////////////////////
 
     modifier onlyController() {
-        require(msg.sender == address(controller));
+        require(msg.sender == address(_controller));
         _;
     }
 
     modifier onlyState(LockState state) {
-        require(lockState == state);
+        require(_lockState == state);
         _;
     }
 
     modifier onlyStates(LockState state1, LockState state2) {
-        require(lockState == state1 || lockState == state2);
+        require(_lockState == state1 || _lockState == state2);
         _;
     }
 
@@ -149,22 +149,22 @@ contract LockedAccount is
     // _assetToken - token contract with resource locked by LockedAccount, where
     // LockedAccount is allowed to make deposits
     function LockedAccount(
-        IAccessPolicy _policy,
-        IEthereumForkArbiter _forkArbiter,
-        string _agreementUri,
-        IERC677Token _assetToken,
-        Neumark _neumark,
-        uint _lockPeriod,
-        uint _penaltyFraction
+        IAccessPolicy policy,
+        IEthereumForkArbiter forkArbiter,
+        string agreementUri,
+        IERC677Token assetToken,
+        Neumark neumark,
+        uint lockPeriod,
+        uint penaltyFraction
     )
-        AccessControlled(_policy)
-        Agreement(_forkArbiter, _agreementUri)
+        AccessControlled(policy)
+        Agreement(forkArbiter, agreementUri)
         Reclaimable()
     {
-        ASSET_TOKEN = _assetToken;
-        NEUMARK = _neumark;
-        LOCK_PERIOD = _lockPeriod;
-        PENALTY_FRACTION = _penaltyFraction;
+        ASSET_TOKEN = assetToken;
+        NEUMARK = neumark;
+        LOCK_PERIOD = lockPeriod;
+        PENALTY_FRACTION = penaltyFraction;
     }
 
     ////////////////////////
@@ -187,17 +187,17 @@ contract LockedAccount is
 
         // transfer to self yourself
         require(ASSET_TOKEN.transferFrom(msg.sender, address(this), amount));
-        Account storage a = accounts[investor];
-        a.balance = _addBalance(a.balance, amount);
+        Account storage a = _accounts[investor];
+        a.balance = addBalance(a.balance, amount);
         a.neumarksDue += neumarks;
         assert(isSafeMultiplier(a.neumarksDue));
         if (a.unlockDate == 0) {
 
             // this is new account - unlockDate always > 0
-            totalInvestors += 1;
+            _totalInvestors += 1;
             a.unlockDate = currentTime() + LOCK_PERIOD;
         }
-        accounts[investor] = a;
+        _accounts[investor] = a;
         FundsLocked(investor, amount, neumarks);
     }
 
@@ -247,7 +247,7 @@ contract LockedAccount is
         onlyState(LockState.AcceptingLocks)
         onlyController()
     {
-        _changeState(LockState.ReleaseAll);
+        changeState(LockState.ReleaseAll);
     }
 
     /// allows anyone to use escape hatch
@@ -256,7 +256,7 @@ contract LockedAccount is
         onlyState(LockState.AcceptingLocks)
         onlyController()
     {
-        _changeState(LockState.AcceptingUnlocks);
+        changeState(LockState.AcceptingUnlocks);
     }
 
     /// enables migration to new LockedAccount instance
@@ -265,16 +265,16 @@ contract LockedAccount is
     /// may be set in AcceptingLocks state (in unlikely event that controller
     /// fails we let investors out)
     /// and AcceptingUnlocks - which is normal operational mode
-    function enableMigration(LockedAccountMigration _migration)
+    function enableMigration(LockedAccountMigration migration)
         public
         only(ROLE_LOCKED_ACCOUNT_ADMIN)
         onlyStates(LockState.AcceptingLocks, LockState.AcceptingUnlocks)
     {
-        require(address(migration) == 0);
+        require(address(_migration) == 0);
 
         // we must be the source
-        require(_migration.getMigrationFrom() == address(this));
-        migration = _migration;
+        require(migration.getMigrationFrom() == address(this));
+        _migration = migration;
         MigrationEnabled(_migration);
     }
 
@@ -282,14 +282,14 @@ contract LockedAccount is
     function migrate()
         public
     {
-        require(address(migration) != 0);
+        require(address(_migration) != 0);
 
         // migrates
-        Account storage a = accounts[msg.sender];
+        Account storage a = _accounts[msg.sender];
 
         // if there is anything to migrate
         if (a.balance > 0) {
-            bool migrated = migration.migrateInvestor(
+            bool migrated = _migration.migrateInvestor(
                 msg.sender,
                 a.balance,
                 a.neumarksDue,
@@ -297,34 +297,34 @@ contract LockedAccount is
             );
             assert(migrated);
             InvestorMigrated(msg.sender, a.balance, a.neumarksDue, a.unlockDate);
-            _removeInvestor(msg.sender, a.balance);
+            removeInvestor(msg.sender, a.balance);
         }
     }
 
-    function setController(ITokenOffering _controller)
+    function setController(ITokenOffering controller)
         public
         only(ROLE_LOCKED_ACCOUNT_ADMIN)
         onlyStates(LockState.Uncontrolled, LockState.AcceptingLocks)
     {
         // do not let change controller that didn't yet finished
-        if (address(controller) != 0) {
-            require(controller.isFinalized());
+        if (address(_controller) != 0) {
+            require(_controller.isFinalized());
         }
-        controller = _controller;
-        _changeState(LockState.AcceptingLocks);
+        _controller = controller;
+        changeState(LockState.AcceptingLocks);
     }
 
     /// sets address to which tokens from unlock penalty are sent
     /// both simple addresses and contracts are allowed
     /// contract needs to implement ApproveAndCallCallback interface
-    function setPenaltyDisbursal(address _penaltyDisbursalAddress)
+    function setPenaltyDisbursal(address penaltyDisbursalAddress)
         public
         only(ROLE_LOCKED_ACCOUNT_ADMIN)
     {
-        require(_penaltyDisbursalAddress != address(0));
+        require(penaltyDisbursalAddress != address(0));
 
         // can be changed at any moment by admin
-        penaltyDisbursalAddress = _penaltyDisbursalAddress;
+        _penaltyDisbursalAddress = penaltyDisbursalAddress;
     }
 
     function assetToken()
@@ -364,8 +364,48 @@ contract LockedAccount is
         constant
         returns (uint256, uint256, uint256)
     {
-        Account storage a = accounts[investor];
+        Account storage a = _accounts[investor];
         return (a.balance, a.neumarksDue, a.unlockDate);
+    }
+
+    function controller()
+        public
+        constant
+        returns (address)
+    {
+        return _controller;
+    }
+
+    function lockState()
+        public
+        constant
+        returns (LockState)
+    {
+        return _lockState;
+    }
+
+    function totalLockedAmount()
+        public
+        constant
+        returns (uint256)
+    {
+        return _totalLockedAmount;
+    }
+
+    function totalInvestors()
+        public
+        constant
+        returns (uint256)
+    {
+        return _totalInvestors;
+    }
+
+    function penaltyDisbursalAddress()
+        public
+        constant
+        returns (address)
+    {
+        return _penaltyDisbursalAddress;
     }
 
     //
@@ -384,38 +424,38 @@ contract LockedAccount is
     // Internal functions
     ////////////////////////
 
-    function _addBalance(uint balance, uint amount)
+    function addBalance(uint balance, uint amount)
         internal
         returns (uint)
     {
-        totalLockedAmount = add(totalLockedAmount, amount);
+        _totalLockedAmount = add(_totalLockedAmount, amount);
         uint256 newBalance = add(balance, amount);
         assert(isSafeMultiplier(newBalance));
         return newBalance;
     }
 
-    function _subBalance(uint balance, uint amount)
+    function subBalance(uint balance, uint amount)
         internal
         returns (uint)
     {
-        totalLockedAmount -= amount;
+        _totalLockedAmount -= amount;
         return balance - amount;
     }
 
-    function _removeInvestor(address investor, uint256 balance)
+    function removeInvestor(address investor, uint256 balance)
         internal
     {
-        totalLockedAmount -= balance;
-        totalInvestors -= 1;
-        delete accounts[investor];
+        _totalLockedAmount -= balance;
+        _totalInvestors -= 1;
+        delete _accounts[investor];
     }
 
-    function _changeState(LockState newState)
+    function changeState(LockState newState)
         internal
     {
-        if (newState != lockState) {
-            LockStateTransition(lockState, newState);
-            lockState = newState;
+        if (newState != _lockState) {
+            LockStateTransition(_lockState, newState);
+            _lockState = newState;
         }
     }
 
@@ -423,13 +463,13 @@ contract LockedAccount is
         internal
         returns (Status)
     {
-        Account storage a = accounts[investor];
+        Account storage a = _accounts[investor];
 
         // if there is anything to unlock
         if (a.balance > 0) {
 
             // in ReleaseAll just give money back by transfering to investor
-            if (lockState == LockState.AcceptingUnlocks) {
+            if (_lockState == LockState.AcceptingUnlocks) {
 
                 // before burn happens, investor must make allowance to locked account
                 if (NEUMARK.allowance(investor, address(this)) < a.neumarksDue) {
@@ -444,16 +484,16 @@ contract LockedAccount is
 
                 // take the penalty if before unlockDate
                 if (currentTime() < a.unlockDate) {
-                    require(penaltyDisbursalAddress != address(0));
+                    require(_penaltyDisbursalAddress != address(0));
                     uint256 penalty = fraction(a.balance, PENALTY_FRACTION);
 
                     // distribute penalty
-                    if (isContract(penaltyDisbursalAddress)) {
+                    if (isContract(_penaltyDisbursalAddress)) {
 
                         // transfer to contract
                         require(
                             ASSET_TOKEN.approveAndCall(
-                                penaltyDisbursalAddress,
+                                _penaltyDisbursalAddress,
                                 penalty,
                                 ""
                             )
@@ -461,10 +501,10 @@ contract LockedAccount is
                     } else {
 
                         // transfer to address
-                        require(ASSET_TOKEN.transfer(penaltyDisbursalAddress, penalty));
+                        require(ASSET_TOKEN.transfer(_penaltyDisbursalAddress, penalty));
                     }
-                    PenaltyDisbursed(investor, penalty, penaltyDisbursalAddress);
-                    a.balance = _subBalance(a.balance, penalty);
+                    PenaltyDisbursed(investor, penalty, _penaltyDisbursalAddress);
+                    a.balance = subBalance(a.balance, penalty);
                 }
             }
 
@@ -473,7 +513,7 @@ contract LockedAccount is
 
             // remove balance, investor and
             FundsUnlocked(investor, a.balance);
-            _removeInvestor(investor, a.balance);
+            removeInvestor(investor, a.balance);
         }
         return Status.SUCCESS;
     }

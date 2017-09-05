@@ -26,19 +26,19 @@ contract TokenMetadata is ITokenMetadata {
     ////////////////////////
 
     /// @notice Constructor to create a MiniMeToken
-    /// @param _tokenName Name of the new token
-    /// @param _decimalUnits Number of decimals of the new token
-    /// @param _tokenSymbol Token Symbol for the new token
+    /// @param tokenName Name of the new token
+    /// @param decimalUnits Number of decimals of the new token
+    /// @param tokenSymbol Token Symbol for the new token
     function TokenMetadata(
-        string _tokenName,
-        uint8 _decimalUnits,
-        string _tokenSymbol,
-        string _version
+        string tokenName,
+        uint8 decimalUnits,
+        string tokenSymbol,
+        string version
     ) {
-        NAME = _tokenName;                                 // Set the name
-        SYMBOL = _tokenSymbol;                             // Set the symbol
-        DECIMALS = _decimalUnits;                          // Set the decimals
-        VERSION = _version;
+        NAME = tokenName;                                 // Set the name
+        SYMBOL = tokenSymbol;                             // Set the symbol
+        DECIMALS = decimalUnits;                          // Set the decimals
+        VERSION = version;
     }
 
     ////////////////////////

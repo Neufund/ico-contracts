@@ -7,13 +7,13 @@ contract Migrations {
     // Immutable state
     ////////////////////////
 
-    address public OWNER;
+    address private OWNER;
 
     ////////////////////////
     // Mutable state
     ////////////////////////
 
-    uint public last_completed_migration;
+    uint private _lastCompletedMigration;
 
     ////////////////////////
     // Modifiers
@@ -40,7 +40,7 @@ contract Migrations {
         public
         restricted
     {
-        last_completed_migration = completed;
+        _lastCompletedMigration = completed;
     }
 
     function upgrade(address new_address)
@@ -48,6 +48,22 @@ contract Migrations {
         restricted
     {
         Migrations upgraded = Migrations(new_address);
-        upgraded.setCompleted(last_completed_migration);
+        upgraded.setCompleted(_lastCompletedMigration);
+    }
+
+    function lastCompletedMigration()
+        public
+        constant
+        returns (uint)
+    {
+        return _lastCompletedMigration;
+    }
+
+    function owner()
+        public
+        constant
+        returns (address)
+    {
+        return OWNER;
     }
 }

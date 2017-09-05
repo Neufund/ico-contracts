@@ -9,9 +9,9 @@ contract Agreement {
     // Immutable state
     ////////////////////////
 
-    IEthereumForkArbiter public ETHEREUM_FORK_ARBITER;
+    IEthereumForkArbiter private ETHEREUM_FORK_ARBITER;
 
-    string public AGREEMENT_URI;
+    string private AGREEMENT_URI;
 
     ////////////////////////
     // Events

@@ -11,7 +11,7 @@ contract Reclaimable is AccessControlled, AccessRoles {
     // Constants
     ////////////////////////
 
-    IBasicToken constant public RECLAIM_ETHER = IBasicToken(0x0);
+    IBasicToken constant internal RECLAIM_ETHER = IBasicToken(0x0);
 
     ////////////////////////
     // Public functions

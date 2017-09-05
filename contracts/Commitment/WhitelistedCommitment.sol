@@ -10,16 +10,16 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
     ////////////////////////
 
     // mapping of addresses allowed to participate
-    mapping (address => bool) public whitelisted;
+    mapping (address => bool) private _whitelisted;
 
-    address[] public whitelistedInvestors;
+    address[] private _whitelistedInvestors;
 
     // mapping of addresses allowed to participate for fixed Neumark cost
-    mapping (address => uint256) public fixedCostTickets;
+    mapping (address => uint256) private _fixedCostTickets;
 
-    mapping (address => uint256) public fixedCostNeumarks;
+    mapping (address => uint256) private _fixedCostNeumarks;
 
-    address[] public fixedCostInvestors;
+    address[] private _fixedCostInvestors;
 
     ////////////////////////
     // Constructor
@@ -45,11 +45,11 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
         only(ROLE_WHITELIST_ADMIN)
     {
         // can be set only once
-        require(fixedCostInvestors.length == 0);
+        require(_fixedCostInvestors.length == 0);
         require(addresses.length == tickets.length);
 
         // before commitment starts
-        require(currentTime() < startDate);
+        require(currentTime() < startDate());
 
         // move to storage
         for (uint256 idx = 0; idx < addresses.length; idx++) {
@@ -59,18 +59,18 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
             require(ticket > 0);
 
             // allow to invest up to ticket on fixed cost
-            fixedCostTickets[addresses[idx]] = ticket;
+            _fixedCostTickets[addresses[idx]] = ticket;
 
             // issue neumarks for given investor
             uint256 ticketEuroUlps = convertToEUR(ticket);
-            fixedCostNeumarks[addresses[idx]] = NEUMARK.issueForEuro(ticketEuroUlps);
+            _fixedCostNeumarks[addresses[idx]] = NEUMARK.issueForEuro(ticketEuroUlps);
 
             // also allow to invest from unordered whitelist along the curve
-            whitelisted[addresses[idx]] = true;
+            _whitelisted[addresses[idx]] = true;
         }
 
         // leave array for easy enumeration
-        fixedCostInvestors = addresses;
+        _fixedCostInvestors = addresses;
     }
 
     function setWhitelist(address[] addresses)
@@ -78,18 +78,18 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
         only(ROLE_WHITELIST_ADMIN)
     {
         // can be set only once
-        require(whitelistedInvestors.length == 0);
+        require(_whitelistedInvestors.length == 0);
 
         // before commitment starts
-        require(currentTime() < startDate);
+        require(currentTime() < startDate());
 
         // move to storage
         for (uint256 idx = 0; idx < addresses.length; idx++) {
-            whitelisted[addresses[idx]] = true;
+            _whitelisted[addresses[idx]] = true;
         }
 
         // leave array for easy enumeration
-        whitelistedInvestors = addresses;
+        _whitelistedInvestors = addresses;
     }
 
     /// allows to abort commitment process before it starts and rollback curve
@@ -98,9 +98,51 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
         public
         only(ROLE_WHITELIST_ADMIN)
     {
-        require(currentTime()<startDate);
+        require(currentTime() < startDate());
         rollbackCurve();
         selfdestruct(address(msg.sender));
+    }
+
+    function whitelisted(address investor)
+        public
+        constant
+        returns (bool)
+    {
+        return _whitelisted[investor];
+    }
+
+    function fixedCostInvestors(uint256 index)
+        public
+        constant
+        returns (address)
+    {
+        require(index < _fixedCostInvestors.length);
+        return _fixedCostInvestors[index];
+    }
+
+    function fixedCostTickets(address investor)
+        public
+        constant
+        returns (uint256)
+    {
+        return _fixedCostTickets[investor];
+    }
+
+    function fixedCostNeumarks(address investor)
+        public
+        constant
+        returns (uint256)
+    {
+        return _fixedCostNeumarks[investor];
+    }
+
+    function whitelistedInvestors(uint256 index)
+        public
+        constant
+        returns (address)
+    {
+        require(index < _whitelistedInvestors.length);
+        return _whitelistedInvestors[index];
     }
 
     //
@@ -154,7 +196,7 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
         returns (uint256)
     {
         // returns 0 in case of investor has no fixed cost ticket
-        uint256 fixedInvestorTicket = fixedCostTickets[investor];
+        uint256 fixedInvestorTicket = _fixedCostTickets[investor];
 
         // what is above limit for fixed price should be rewarded from curve
         uint256 whitelistReward = 0;
@@ -169,14 +211,14 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
         // get pro rata neumark reward for any eth left
         uint256 fixedReward = 0;
         if (remainingAmount > 0) {
-            uint256 fixedInvestorNeumarks = fixedCostNeumarks[investor];
+            uint256 fixedInvestorNeumarks = _fixedCostNeumarks[investor];
             fixedReward = proportion(fixedInvestorNeumarks, remainingAmount, fixedInvestorTicket);
 
             // if investor gets neumark with `k` tranches of different wei sizes a1...ak and `ticket` is total declared ticket
             // then last proportion must be: ak / (ticket - sum(a1...ak-1)) == 1
             // which gives fixedReward == fixedInvestorNeumarks, therefore we may safely do the following:
-            fixedCostNeumarks[investor] -= fixedReward;
-            fixedCostTickets[investor] -= remainingAmount;
+            _fixedCostNeumarks[investor] -= fixedReward;
+            _fixedCostTickets[investor] -= remainingAmount;
         }
 
         // distribute to investor and platform operator
@@ -190,6 +232,6 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
     {
         // latter part of this condition is not needed because we whitelist every fixed cost investor
         // kept to make condition clear
-        return (whitelisted[msg.sender] || fixedCostTickets[msg.sender] > 0);
+        return (_whitelisted[msg.sender] || _fixedCostTickets[msg.sender] > 0);
     }
 }

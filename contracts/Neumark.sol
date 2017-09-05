@@ -31,9 +31,9 @@ contract Neumark is
     // Mutable state
     ////////////////////////
 
-    bool public transferEnabled;
+    bool private _transferEnabled;
 
-    uint256 public totalEuroUlps;
+    uint256 private _totalEuroUlps;
 
     ////////////////////////
     // Events
@@ -71,8 +71,8 @@ contract Neumark is
         NeumarkIssuanceCurve()
         Reclaimable()
     {
-        transferEnabled = false;
-        totalEuroUlps = 0;
+        _transferEnabled = false;
+        _totalEuroUlps = 0;
     }
 
     ////////////////////////
@@ -85,11 +85,11 @@ contract Neumark is
         acceptAgreement(msg.sender)
         returns (uint256)
     {
-        require(totalEuroUlps + euroUlps >= totalEuroUlps);
+        require(_totalEuroUlps + euroUlps >= _totalEuroUlps);
         address beneficiary = msg.sender;
-        uint256 neumarkUlps = incremental(totalEuroUlps, euroUlps);
+        uint256 neumarkUlps = incremental(_totalEuroUlps, euroUlps);
 
-        totalEuroUlps = totalEuroUlps + euroUlps;
+        _totalEuroUlps = _totalEuroUlps + euroUlps;
 
         assert(mGenerateTokens(beneficiary, neumarkUlps));
 
@@ -104,9 +104,9 @@ contract Neumark is
         returns (uint256)
     {
         address owner = msg.sender;
-        uint256 euroUlps = incrementalInverse(totalEuroUlps, neumarkUlps);
+        uint256 euroUlps = incrementalInverse(_totalEuroUlps, neumarkUlps);
 
-        totalEuroUlps -= euroUlps;
+        _totalEuroUlps -= euroUlps;
 
         assert(mDestroyTokens(owner, neumarkUlps));
 
@@ -118,7 +118,7 @@ contract Neumark is
         public
         only(ROLE_TRANSFER_ADMIN)
     {
-        transferEnabled = enabled;
+        _transferEnabled = enabled;
     }
 
     function createSnapshot()
@@ -127,6 +127,22 @@ contract Neumark is
         returns (uint256)
     {
         return DailyAndSnapshotable.createSnapshot();
+    }
+
+    function transferEnabled()
+        public
+        constant
+        returns (bool)
+    {
+        return _transferEnabled;
+    }
+
+    function totalEuroUlps()
+        public
+        constant
+        returns (uint256)
+    {
+        return _totalEuroUlps;
     }
 
     ////////////////////////
@@ -147,7 +163,7 @@ contract Neumark is
         acceptAgreement(to)
         returns (bool allow)
     {
-        return transferEnabled;
+        return _transferEnabled;
     }
 
     function mOnApprove(

@@ -28,15 +28,15 @@ contract Disbursal is IERC677Callback {
     // Immutabel state
     ////////////////////////
 
-    ISnapshotableToken public SHARE_TOKEN;
+    ISnapshotableToken private SHARE_TOKEN;
 
     ////////////////////////
     // Mutable state
     ////////////////////////
 
-    Disbursment[] disbursments;
+    Disbursment[] private _disbursments;
 
-    mapping(address => mapping(uint256 => bool)) claimed;
+    mapping(address => mapping(uint256 => bool)) private _claimed;
 
     ////////////////////////
     // Events
@@ -80,7 +80,7 @@ contract Disbursal is IERC677Callback {
     {
         uint256[100] memory result;
         uint j = 0;
-        for (uint256 i = from; i < disbursments.length; ++i) {
+        for (uint256 i = from; i < _disbursments.length; ++i) {
             if (claimable(beneficiary, i)) {
                 result[j] = i;
                 j += 1;
@@ -98,17 +98,17 @@ contract Disbursal is IERC677Callback {
         returns (bool)
     {
         // Invalid index
-        if(index >= disbursments.length) {
+        if(index >= _disbursments.length) {
             return false;
         }
 
         // Already claimed
-        if(claimed[beneficiary][index] == true) {
+        if(_claimed[beneficiary][index] == true) {
             return false;
         }
 
         // Check if `beneficiary` has shares
-        Disbursment storage disbursment = disbursments[index];
+        Disbursment storage disbursment = _disbursments[index];
         uint256 shares = SHARE_TOKEN.balanceOfAt(beneficiary, disbursment.snapshot);
         return  shares > 0;
     }
@@ -122,8 +122,8 @@ contract Disbursal is IERC677Callback {
     function claim(address beneficiary)
         public
     {
-        for(uint256 i = 0; i < disbursments.length; ++i) {
-            if(claimed[beneficiary][i] == false) {
+        for(uint256 i = 0; i < _disbursments.length; ++i) {
+            if(_claimed[beneficiary][i] == false) {
                 claim(beneficiary, i);
             }
         }
@@ -140,8 +140,8 @@ contract Disbursal is IERC677Callback {
     function claim(address beneficiary, uint256 index)
         public
     {
-        require(index < disbursments.length);
-        require(claimed[beneficiary][index] == false);
+        require(index < _disbursments.length);
+        require(_claimed[beneficiary][index] == false);
 
         // Compute share
         // NOTE: By mainting both remaining counters we have automatic
@@ -149,7 +149,7 @@ contract Disbursal is IERC677Callback {
         //       final claim being exact and issuing all the remaining tokens.
         // TODO: Remove < 2¹²⁸ restrictions
         // TODO: Correct rounding instead of floor.
-        Disbursment storage disbursment = disbursments[index];
+        Disbursment storage disbursment = _disbursments[index];
         uint256 shares = SHARE_TOKEN.balanceOfAt(beneficiary, disbursment.snapshot);
         assert(disbursment.remainingShares < 2**128);
         assert(disbursment.remainingAmount < 2**128);
@@ -161,7 +161,7 @@ contract Disbursal is IERC677Callback {
         // TODO: Can we reduce the number of state writes?
         disbursment.remainingAmount -= amount;
         disbursment.remainingShares -= shares;
-        claimed[beneficiary][index] = true;
+        _claimed[beneficiary][index] = true;
 
         // Transfer tokens
         IBasicToken token = disbursment.disbursedToken;
@@ -206,6 +206,14 @@ contract Disbursal is IERC677Callback {
         disburseAllowance(IERC20Token(token), from, amount);
     }
 
+    function shareToken()
+        public
+        constant
+        returns (ISnapshotableToken)
+    {
+        return SHARE_TOKEN;
+    }
+
     // TODO: ERC223 style receiver
 
     ////////////////////////
@@ -233,8 +241,8 @@ contract Disbursal is IERC677Callback {
         require(totalShares < 2**128);
 
         // Create disbursal
-        uint256 index = disbursments.length;
-        disbursments.push(
+        uint256 index = _disbursments.length;
+        _disbursments.push(
             Disbursment({
                 snapshot: snapshot,
                 disbursedToken: token,

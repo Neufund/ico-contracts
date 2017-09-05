@@ -30,19 +30,19 @@ contract Vote {
     // Immutable state
     ////////////////////////
 
-    ISnapshotableToken public TOKEN;
+    ISnapshotableToken private TOKEN;
 
-    uint256 public SNAPSHOT;
+    uint256 private SNAPSHOT;
 
-    bytes32[] public CHOICE_HASHES;
+    bytes32[] private CHOICE_HASHES;
 
     ////////////////////////
     // Mutable state
     ////////////////////////
 
-    string[] public choices;
+    string[] private _choices;
 
-    uint256[] totals;
+    uint256[] private _totals;
 
     ////////////////////////
     // Constructor
@@ -57,7 +57,7 @@ contract Vote {
         TOKEN = token;
         SNAPSHOT = token.createSnapshot();
         CHOICE_HASHES = choiceHashes;
-        choices.length = CHOICE_HASHES.length;
+        _choices.length = CHOICE_HASHES.length;
     }
 
     ////////////////////////
@@ -68,7 +68,7 @@ contract Vote {
     {
         require(index < CHOICE_HASHES.length);
         require(keccak256(choice) == CHOICE_HASHES[index]);
-        choices[index] = choice;
+        _choices[index] = choice;
     }
 
     function vote(

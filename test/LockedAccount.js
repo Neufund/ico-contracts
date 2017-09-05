@@ -80,7 +80,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
       "neumarks must be allocated"
     ).to.be.bignumber.equal(neumarks.add(initialNeumarksBalance));
     // only controller can lock
-    tx = await chain.commitment._investFor(investorAddress, ticket, neumarks, {
+    tx = await chain.commitment.investFor(investorAddress, ticket, neumarks, {
       value: ticket,
       from: investorAddress
     });
@@ -285,7 +285,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
     // move time forward within longstop date
     await increaseTime(moment.duration(chain.days, "s"));
     // controller says yes
-    await chain.commitment._succ();
+    await chain.commitment.succ();
     // must enable token transfers
     await chain.neumark.enableTransfer(true);
   }
@@ -537,7 +537,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
     const neumarks2 = await lockEther(investor2, ticket2);
     await increaseTime(moment.duration(chain.days, "s"));
     // controller says no
-    await chain.commitment._fail();
+    await chain.commitment.fail();
     // forward to investor1 unlock date
     let unlockTx = await chain.lockedAccount.unlock({ from: investor });
     await expectUnlockEvent(unlockTx, investor, ticket1);
@@ -604,12 +604,12 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
   });
 
   it("should reclaim ether", async () => {
+    const RECLAIM_ETHER = "0x0";
     const amount = chain.ether(1);
     await forceEther(chain.lockedAccount.address, amount, investor);
-    const reclaimEther = await chain.lockedAccount.RECLAIM_ETHER();
     await allowToReclaim(admin);
     const adminEthBalance = await web3.eth.getBalance(admin);
-    const tx = await chain.lockedAccount.reclaim(reclaimEther, {
+    const tx = await chain.lockedAccount.reclaim(RECLAIM_ETHER, {
       from: admin,
       gasPrice
     });
@@ -628,7 +628,9 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
     expect(await tokenController.isFinalized()).to.be.false;
     const nullContract = await TestNullContract.new();
     await expect(
-      chain.lockedAccount.setController(nullContract.address, { from: admin })
+      chain.lockedAccount.setController(nullContract.address, {
+        from: admin
+      })
     ).to.be.rejectedWith(EvmError);
   });
 
@@ -636,7 +638,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
     const ticket1 = chain.ether(9.18781092183);
     await lockEther(investor, ticket1);
     // finalizes controller
-    await chain.commitment._succWithLockRelease();
+    await chain.commitment.succWithLockRelease();
     const controllerAddr = await chain.lockedAccount.controller();
     const tokenController = TestCommitment.at(controllerAddr);
     expect(await tokenController.isFinalized()).to.be.true;

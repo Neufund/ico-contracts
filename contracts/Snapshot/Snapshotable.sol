@@ -12,9 +12,9 @@ contract Snapshotable is
     // Mutable state
     ////////////////////////
 
-    uint256 nextSnapshotId;
+    uint256 private _nextSnapshotId;
 
-    bool nextSnapshotModified;
+    bool private _nextSnapshotModified;
 
     ////////////////////////
     // Constructor
@@ -23,8 +23,8 @@ contract Snapshotable is
     function Snapshotable(uint256 start)
         internal
     {
-        nextSnapshotId = start;
-        nextSnapshotModified = true;
+        _nextSnapshotId = start;
+        _nextSnapshotModified = true;
     }
 
     ////////////////////////
@@ -35,13 +35,13 @@ contract Snapshotable is
         public
         returns (uint256)
     {
-        require(nextSnapshotId < 2**256 - 1);
+        require(_nextSnapshotId < 2**256 - 1);
 
         // If the snapshot was not modified, return
         // the previous snapshot id. Their states
         // are identical.
-        if (!nextSnapshotModified) {
-            uint256 previousSnapshot = nextSnapshotId - 1;
+        if (!_nextSnapshotModified) {
+            uint256 previousSnapshot = _nextSnapshotId - 1;
 
             // Log the event anyway, some logic may depend
             // depend on it.
@@ -50,9 +50,9 @@ contract Snapshotable is
         }
 
         // Increment the snapshot counter
-        uint256 snapshotId = nextSnapshotId;
-        nextSnapshotId += 1;
-        nextSnapshotModified = false;
+        uint256 snapshotId = _nextSnapshotId;
+        _nextSnapshotId += 1;
+        _nextSnapshotModified = false;
 
         // Log and return
         SnapshotCreated(snapshotId);
@@ -67,14 +67,14 @@ contract Snapshotable is
         internal
         returns (uint256)
     {
-        return nextSnapshotId;
+        return _nextSnapshotId;
     }
 
     function mixinFlagSnapshotModified()
         internal
     {
-        if (!nextSnapshotModified) {
-            nextSnapshotModified = true;
+        if (!_nextSnapshotModified) {
+            _nextSnapshotModified = true;
         }
     }
 }

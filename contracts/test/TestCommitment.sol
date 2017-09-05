@@ -16,12 +16,7 @@ contract TestCommitment is PublicCommitment {
     // Constructor
     ////////////////////////
 
-    function TestCommitment(
-        IAccessPolicy accessPolicy,
-        EtherToken _ethToken,
-        LockedAccount _lockedAccount,
-        Neumark _neumark
-    )
+    function TestCommitment(IAccessPolicy accessPolicy, EtherToken _ethToken, LockedAccount _lockedAccount, Neumark _neumark)
          PublicCommitment(accessPolicy, _ethToken, _lockedAccount, _neumark)
     {
     }
@@ -30,27 +25,55 @@ contract TestCommitment is PublicCommitment {
     // Public functions
     ////////////////////////
 
-    function _succ() {
+    function succ()
+        public
+    {
         LOCKED_ACCOUNT.controllerSucceeded();
-        finalized = true;
+        _finalized = true;
     }
 
-    function _succWithLockRelease() {
+    function succWithLockRelease()
+        public
+    {
         // do not call lockedAccount just finalize
         // this will allow another controller to overtake lock
-        finalized = true;
+        _finalized = true;
     }
 
-    function _fail() {
+    function fail()
+        public
+    {
         LOCKED_ACCOUNT.controllerFailed();
-        finalized = true;
+        _finalized = true;
     }
 
-    function _investFor(
-        address investor,
-        uint256 amount,
-        uint256 neumarks
-    )
+    // a test function to change start date of ICO - may be useful for UI demo
+    function changeStartDate(uint256 date)
+        public
+    {
+        _startDate = date;
+    }
+
+    // a test function to change start date of ICO - may be useful for UI demo
+    function changeEndDate(uint256 date)
+        public
+    {
+        _endDate = date;
+    }
+
+    function changeMaxCap(uint256 _cap)
+        public
+    {
+        _maxAbsCap = _cap;
+    }
+
+    function changeMinCap(uint256 _cap)
+        public
+    {
+        _minAbsCap = _cap;
+    }
+
+    function investFor(address investor, uint256 amount, uint256 neumarks)
         public
         payable
     {

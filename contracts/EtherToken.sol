@@ -52,8 +52,8 @@ contract EtherToken is
     {
         // must have as much ether as declared
         require(msg.value == amount);
-        balances[to] = add(balances[to], amount);
-        totalSupply = add(totalSupply, amount);
+        _balances[to] = add(_balances[to], amount);
+        _totalSupply = add(_totalSupply, amount);
         Deposit(to, amount);
         return true;
     }
@@ -62,9 +62,9 @@ contract EtherToken is
     function withdraw(uint256 amount)
         public
     {
-        require(balances[msg.sender] >= amount);
-        balances[msg.sender] -= amount;
-        totalSupply -= amount;
+        require(_balances[msg.sender] >= amount);
+        _balances[msg.sender] -= amount;
+        _totalSupply -= amount;
         msg.sender.transfer(amount);
         Withdrawal(msg.sender, amount);
     }
@@ -73,16 +73,16 @@ contract EtherToken is
     // Implements IERC677Token
     //
 
-    function approveAndCall(address _spender, uint256 _amount, bytes _extraData)
+    function approveAndCall(address spender, uint256 amount, bytes extraData)
         returns (bool success)
     {
-        require(approve(_spender, _amount));
+        require(approve(spender, amount));
 
-        success = IERC677Callback(_spender).receiveApproval(
+        success = IERC677Callback(spender).receiveApproval(
             msg.sender,
-            _amount,
+            amount,
             this,
-            _extraData
+            extraData
         );
 
         return success;

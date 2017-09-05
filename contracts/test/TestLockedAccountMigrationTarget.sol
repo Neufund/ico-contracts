@@ -11,9 +11,9 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
     // Mutable state
     ////////////////////////
 
-    LockedAccount public migrationSource;
+    LockedAccount private _migrationSource;
 
-    bool public shouldMigrationFail;
+    bool private _shouldMigrationFail;
 
     ////////////////////////
     // Constructor
@@ -40,14 +40,14 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
         public
         only(ROLE_LOCKED_ACCOUNT_ADMIN)
     {
-        migrationSource = source;
+        _migrationSource = source;
     }
 
     function setShouldMigrationFail(bool shouldFail)
         only(ROLE_LOCKED_ACCOUNT_ADMIN)
         public
     {
-        shouldMigrationFail = shouldFail;
+        _shouldMigrationFail = shouldFail;
     }
 
     function migrateInvestor(address investor, uint256 balance, uint256 neumarksDue, uint256 unlockDate)
@@ -55,18 +55,18 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
         onlyMigrationFrom
         returns(bool)
     {
-        if (shouldMigrationFail)
+        if (_shouldMigrationFail)
             return false;
 
         // just move account
-        accounts[investor] = Account({
+        _accounts[investor] = Account({
             balance: balance,
             neumarksDue: neumarksDue,
             unlockDate: unlockDate
         });
         // minimal bookkeeping
-        _addBalance(balance, balance);
-        totalInvestors += 1;
+        addBalance(balance, balance);
+        _totalInvestors += 1;
 
         return true;
     }
@@ -77,6 +77,6 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
         constant
         returns (address)
     {
-        return address(migrationSource);
+        return address(_migrationSource);
     }
 }
