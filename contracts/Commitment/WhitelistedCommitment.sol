@@ -6,7 +6,7 @@ import './PublicCommitment.sol';
 contract WhitelistedCommitment is AccessRoles, CommitmentBase {
 
     ////////////////////////
-    // State variables
+    // Mutable State
     ////////////////////////
 
     // mapping of addresses allowed to participate
@@ -63,7 +63,7 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
 
             // issue neumarks for given investor
             uint256 ticketEuroUlps = convertToEUR(ticket);
-            fixedCostNeumarks[addresses[idx]] = neumark.issueForEuro(ticketEuroUlps);
+            fixedCostNeumarks[addresses[idx]] = NEUMARK.issueForEuro(ticketEuroUlps);
 
             // also allow to invest from unordered whitelist along the curve
             whitelisted[addresses[idx]] = true;
@@ -113,7 +113,7 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
     {
         // This contract holds Neumark during the commitment phase
         if (!isFinalized()) {
-            require(token != neumark);
+            require(token != NEUMARK);
         }
         Reclaimable.reclaim(token);
     }
@@ -125,9 +125,9 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
     function rollbackCurve()
         internal
     {
-        uint neumarks = neumark.balanceOf(address(this));
+        uint neumarks = NEUMARK.balanceOf(address(this));
         if (neumarks > 0) {
-            neumark.burnNeumark(neumarks);
+            NEUMARK.burnNeumark(neumarks);
         }
     }
 
@@ -146,7 +146,7 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
         internal
     {
         // unlock all accounts in lockedAccount
-        lockedAccount.controllerFailed();
+        LOCKED_ACCOUNT.controllerFailed();
     }
 
     function giveNeumarks(address investor, uint256 amount)
@@ -162,7 +162,7 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
         if (amount > fixedInvestorTicket) {
             uint256 whitelistedAmount = amount - fixedInvestorTicket;
             uint256 whitelistedEuroUlps = convertToEUR(whitelistedAmount);
-            whitelistReward = neumark.issueForEuro(whitelistedEuroUlps);
+            whitelistReward = NEUMARK.issueForEuro(whitelistedEuroUlps);
             remainingAmount = fixedInvestorTicket;
         }
 

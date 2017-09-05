@@ -31,7 +31,7 @@ contract TestCommitment is PublicCommitment {
     ////////////////////////
 
     function _succ() {
-        lockedAccount.controllerSucceeded();
+        LOCKED_ACCOUNT.controllerSucceeded();
         finalized = true;
     }
 
@@ -42,7 +42,7 @@ contract TestCommitment is PublicCommitment {
     }
 
     function _fail() {
-        lockedAccount.controllerFailed();
+        LOCKED_ACCOUNT.controllerFailed();
         finalized = true;
     }
 
@@ -55,12 +55,12 @@ contract TestCommitment is PublicCommitment {
         payable
     {
         // mint new ETH-T for yourself
-        require(paymentToken.deposit.value(msg.value)(address(this), amount));
+        require(PAYMENT_TOKEN.deposit.value(msg.value)(address(this), amount));
 
         // make allowance for lock
-        require(paymentToken.approve(address(lockedAccount), amount));
+        require(PAYMENT_TOKEN.approve(address(LOCKED_ACCOUNT), amount));
 
         // lock in lock
-        lockedAccount.lock(investor, amount, neumarks);
+        LOCKED_ACCOUNT.lock(investor, amount, neumarks);
     }
 }

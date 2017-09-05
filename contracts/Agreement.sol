@@ -9,9 +9,9 @@ contract Agreement {
     // Immutable state
     ////////////////////////
 
-    IEthereumForkArbiter public ethereumForkArbiter;
+    IEthereumForkArbiter public ETHEREUM_FORK_ARBITER;
 
-    string public agreementUri;
+    string public AGREEMENT_URI;
 
     ////////////////////////
     // Events
@@ -36,7 +36,23 @@ contract Agreement {
 
     function Agreement(IEthereumForkArbiter forkArbiter, string uri) {
         require(forkArbiter != IEthereumForkArbiter(0x0));
-        ethereumForkArbiter = forkArbiter;
-        agreementUri = uri;
+        ETHEREUM_FORK_ARBITER = forkArbiter;
+        AGREEMENT_URI = uri;
+    }
+
+    function ethereumForkArbiter()
+        public
+        constant
+        returns (IEthereumForkArbiter)
+    {
+        return ETHEREUM_FORK_ARBITER;
+    }
+
+    function agreementUri()
+        public
+        constant
+        returns (string)
+    {
+        return AGREEMENT_URI;
     }
 }

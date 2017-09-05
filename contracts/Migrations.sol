@@ -7,7 +7,7 @@ contract Migrations {
     // Immutable state
     ////////////////////////
 
-    address public owner;
+    address public OWNER;
 
     ////////////////////////
     // Mutable state
@@ -20,7 +20,7 @@ contract Migrations {
     ////////////////////////
 
     modifier restricted() {
-        if (msg.sender == owner)
+        if (msg.sender == OWNER)
             _;
     }
 
@@ -29,7 +29,7 @@ contract Migrations {
     ////////////////////////
 
     function Migrations() {
-        owner = msg.sender;
+        OWNER = msg.sender;
     }
 
     ////////////////////////

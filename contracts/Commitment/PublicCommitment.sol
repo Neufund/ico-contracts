@@ -37,17 +37,17 @@ contract PublicCommitment is
         internal
     {
         // enable Neumark trading in token controller
-        neumark.enableTransfer(true);
+        NEUMARK.enableTransfer(true);
 
         // enable escape hatch and end locking funds phase
-        lockedAccount.controllerSucceeded();
+        LOCKED_ACCOUNT.controllerSucceeded();
     }
 
     function onCommitmentFailed()
         internal
     {
         // unlock all accounts in lockedAccount
-        lockedAccount.controllerFailed();
+        LOCKED_ACCOUNT.controllerFailed();
     }
 
     function giveNeumarks(address investor, uint256 amount)
@@ -57,7 +57,7 @@ contract PublicCommitment is
         uint256 euroUlps = convertToEUR(amount);
 
         // issue to self
-        uint256 neumarkUlps = neumark.issueForEuro(euroUlps);
+        uint256 neumarkUlps = NEUMARK.issueForEuro(euroUlps);
         return distributeAndReturnInvestorNeumarks(investor, neumarkUlps);
     }
 

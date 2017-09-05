@@ -7,7 +7,7 @@ import './StandardRoles.sol';
 contract AccessControlled is IAccessControlled, StandardRoles {
 
     ////////////////////////
-    // State variables
+    // Mutable state
     ////////////////////////
 
     IAccessPolicy private _accessPolicy;

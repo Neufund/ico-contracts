@@ -29,18 +29,18 @@ contract CommitmentBase is
     uint256 public constant NEUMARK_REWARD_PLATFORM_OPERATOR_DIVISOR = 2;
 
     ////////////////////////
-    // Immutable state variables
+    // Immutable state
     ////////////////////////
 
     // locks investors capital
-    LockedAccount public lockedAccount;
+    LockedAccount public LOCKED_ACCOUNT;
 
-    ITokenWithDeposit public paymentToken;
+    ITokenWithDeposit public PAYMENT_TOKEN;
 
-    Neumark public neumark;
+    Neumark public NEUMARK;
 
     ////////////////////////
-    // State variables
+    // Mutable state
     ////////////////////////
 
     //
@@ -88,9 +88,10 @@ contract CommitmentBase is
         Reclaimable()
     {
         require(address(_ethToken) == address(_lockedAccount.assetToken()));
-        lockedAccount = _lockedAccount;
-        neumark = _neumark;
-        paymentToken = _ethToken;
+        require(_neumark == _lockedAccount.neumark());
+        LOCKED_ACCOUNT = _lockedAccount;
+        NEUMARK = _neumark;
+        PAYMENT_TOKEN = _ethToken;
     }
 
     ////////////////////////
@@ -133,14 +134,14 @@ contract CommitmentBase is
         payable
     {
         // must control locked account
-        require(address(lockedAccount.controller()) == address(this));
+        require(address(LOCKED_ACCOUNT.controller()) == address(this));
 
         // must have terms set
         require(startDate > 0);
         require(currentTime() >= startDate);
         require(msg.value >= minTicket);
         require(!hasEnded());
-        uint256 total = add(lockedAccount.totalLockedAmount(), msg.value);
+        uint256 total = add(LOCKED_ACCOUNT.totalLockedAmount(), msg.value);
 
         // we are not sending back the difference - only full tickets
         require(total <= maxAbsCap);
@@ -150,17 +151,17 @@ contract CommitmentBase is
         uint256 neumarks = giveNeumarks(msg.sender, msg.value);
 
         //send Money to ETH-T contract
-        paymentToken.deposit.value(msg.value)(address(this), msg.value);
+        PAYMENT_TOKEN.deposit.value(msg.value)(address(this), msg.value);
 
         // make allowance for lock
-        paymentToken.approve(address(lockedAccount), msg.value);
+        PAYMENT_TOKEN.approve(address(LOCKED_ACCOUNT), msg.value);
 
         // lock in lock
-        lockedAccount.lock(msg.sender, msg.value, neumarks);
+        LOCKED_ACCOUNT.lock(msg.sender, msg.value, neumarks);
 
         // convert weis into euro
         uint256 euroUlps = convertToEUR(msg.value);
-        FundsInvested(msg.sender, msg.value, paymentToken, euroUlps, neumarks, neumark);
+        FundsInvested(msg.sender, msg.value, PAYMENT_TOKEN, euroUlps, neumarks, NEUMARK);
     }
 
     /// when commitment end criteria are met ANYONE can finalize
@@ -182,8 +183,32 @@ contract CommitmentBase is
             onCommitmentFailed();
             CommitmentCompleted(false);
         }
-        finalCommitedAmount = lockedAccount.totalLockedAmount();
+        finalCommitedAmount = LOCKED_ACCOUNT.totalLockedAmount();
         finalized = true;
+    }
+
+    function lockedAccount()
+        public
+        constant
+        returns (LockedAccount)
+    {
+        return LOCKED_ACCOUNT;
+    }
+
+    function paymentToken()
+        public
+        constant
+        returns (ITokenWithDeposit)
+    {
+        return  PAYMENT_TOKEN;
+    }
+
+    function neumark()
+        public
+        constant
+        returns (Neumark)
+    {
+        return NEUMARK;
     }
 
     /// overrides TokenOffering
@@ -192,7 +217,7 @@ contract CommitmentBase is
         constant
         returns (bool)
     {
-        uint256 amount = finalized ? finalCommitedAmount : lockedAccount.totalLockedAmount();
+        uint256 amount = finalized ? finalCommitedAmount : LOCKED_ACCOUNT.totalLockedAmount();
         return amount >= minAbsCap;
     }
 
@@ -202,7 +227,7 @@ contract CommitmentBase is
         constant
         returns(bool)
     {
-        uint256 amount = finalized ? finalCommitedAmount : lockedAccount.totalLockedAmount();
+        uint256 amount = finalized ? finalCommitedAmount : LOCKED_ACCOUNT.totalLockedAmount();
         return amount >= maxAbsCap || currentTime() >= endDate;
     }
 
@@ -240,12 +265,12 @@ contract CommitmentBase is
         uint256 investorNeumarks = divRound(neumarks, NEUMARK_REWARD_PLATFORM_OPERATOR_DIVISOR);
 
         // @ remco is there a better way to distribute?
-        bool isEnabled = neumark.transferEnabled();
+        bool isEnabled = NEUMARK.transferEnabled();
         if (!isEnabled)
-            neumark.enableTransfer(true);
-        require(neumark.transfer(investor, investorNeumarks));
-        require(neumark.transfer(platformOperatorWallet, neumarks - investorNeumarks));
-        neumark.enableTransfer(isEnabled);
+            NEUMARK.enableTransfer(true);
+        require(NEUMARK.transfer(investor, investorNeumarks));
+        require(NEUMARK.transfer(platformOperatorWallet, neumarks - investorNeumarks));
+        NEUMARK.enableTransfer(isEnabled);
         return investorNeumarks;
     }
 

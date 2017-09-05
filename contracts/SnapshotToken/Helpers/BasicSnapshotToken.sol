@@ -16,11 +16,11 @@ contract BasicSnapshotToken is
 
     // `parentToken` is the Token address that was cloned to produce this token;
     //  it will be 0x0 for a token that was not cloned
-    ISnapshotTokenParent public parentToken;
+    ISnapshotTokenParent public PARENT_TOKEN;
 
     // `parentSnapShotBlock` is the block number from the Parent Token that was
     //  used to determine the initial distribution of the Clone Token
-    uint256 public parentSnapshot;
+    uint256 public PARENT_SNAPSHOT;
 
     ////////////////////////
     // Mutable state
@@ -48,8 +48,8 @@ contract BasicSnapshotToken is
         public
         Snapshot()
     {
-        parentToken = _parentToken;
-        parentSnapshot = _parentSnapshot;
+        PARENT_TOKEN = _parentToken;
+        PARENT_SNAPSHOT = _parentSnapshot;
     }
 
     ////////////////////////
@@ -111,8 +111,8 @@ contract BasicSnapshotToken is
         }
 
         // Try parent contract at or before the fork
-        if (address(parentToken) != 0) {
-            return parentToken.totalSupplyAt(parentSnapshot);
+        if (address(PARENT_TOKEN) != 0) {
+            return PARENT_TOKEN.totalSupplyAt(PARENT_SNAPSHOT);
         }
 
         // Default to an empty balance
@@ -136,8 +136,8 @@ contract BasicSnapshotToken is
         }
 
         // Try parent contract at or before the fork
-        if (address(parentToken) != 0) {
-            return parentToken.balanceOfAt(_owner, parentSnapshot);
+        if (address(PARENT_TOKEN) != 0) {
+            return PARENT_TOKEN.balanceOfAt(_owner, PARENT_SNAPSHOT);
         }
 
         // Default to an empty balance
