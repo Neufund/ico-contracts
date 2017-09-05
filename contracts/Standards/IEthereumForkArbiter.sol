@@ -24,26 +24,32 @@ contract IEthereumForkArbiter {
 
     function nextForkName()
         public
+        constant
         returns (string);
 
     function nextForkUrl()
         public
+        constant
         returns (string);
 
     function nextForkBlockNumber()
         public
+        constant
         returns (uint256);
 
     function lastSignedBlockNumber()
         public
+        constant
         returns (uint256);
 
     function lastSignedBlockHash()
         public
+        constant
         returns (bytes32);
 
     function lastSignedTimestamp()
         public
+        constant
         returns (uint256);
 
 }

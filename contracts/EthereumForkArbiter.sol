@@ -16,17 +16,17 @@ contract EthereumForkArbiter is
     // Mutable state
     ////////////////////////
 
-    string private nextForkName;
+    string private _nextForkName;
 
-    string private nextForkUrl;
+    string private _nextForkUrl;
 
-    uint256 private nextForkBlockNumber;
+    uint256 private _nextForkBlockNumber;
 
-    uint256 private lastSignedBlockNumber;
+    uint256 private _lastSignedBlockNumber;
 
-    bytes32 private lastSignedBlockHash;
+    bytes32 private _lastSignedBlockHash;
 
-    uint256 private lastSignedTimestamp;
+    uint256 private _lastSignedTimestamp;
 
     ////////////////////////
     // Constructor
@@ -54,12 +54,12 @@ contract EthereumForkArbiter is
         require(blockNumber == 0 || blockNumber > block.number);
 
         // Store announcement
-        nextForkName = name;
-        nextForkUrl = url;
-        nextForkBlockNumber = blockNumber;
+        _nextForkName = name;
+        _nextForkUrl = url;
+        _nextForkBlockNumber = blockNumber;
 
         // Log
-        ForkAnnounced(nextForkName, nextForkUrl, nextForkBlockNumber);
+        ForkAnnounced(_nextForkName, _nextForkUrl, _nextForkBlockNumber);
     }
 
     /// @notice Declare that the current fork (as identified by a blockhash) is the valid fork. The valid fork is always the one with the most recent signature.
@@ -70,17 +70,17 @@ contract EthereumForkArbiter is
         require(block.blockhash(number) == hash);
 
         // Reset announcement
-        delete nextForkName;
-        delete nextForkUrl;
-        delete nextForkBlockNumber;
+        delete _nextForkName;
+        delete _nextForkUrl;
+        delete _nextForkBlockNumber;
 
         // Store signature
-        lastSignedBlockNumber = number;
-        lastSignedBlockHash = hash;
-        lastSignedTimestamp = block.timestamp;
+        _lastSignedBlockNumber = number;
+        _lastSignedBlockHash = hash;
+        _lastSignedTimestamp = block.timestamp;
 
         // Log
-        ForkSigned(lastSignedBlockNumber, lastSignedBlockHash);
+        ForkSigned(_lastSignedBlockNumber, _lastSignedBlockHash);
     }
 
     function nextForkName()
@@ -88,7 +88,7 @@ contract EthereumForkArbiter is
         constant
         returns (string)
     {
-        return nextForkName;
+        return _nextForkName;
     }
 
     function nextForkUrl()
@@ -96,7 +96,7 @@ contract EthereumForkArbiter is
         constant
         returns (string)
     {
-        return nextForkUrl;
+        return _nextForkUrl;
     }
 
     function nextForkBlockNumber()
@@ -104,7 +104,7 @@ contract EthereumForkArbiter is
         constant
         returns (uint256)
     {
-        return nextForkBlockNumber;
+        return _nextForkBlockNumber;
     }
 
     function lastSignedBlockNumber()
@@ -112,7 +112,7 @@ contract EthereumForkArbiter is
         constant
         returns (uint256)
     {
-        return lastSignedBlockNumber;
+        return _lastSignedBlockNumber;
     }
 
     function lastSignedBlockHash()
@@ -120,7 +120,7 @@ contract EthereumForkArbiter is
         constant
         returns (bytes32)
     {
-        return lastSignedBlockHash;
+        return _lastSignedBlockHash;
     }
 
     function lastSignedTimestamp()
@@ -128,6 +128,6 @@ contract EthereumForkArbiter is
         constant
         returns (uint256)
     {
-        return lastSignedTimestamp;
+        return _lastSignedTimestamp;
     }
 }
