@@ -116,7 +116,7 @@ contract("PublicCommitment", ([lockAdmin, investor]) => {
       from: investor
     });
     // check event
-    const event = eventValue(tx, "FundsInvested");
+    const event = eventValue(tx, "LogFundsInvested");
     expect(event).to.exist;
     expect(event.args.amount).to.be.bignumber.equal(ticket);
     // check balances

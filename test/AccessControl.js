@@ -39,7 +39,7 @@ contract("AccessControl", ([accessController, owner1, owner2]) => {
     oldValue,
     newValue
   ) {
-    const event = eventValue(tx, "AccessChanged");
+    const event = eventValue(tx, "LogAccessChanged");
     expect(event).to.exist;
     expect(event.args.controller).to.equal(accessController);
     expect(event.args.subject).to.equal(subject);
@@ -50,7 +50,7 @@ contract("AccessControl", ([accessController, owner1, owner2]) => {
   }
 
   function expectAccessEvent(tx, subject, role, object, granted) {
-    const event = eventValue(tx, "Access");
+    const event = eventValue(tx, "LogAccess");
     expect(event).to.exist;
     expect(event.args.subject).to.equal(subject);
     expect(event.args.role).to.equal(role);

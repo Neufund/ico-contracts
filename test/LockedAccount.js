@@ -64,7 +64,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
   });
 
   async function expectLockEvent(tx, investorAddress, ticket, neumarks) {
-    const event = eventValue(tx, "FundsLocked");
+    const event = eventValue(tx, "LogFundsLocked");
     expect(event).to.exist;
     expect(event.args.investor).to.equal(investorAddress);
     expect(event.args.amount).to.be.bignumber.equal(ticket);
@@ -86,7 +86,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
     let tx = await chain.neumark.issueForEuro(ticket, {
       from: investorAddress
     });
-    const neumarks = eventValue(tx, "NeumarksIssued", "neumarkUlp");
+    const neumarks = eventValue(tx, "LogNeumarksIssued", "neumarkUlp");
     expect(
       await chain.neumark.balanceOf(investorAddress),
       "neumarks must be allocated"
@@ -216,7 +216,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
 
   async function expectPenaltyEvent(tx, investorAddress, penalty) {
     const disbursalPool = await chain.lockedAccount.penaltyDisbursalAddress();
-    const event = eventValue(tx, "PenaltyDisbursed");
+    const event = eventValue(tx, "LogPenaltyDisbursed");
     expect(event).to.exist;
     expect(event.args.investor).to.equal(investorAddress);
     expect(event.args.amount).to.be.bignumber.equal(penalty);
@@ -233,7 +233,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
   } */
 
   async function expectNeumarksBurnedEvent(tx, owner, euroUlp, neumarkUlp) {
-    const event = eventValue(tx, "NeumarksBurned");
+    const event = eventValue(tx, "LogNeumarksBurned");
     expect(event).to.exist;
     expect(event.args.owner).to.equal(owner);
     expect(event.args.euroUlp).to.be.bignumber.equal(euroUlp);
@@ -241,7 +241,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
   }
 
   async function expectUnlockEvent(tx, investorAddress, amount) {
-    const event = eventValue(tx, "FundsUnlocked");
+    const event = eventValue(tx, "LogFundsUnlocked");
     expect(event).to.exist;
     expect(event.args.investor).to.equal(investorAddress);
     expect(event.args.amount).to.be.bignumber.equal(amount);
@@ -256,7 +256,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
   async function assertCorrectUnlock(tx, investorAddress, ticket, penalty) {
     const disbursalPool = await chain.lockedAccount.penaltyDisbursalAddress();
     assert.equal(error(tx), Status.SUCCESS, "Expected OK rc from unlock()");
-    // console.log(`unlocked ${eventValue(tx, 'FundsUnlocked', 'amount')} ether`);
+    // console.log(`unlocked ${eventValue(tx, 'LogFundsUnlocked', 'amount')} ether`);
     expect(
       await chain.lockedAccount.totalLockedAmount(),
       "all money sent to pool and to investor"

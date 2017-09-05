@@ -162,12 +162,12 @@ contract(
         migrationTarget.address,
         { from: admin }
       );
-      let event = eventValue(tx, "MigrationEnabled");
+      let event = eventValue(tx, "LogMigrationEnabled");
       expect(event).to.exist;
       expect(event.args.target).to.be.equal(migrationTarget.address);
       // migrate investor
       tx = await chain.lockedAccount.migrate({ from: investorAddress });
-      event = eventValue(tx, "InvestorMigrated");
+      event = eventValue(tx, "LogInvestorMigrated");
       expect(event).to.exist;
       expect(event.args.investor).to.be.equal(investorAddress);
       expect(event.args.amount).to.be.bignumber.equal(ticket);
@@ -246,13 +246,13 @@ contract(
     it("migrate same investor twice should do nothing", async () => {
       await migrateOne(chain.ether(1), investor);
       const tx = await chain.lockedAccount.migrate({ from: investor });
-      expect(hasEvent(tx, "InvestorMigrated")).to.be.false;
+      expect(hasEvent(tx, "LogInvestorMigrated")).to.be.false;
     });
 
     it("migrate non existing investor should do nothing", async () => {
       await migrateOne(chain.ether(1), investor);
       const tx = await chain.lockedAccount.migrate({ from: investor2 });
-      expect(hasEvent(tx, "InvestorMigrated")).to.be.false;
+      expect(hasEvent(tx, "LogInvestorMigrated")).to.be.false;
     });
 
     it("enabling migration for a second time should throw", async () => {
