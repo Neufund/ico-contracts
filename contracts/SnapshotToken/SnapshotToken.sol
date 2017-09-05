@@ -56,11 +56,15 @@ contract SnapshotToken is
     TokenMetadata,
     IsContract
 {
+    ////////////////////////
+    // Constants
+    ////////////////////////
+
     string private constant VERSION = "ST_1.0";
 
-////////////////
-// Constructor
-////////////////
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     /// @notice Constructor to create a MiniMeToken
     ///  is a new token
@@ -79,23 +83,23 @@ contract SnapshotToken is
     {
     }
 
-///////////////////
-// Public functions
-///////////////////
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
-    /// @notice Send `_amount` tokens to `_to` from `msg.sender`
-    /// @param _to The address of the recipient
-    /// @param _amount The amount of tokens to be transferred
+    /// @notice Send `amount` tokens to `to` from `msg.sender`
+    /// @param to The address of the recipient
+    /// @param amount The amount of tokens to be transferred
     /// @return Whether the transfer was successful or not
     /// Overrides the public function in SnapshotTokenBase
-    function transfer(address _to, uint256 _amount)
+    function transfer(address to, uint256 amount)
         public
         returns (bool success)
     {
         // NOTE: We do not call the ERC223 callback
         // here for compatibility reasons. Please use
-        // tranfser(_to, _amount, bytes()) instead.
-        return transfer(msg.sender, _to, _amount);
+        // tranfser(to, amount, bytes()) instead.
+        return transfer(msg.sender, to, amount);
     }
 
     function transfer(address to, uint amount, bytes data)
@@ -114,79 +118,84 @@ contract SnapshotToken is
         return success;
     }
 
-    /// @notice `msg.sender` approves `_spender` to spend `_amount` tokens on
+    /// @notice `msg.sender` approves `spender` to spend `amount` tokens on
     ///  its behalf. This is a modified version of the ERC20 approve function
     ///  to be a little bit safer
-    /// @param _spender The address of the account able to transfer the tokens
-    /// @param _amount The amount of tokens to be approved for transfer
+    /// @param spender The address of the account able to transfer the tokens
+    /// @param amount The amount of tokens to be approved for transfer
     /// @return True if the approval was successful
     /// Overrides the public function in Allowance
-    function approve(address _spender, uint256 _amount)
+    function approve(address spender, uint256 amount)
         public
         returns (bool success)
     {
         // Alerts the token controller of the approve function call
-        require(mOnApprove(msg.sender, _spender, _amount));
+        require(mOnApprove(msg.sender, spender, amount));
 
-        return Allowance.approve(_spender, _amount);
+        return Allowance.approve(spender, amount);
     }
 
-    /// @notice `msg.sender` approves `_spender` to send `_amount` tokens on
+    /// @notice `msg.sender` approves `spender` to send `amount` tokens on
     ///  its behalf, and then a function is triggered in the contract that is
-    ///  being approved, `_spender`. This allows users to use their tokens to
+    ///  being approved, `spender`. This allows users to use their tokens to
     ///  interact with contracts in one function call instead of two
-    /// @param _spender The address of the contract able to transfer the tokens
-    /// @param _amount The amount of tokens to be approved for transfer
+    /// @param spender The address of the contract able to transfer the tokens
+    /// @param amount The amount of tokens to be approved for transfer
     /// @return True if the function call was successful
     /// Reimplements the public function in Allowance (TODO: is this necessary?)
-    function approveAndCall(address _spender, uint256 _amount, bytes _extraData)
+    function approveAndCall(address spender, uint256 amount, bytes extraData)
         public
         returns (bool success)
     {
-        require(approve(_spender, _amount));
+        require(approve(spender, amount));
 
-        success = IERC677Callback(_spender).receiveApproval(
+        success = IERC677Callback(spender).receiveApproval(
             msg.sender,
-            _amount,
+            amount,
             this,
-            _extraData
+            extraData
         );
 
         return success;
     }
 
-////////////////
-// Internal functions
-////////////////
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
 
     /// @dev This is the actual transfer function in the token contract, it can
     ///  only be called by other functions in this contract.
-    /// @param _from The address holding the tokens being transferred
-    /// @param _to The address of the recipient
-    /// @param _amount The amount of tokens to be transferred
+    /// @param from The address holding the tokens being transferred
+    /// @param to The address of the recipient
+    /// @param amount The amount of tokens to be transferred
     /// @return True if the transfer was successful
     /// Implements the abstract function from AllowanceBase
-    function mAllowanceTransfer(address _from, address _to, uint _amount)
-        internal
-        returns(bool)
-    {
-        return transfer(_from, _to, _amount);
-    }
-
-    /// @dev This is the actual transfer function in the token contract, it can
-    ///  only be called by other functions in this contract.
-    /// @param _from The address holding the tokens being transferred
-    /// @param _to The address of the recipient
-    /// @param _amount The amount of tokens to be transferred
-    /// @return True if the transfer was successful
-    /// Implements the abstract function from AllowanceBase
-    function transfer(address _from, address _to, uint _amount)
+    function transfer(address from, address to, uint amount)
         internal
         returns(bool)
     {
         // Alerts the token controller of the transfer
-        require(mOnTransfer(_from, _to, _amount));
+        require(mOnTransfer(from, to, amount));
 
-        return mTransfer(_from, _to, _amount);
+        return mTransfer(from, to, amount);
     }
+
+    //
+    // Implements MAllowance
+    //
+
+    /// @dev This is the actual transfer function in the token contract, it can
+    ///  only be called by other functions in this contract.
+    /// @param from The address holding the tokens being transferred
+    /// @param to The address of the recipient
+    /// @param amount The amount of tokens to be transferred
+    /// @return True if the transfer was successful
+    /// Implements the abstract function from AllowanceBase
+    function mAllowanceTransfer(address from, address to, uint amount)
+        internal
+        returns(bool)
+    {
+        return transfer(from, to, amount);
+    }
+
 }

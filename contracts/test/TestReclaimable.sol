@@ -8,6 +8,9 @@ contract TestReclaimable is
     AccessControlled,
     Reclaimable
 {
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     function TestReclaimable(IAccessPolicy accessPolicy)
         AccessControlled(accessPolicy)

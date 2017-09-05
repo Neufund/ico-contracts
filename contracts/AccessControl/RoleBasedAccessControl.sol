@@ -23,27 +23,30 @@ contract RoleBasedAccessControl is
         Deny
     }
 
-    ////////////////
+    ////////////////////////
     // Constants
-    ////////////////
+    ////////////////////////
 
-    IAccessControlled public constant GLOBAL = IAccessControlled(0x0);
+    IAccessControlled private constant GLOBAL = IAccessControlled(0x0);
 
-    address public constant EVERYONE = 0x0;
+    address private constant EVERYONE = 0x0;
 
-    ////////////////
-    // State
-    ////////////////
+    ////////////////////////
+    // Mutable state
+    ////////////////////////
 
     // subject → role → object → allowed
-    mapping (address => mapping(bytes32 => mapping(address => TriState))) access;
+    mapping (address =>
+        mapping(bytes32 =>
+            mapping(address => TriState))) private _access;
 
     // object → role → addresses
-    mapping (address => mapping(bytes32 => address[])) accessList;
+    mapping (address =>
+        mapping(bytes32 => address[])) private _accessList;
 
-    ////////////////
+    ////////////////////////
     // Events
-    ////////////////
+    ////////////////////////
 
     event AccessChanged(
         address controller,
@@ -62,21 +65,21 @@ contract RoleBasedAccessControl is
         bool granted
     );
 
-    ////////////////
+    ////////////////////////
     // Constructor
-    ////////////////
+    ////////////////////////
 
     function RoleBasedAccessControl()
         AccessControlled(this) // We are our own policy. This is immutable.
     {
         // Issue the local and global AccessContoler role to creator
-        access[msg.sender][ROLE_ACCESS_CONTROLER][this] = TriState.Allow;
-        access[msg.sender][ROLE_ACCESS_CONTROLER][GLOBAL] = TriState.Allow;
+        _access[msg.sender][ROLE_ACCESS_CONTROLER][this] = TriState.Allow;
+        _access[msg.sender][ROLE_ACCESS_CONTROLER][GLOBAL] = TriState.Allow;
     }
 
-    ////////////////
+    ////////////////////////
     // Public functions
-    ////////////////
+    ////////////////////////
 
     // Overrides `AccessControlled.setAccessPolicy(IAccessPolicy)`
     function setAccessPolicy(IAccessPolicy)
@@ -105,21 +108,21 @@ contract RoleBasedAccessControl is
         TriState value = TriState.Unset;
 
         // Cascade local, global, everyone local, everyone global
-        value = access[subject][role][object];
+        value = _access[subject][role][object];
         set = value != TriState.Unset;
         allow = value == TriState.Allow;
         if (!set) {
-            value = access[subject][role][GLOBAL];
+            value = _access[subject][role][GLOBAL];
             set = value != TriState.Unset;
             allow = value == TriState.Allow;
         }
         if (!set) {
-            value = access[EVERYONE][role][object];
+            value = _access[EVERYONE][role][object];
             set = value != TriState.Unset;
             allow = value == TriState.Allow;
         }
         if (!set) {
-            value = access[EVERYONE][role][GLOBAL];
+            value = _access[EVERYONE][role][GLOBAL];
             set = value != TriState.Unset;
             allow = value == TriState.Allow;
         }
@@ -172,7 +175,7 @@ contract RoleBasedAccessControl is
         constant
         returns (TriState)
     {
-        return access[subject][role][object];
+        return _access[subject][role][object];
     }
 
     function getUsers(
@@ -183,12 +186,12 @@ contract RoleBasedAccessControl is
         constant
         returns (address[])
     {
-        return accessList[object][role];
+        return _accessList[object][role];
     }
 
-    ////////////////
+    ////////////////////////
     // Private functions
-    ////////////////
+    ////////////////////////
 
     function setUserRolePrivate(
         address subject,
@@ -205,16 +208,16 @@ contract RoleBasedAccessControl is
         require(role != ROLE_ACCESS_CONTROLER || subject != msg.sender || object != this);
 
         // Fetch old value and short-circuit no-ops
-        TriState oldValue = access[subject][role][object];
+        TriState oldValue = _access[subject][role][object];
         if(oldValue == newValue) {
             return;
         }
 
         // Update the mapping
-        access[subject][role][object] = newValue;
+        _access[subject][role][object] = newValue;
 
         // Update the list on add / remove
-        address[] storage list = accessList[object][role];
+        address[] storage list = _accessList[object][role];
         if(oldValue == TriState.Unset && newValue != TriState.Unset) {
             list.push(subject);
         }

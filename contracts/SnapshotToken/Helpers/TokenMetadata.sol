@@ -5,52 +5,75 @@ import '../../Standards/ITokenMetadata.sol';
 
 contract TokenMetadata is ITokenMetadata {
 
-    string private tokenName;                //The Token's name: e.g. DigixDAO Tokens
-    uint8 private tokenDecimals;             //Number of decimals of the smallest unit
-    string private tokenSymbol;              //An identifier: e.g. REP
-    string private tokenVersion;             //An arbitrary versioning scheme
+    ////////////////////////
+    // Immutable state
+    ////////////////////////
+
+    // The Token's name: e.g. DigixDAO Tokens
+    string private NAME;
+
+    // An identifier: e.g. REP
+    string private SYMBOL;
+
+    // Number of decimals of the smallest unit
+    uint8 private DECIMALS;
+
+    // An arbitrary versioning scheme
+    string private VERSION;
+
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     /// @notice Constructor to create a MiniMeToken
-    /// @param _tokenName Name of the new token
-    /// @param _decimalUnits Number of decimals of the new token
-    /// @param _tokenSymbol Token Symbol for the new token
+    /// @param tokenName Name of the new token
+    /// @param decimalUnits Number of decimals of the new token
+    /// @param tokenSymbol Token Symbol for the new token
     function TokenMetadata(
-        string _tokenName,
-        uint8 _decimalUnits,
-        string _tokenSymbol,
-        string _version
+        string tokenName,
+        uint8 decimalUnits,
+        string tokenSymbol,
+        string version
     ) {
-        tokenName = _tokenName;                                 // Set the name
-        tokenDecimals = _decimalUnits;                          // Set the decimals
-        tokenSymbol = _tokenSymbol;                             // Set the symbol
-        tokenVersion = _version;
+        NAME = tokenName;                                 // Set the name
+        SYMBOL = tokenSymbol;                             // Set the symbol
+        DECIMALS = decimalUnits;                          // Set the decimals
+        VERSION = version;
+    }
+
+    ////////////////////////
+    // Public functions
+    ////////////////////////
+
+    function name()
+        public
+        constant
+        returns (string)
+    {
+        return NAME;
     }
 
     function symbol()
+        public
         constant
         returns (string)
     {
-        return tokenSymbol;
-    }
-
-    function name()
-        constant
-        returns (string)
-    {
-        return tokenName;
+        return SYMBOL;
     }
 
     function decimals()
+        public
         constant
         returns (uint8)
     {
-        return tokenDecimals;
+        return DECIMALS;
     }
 
     function version()
+        public
         constant
         returns (string)
     {
-        return tokenVersion;
+        return VERSION;
     }
 }

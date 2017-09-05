@@ -10,44 +10,55 @@ contract BasicSnapshotToken is
     MMint,
     Snapshot
 {
+    ////////////////////////
+    // Immutable state
+    ////////////////////////
 
     // `parentToken` is the Token address that was cloned to produce this token;
     //  it will be 0x0 for a token that was not cloned
-    ISnapshotTokenParent public parentToken;
+    ISnapshotTokenParent private PARENT_TOKEN;
 
     // `parentSnapShotBlock` is the block number from the Parent Token that was
     //  used to determine the initial distribution of the Clone Token
-    uint256 public parentSnapshot;
+    uint256 private PARENT_SNAPSHOT;
+
+    ////////////////////////
+    // Mutable state
+    ////////////////////////
 
     // `balances` is the map that tracks the balance of each address, in this
     //  contract when the balance changes the block number that the change
     //  occurred is also included in the map
-    mapping (address => Values[]) balances;
+    mapping (address => Values[]) private _balances;
 
     // Tracks the history of the `totalSupply` of the token
-    Values[] totalSupplyValues;
+    Values[] private _totalSupplyValues;
 
-////////////////
-// Constructor
-////////////////
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     /// @notice Constructor to create a MiniMeToken
-    /// @param _parentToken Address of the parent token, set to 0x0 if it is a
+    /// @param parentToken Address of the parent token, set to 0x0 if it is a
     ///  new token
     function BasicSnapshotToken(
-        ISnapshotTokenParent _parentToken,
-        uint256 _parentSnapshot
+        ISnapshotTokenParent parentToken,
+        uint256 parentSnapshot
     )
         public
         Snapshot()
     {
-        parentToken = _parentToken;
-        parentSnapshot = _parentSnapshot;
+        PARENT_TOKEN = parentToken;
+        PARENT_SNAPSHOT = parentSnapshot;
     }
 
-///////////////////
-// ERC20 Basic Methods
-///////////////////
+    ////////////////////////
+    // Public functions
+    ////////////////////////
+
+    //
+    // Implements IBasicToken
+    //
 
     /// @dev This function makes it easy to get the total number of tokens
     /// @return The total number of tokens
@@ -56,172 +67,176 @@ contract BasicSnapshotToken is
         constant
         returns (uint)
     {
-        return getValue(totalSupplyValues, 0);
+        return getValue(_totalSupplyValues, 0);
     }
 
-    /// @param _owner The address that's balance is being requested
-    /// @return The balance of `_owner` at the current block
-    function balanceOf(address _owner)
+    /// @param owner The address that's balance is being requested
+    /// @return The balance of `owner` at the current block
+    function balanceOf(address owner)
         public
         constant
         returns (uint256 balance)
     {
-        return getValue(balances[_owner], 0);
+        return getValue(_balances[owner], 0);
     }
 
-    /// @notice Send `_amount` tokens to `_to` from `msg.sender`
-    /// @param _to The address of the recipient
-    /// @param _amount The amount of tokens to be transferred
+    /// @notice Send `amount` tokens to `to` from `msg.sender`
+    /// @param to The address of the recipient
+    /// @param amount The amount of tokens to be transferred
     /// @return Whether the transfer was successful or not
-    function transfer(address _to, uint256 _amount)
+    function transfer(address to, uint256 amount)
         public
         returns (bool success)
     {
-        return mTransfer(msg.sender, _to, _amount);
+        return mTransfer(msg.sender, to, amount);
     }
 
-////////////////
-// Query balance and totalSupply in History
-////////////////
+    //
+    // Implements ISnapshotTokenParent
+    //
 
-    /// @notice Total amount of tokens at a specific `_snapshot`.
-    /// @param _snapshot The block number when the totalSupply is queried
-    /// @return The total amount of tokens at `_snapshot`
-    function totalSupplyAt(uint _snapshot)
+    /// @notice Total amount of tokens at a specific `snapshot`.
+    /// @param snapshot The block number when the totalSupply is queried
+    /// @return The total amount of tokens at `snapshot`
+    function totalSupplyAt(uint snapshot)
         public
         constant
         returns(uint)
     {
-        Values[] storage values = totalSupplyValues;
+        Values[] storage values = _totalSupplyValues;
 
         // If there is a value, return it
-        if (hasValueAt(values, _snapshot)) {
-            return getValueAt(values, _snapshot, 0);
+        if (hasValueAt(values, snapshot)) {
+            return getValueAt(values, snapshot, 0);
         }
 
         // Try parent contract at or before the fork
-        if (address(parentToken) != 0) {
-            return parentToken.totalSupplyAt(parentSnapshot);
+        if (address(PARENT_TOKEN) != 0) {
+            return PARENT_TOKEN.totalSupplyAt(PARENT_SNAPSHOT);
         }
 
         // Default to an empty balance
         return 0;
     }
 
-    /// @dev Queries the balance of `_owner` at a specific `_snapshot`
-    /// @param _owner The address from which the balance will be retrieved
-    /// @param _snapshot The block number when the balance is queried
-    /// @return The balance at `_snapshot`
-    function balanceOfAt(address _owner, uint _snapshot)
+    /// @dev Queries the balance of `owner` at a specific `snapshot`
+    /// @param owner The address from which the balance will be retrieved
+    /// @param snapshot The block number when the balance is queried
+    /// @return The balance at `snapshot`
+    function balanceOfAt(address owner, uint snapshot)
         public
         constant
         returns (uint)
     {
-        Values[] storage values = balances[_owner];
+        Values[] storage values = _balances[owner];
 
         // If there is a value, return it
-        if (hasValueAt(values, _snapshot)) {
-            return getValueAt(values, _snapshot, 0);
+        if (hasValueAt(values, snapshot)) {
+            return getValueAt(values, snapshot, 0);
         }
 
         // Try parent contract at or before the fork
-        if (address(parentToken) != 0) {
-            return parentToken.balanceOfAt(_owner, parentSnapshot);
+        if (address(PARENT_TOKEN) != 0) {
+            return PARENT_TOKEN.balanceOfAt(owner, PARENT_SNAPSHOT);
         }
 
         // Default to an empty balance
         return 0;
     }
 
-////////////////
-// Generate and destroy tokens
-////////////////
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
+
+    //
+    // Implements MMint
+    //
 
     /// @dev This is the actual transfer function in the token contract, it can
     ///  only be called by other functions in this contract.
-    /// @param _from The address holding the tokens being transferred
-    /// @param _to The address of the recipient
-    /// @param _amount The amount of tokens to be transferred
+    /// @param from The address holding the tokens being transferred
+    /// @param to The address of the recipient
+    /// @param amount The amount of tokens to be transferred
     /// @return True if the transfer was successful
     function mTransfer(
-        address _from,
-        address _to,
-        uint _amount
+        address from,
+        address to,
+        uint amount
     )
         internal
         returns(bool)
     {
-        if (_amount == 0) {
+        if (amount == 0) {
             return true;
         }
 
         // If the amount being transfered is more than the balance of the
         //  account the transfer returns false
-        var previousBalanceFrom = balanceOf(_from);
-        if (previousBalanceFrom < _amount) {
+        var previousBalanceFrom = balanceOf(from);
+        if (previousBalanceFrom < amount) {
             return false;
         }
 
         // First update the balance array with the new value for the address
         //  sending the tokens
-        uint256 newBalanceFrom = previousBalanceFrom - _amount;
-        setValue(balances[_from], newBalanceFrom);
+        uint256 newBalanceFrom = previousBalanceFrom - amount;
+        setValue(_balances[from], newBalanceFrom);
 
         // Then update the balance array with the new value for the address
         //  receiving the tokens
-        uint256 previousBalanceTo = balanceOf(_to);
-        uint256 newBalanceTo = previousBalanceTo + _amount;
+        uint256 previousBalanceTo = balanceOf(to);
+        uint256 newBalanceTo = previousBalanceTo + amount;
         assert(newBalanceTo >= previousBalanceTo); // Check for overflow
-        setValue(balances[_to], newBalanceTo);
+        setValue(_balances[to], newBalanceTo);
 
         // An event to make the transfer easy to find on the blockchain
-        Transfer(_from, _to, _amount);
+        Transfer(from, to, amount);
         return true;
     }
 
-    /// @notice Generates `_amount` tokens that are assigned to `_owner`
-    /// @param _owner The address that will be assigned the new tokens
-    /// @param _amount The quantity of tokens generated
+    /// @notice Generates `amount` tokens that are assigned to `owner`
+    /// @param owner The address that will be assigned the new tokens
+    /// @param amount The quantity of tokens generated
     /// @return True if the tokens are generated correctly
-    function mGenerateTokens(address _owner, uint _amount)
+    function mGenerateTokens(address owner, uint amount)
         internal
         returns (bool)
     {
         uint curTotalSupply = totalSupply();
-        uint256 newTotalSupply = curTotalSupply + _amount;
+        uint256 newTotalSupply = curTotalSupply + amount;
         require(newTotalSupply >= curTotalSupply); // Check for overflow
 
-        uint previousBalanceTo = balanceOf(_owner);
-        uint256 newBalanceTo = previousBalanceTo + _amount;
+        uint previousBalanceTo = balanceOf(owner);
+        uint256 newBalanceTo = previousBalanceTo + amount;
         assert(newBalanceTo >= previousBalanceTo); // Check for overflow
 
-        setValue(totalSupplyValues, newTotalSupply);
-        setValue(balances[_owner], newBalanceTo);
+        setValue(_totalSupplyValues, newTotalSupply);
+        setValue(_balances[owner], newBalanceTo);
 
-        Transfer(0, _owner, _amount);
+        Transfer(0, owner, amount);
         return true;
     }
 
-    /// @notice Burns `_amount` tokens from `_owner`
-    /// @param _owner The address that will lose the tokens
-    /// @param _amount The quantity of tokens to burn
+    /// @notice Burns `amount` tokens from `owner`
+    /// @param owner The address that will lose the tokens
+    /// @param amount The quantity of tokens to burn
     /// @return True if the tokens are burned correctly
-    function mDestroyTokens(address _owner, uint _amount)
+    function mDestroyTokens(address owner, uint amount)
         internal
         returns (bool)
     {
         uint curTotalSupply = totalSupply();
-        require(curTotalSupply >= _amount);
+        require(curTotalSupply >= amount);
 
-        uint previousBalanceFrom = balanceOf(_owner);
-        require(previousBalanceFrom >= _amount);
+        uint previousBalanceFrom = balanceOf(owner);
+        require(previousBalanceFrom >= amount);
 
-        uint newTotalSupply = curTotalSupply - _amount;
-        uint newBalanceFrom = previousBalanceFrom - _amount;
-        setValue(totalSupplyValues, newTotalSupply);
-        setValue(balances[_owner], newBalanceFrom);
+        uint newTotalSupply = curTotalSupply - amount;
+        uint newBalanceFrom = previousBalanceFrom - amount;
+        setValue(_totalSupplyValues, newTotalSupply);
+        setValue(_balances[owner], newBalanceFrom);
 
-        Transfer(_owner, 0, _amount);
+        Transfer(owner, 0, amount);
         return true;
     }
 }

@@ -6,9 +6,29 @@ import '../Standards/IERC677Token.sol';
 
 contract TestFeeDistributionPool is IERC677Callback {
 
-    event TestReceiveApproval(address from, uint256 amount);
+    ////////////////////////
+    // Events
+    ////////////////////////
 
-    function receiveApproval(address from, uint256 _amount, address _token, bytes _data)
+    event TestReceiveApproval(
+        address from,
+        uint256 amount
+    );
+
+    ////////////////////////
+    // Public functions
+    ////////////////////////
+
+    //
+    // Implements IERC677Callback
+    //
+
+    function receiveApproval(
+        address from,
+        uint256 _amount,
+        address _token,
+        bytes // _data
+    )
         public
         returns (bool)
     {

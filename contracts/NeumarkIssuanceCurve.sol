@@ -3,6 +3,10 @@ pragma solidity 0.4.15;
 
 contract NeumarkIssuanceCurve {
 
+    ////////////////////////
+    // Public functions
+    ////////////////////////
+
     function incremental(uint256 totalEuroUlps, uint256 euroUlps)
         public
         constant

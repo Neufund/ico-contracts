@@ -6,9 +6,9 @@ import './MPolicy.sol';
 // Snapshot consumes MPolicy
 contract Snapshot is MPolicy {
 
-////////////////
-// Types
-////////////////
+    ////////////////////////
+    // Types
+    ////////////////////////
 
     /// @dev `Checkpoint` is the structure that attaches a block number to a
     ///  given value, the block number attached is the one that last changed the
@@ -22,9 +22,9 @@ contract Snapshot is MPolicy {
         uint256 value;
     }
 
-////////////////
-// Internal functions
-////////////////
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
 
     function hasValue(
         Values[] storage values

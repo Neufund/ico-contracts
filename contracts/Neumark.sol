@@ -17,22 +17,43 @@ contract Neumark is
     Reclaimable
 {
 
-    string constant TOKEN_NAME     = "Neumark";
-    uint8  constant TOKEN_DECIMALS = 18;
-    string constant TOKEN_SYMBOL   = "NMK";
+    ////////////////////////
+    // Constants
+    ////////////////////////
 
-    bool public transferEnabled;
-    uint256 public totalEuroUlps;
+    string private constant TOKEN_NAME = "Neumark";
+
+    uint8  private constant TOKEN_DECIMALS = 18;
+
+    string private constant TOKEN_SYMBOL = "NMK";
+
+    ////////////////////////
+    // Mutable state
+    ////////////////////////
+
+    bool private _transferEnabled;
+
+    uint256 private _totalEuroUlps;
+
+    ////////////////////////
+    // Events
+    ////////////////////////
 
     event NeumarksIssued(
         address indexed owner,
         uint256 euroUlp,
-        uint256 neumarkUlp);
+        uint256 neumarkUlp
+    );
 
     event NeumarksBurned(
         address indexed owner,
         uint256 euroUlp,
-        uint256 neumarkUlp);
+        uint256 neumarkUlp
+    );
+
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     function Neumark(
         IAccessPolicy accessPolicy,
@@ -50,9 +71,13 @@ contract Neumark is
         NeumarkIssuanceCurve()
         Reclaimable()
     {
-        transferEnabled = false;
-        totalEuroUlps = 0;
+        _transferEnabled = false;
+        _totalEuroUlps = 0;
     }
+
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     function issueForEuro(uint256 euroUlps)
         public
@@ -60,11 +85,11 @@ contract Neumark is
         acceptAgreement(msg.sender)
         returns (uint256)
     {
-        require(totalEuroUlps + euroUlps >= totalEuroUlps);
+        require(_totalEuroUlps + euroUlps >= _totalEuroUlps);
         address beneficiary = msg.sender;
-        uint256 neumarkUlps = incremental(totalEuroUlps, euroUlps);
+        uint256 neumarkUlps = incremental(_totalEuroUlps, euroUlps);
 
-        totalEuroUlps = totalEuroUlps + euroUlps;
+        _totalEuroUlps = _totalEuroUlps + euroUlps;
 
         assert(mGenerateTokens(beneficiary, neumarkUlps));
 
@@ -79,9 +104,9 @@ contract Neumark is
         returns (uint256)
     {
         address owner = msg.sender;
-        uint256 euroUlps = incrementalInverse(totalEuroUlps, neumarkUlps);
+        uint256 euroUlps = incrementalInverse(_totalEuroUlps, neumarkUlps);
 
-        totalEuroUlps -= euroUlps;
+        _totalEuroUlps -= euroUlps;
 
         assert(mDestroyTokens(owner, neumarkUlps));
 
@@ -93,7 +118,7 @@ contract Neumark is
         public
         only(ROLE_TRANSFER_ADMIN)
     {
-        transferEnabled = enabled;
+        _transferEnabled = enabled;
     }
 
     function createSnapshot()
@@ -104,35 +129,47 @@ contract Neumark is
         return DailyAndSnapshotable.createSnapshot();
     }
 
-    /// @notice Notifies the controller about a token transfer allowing the
-    ///  controller to react if desired
-    /// @param from The origin of the transfer
-    /// @param to The destination of the transfer
-    /// @param amount The amount of the transfer
-    /// @return False if the controller does not authorize the transfer
+    function transferEnabled()
+        public
+        constant
+        returns (bool)
+    {
+        return _transferEnabled;
+    }
+
+    function totalEuroUlps()
+        public
+        constant
+        returns (uint256)
+    {
+        return _totalEuroUlps;
+    }
+
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
+
+    //
+    // Implements MTokenController
+    //
+
     function mOnTransfer(
         address from,
         address to,
-        uint amount
+        uint // amount
     )
         internal
         acceptAgreement(from)
         acceptAgreement(to)
         returns (bool allow)
     {
-        return transferEnabled;
+        return _transferEnabled;
     }
 
-    /// @notice Notifies the controller about an approval allowing the
-    ///  controller to react if desired
-    /// @param owner The address that calls `approve()`
-    /// @param spender The spender in the `approve()` call
-    /// @param amount The amount in the `approve()` call
-    /// @return False if the controller does not authorize the approval
     function mOnApprove(
         address owner,
-        address spender,
-        uint amount
+        address, // spender,
+        uint // amount
     )
         internal
         acceptAgreement(owner)
@@ -140,5 +177,4 @@ contract Neumark is
     {
         return true;
     }
-
 }

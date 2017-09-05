@@ -5,6 +5,10 @@ import './IAccessControlled.sol';
 
 contract IAccessPolicy {
 
+    ////////////////////////
+    // Public functions
+    ////////////////////////
+
     // Note: we don't make this function constant to allow for
     //       state-updating access controls such as rate limiting.
     function allowed(

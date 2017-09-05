@@ -3,6 +3,10 @@ pragma solidity 0.4.15;
 
 contract IsContract {
 
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
+
     function isContract(address addr)
         internal
         constant

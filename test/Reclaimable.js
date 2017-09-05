@@ -8,14 +8,13 @@ const TestToken = artifacts.require("TestToken");
 
 contract("Reclaimable", ([deployer, reclaimer, other]) => {
   let reclaimable;
-  let RECLAIM_ETHER;
+  const RECLAIM_ETHER = "0x0";
 
   beforeEach(async () => {
     const accessPolicy = await createAccessPolicy([
       { subject: reclaimer, role: roles.reclaimer }
     ]);
     reclaimable = await TestReclaimable.new(accessPolicy);
-    RECLAIM_ETHER = await reclaimable.RECLAIM_ETHER();
   });
 
   it("should reclaim ether", async () => {

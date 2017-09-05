@@ -5,6 +5,10 @@ pragma solidity 0.4.15;
 /// You should still use require() for input validation/access control
 contract ReturnsErrors {
 
+    ////////////////////////
+    // Types
+    ////////////////////////
+
     enum Status {
         SUCCESS,
         NOT_ENOUGH_NEUMARKS_TO_UNLOCK, // investor didn't approve enough neumarks to be burned
@@ -13,7 +17,17 @@ contract ReturnsErrors {
         /// @dev Add your own
     }
 
-    event Error(Status code);
+    ////////////////////////
+    // Events
+    ////////////////////////
+
+    event Error(
+        Status code
+    );
+
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     /// Example usage:
     ///

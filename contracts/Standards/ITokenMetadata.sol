@@ -3,6 +3,10 @@ pragma solidity 0.4.15;
 
 contract ITokenMetadata {
 
+    ////////////////////////
+    // Public functions
+    ////////////////////////
+
     function symbol()
         constant
         returns (string);

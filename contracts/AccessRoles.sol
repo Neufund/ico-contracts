@@ -3,6 +3,10 @@ pragma solidity 0.4.15;
 
 contract AccessRoles {
 
+    ////////////////////////
+    // Constants
+    ////////////////////////
+
     // NOTE: All roles are set to the keccak256 hash of the
     // CamelCased role name, i.e.
     // ROLE_LOCKED_ACCOUNT_ADMIN = keccak256("LockedAccountAdmin")

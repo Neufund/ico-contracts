@@ -5,19 +5,54 @@ import './Standards/IEthereumForkArbiter.sol';
 
 contract Agreement {
 
-    IEthereumForkArbiter public ethereumForkArbiter;
-    string public agreementUri;
+    ////////////////////////
+    // Immutable state
+    ////////////////////////
 
-    event AgreementAccepted(address indexed accepter);
+    IEthereumForkArbiter private ETHEREUM_FORK_ARBITER;
+
+    string private AGREEMENT_URI;
+
+    ////////////////////////
+    // Events
+    ////////////////////////
+
+    event AgreementAccepted(
+        address indexed accepter
+    );
+
+    ////////////////////////
+    // Modifiers
+    ////////////////////////
 
     modifier acceptAgreement(address accepter) {
         AgreementAccepted(accepter);
         _;
     }
 
+    ////////////////////////
+    // Constructor
+    ////////////////////////
+
     function Agreement(IEthereumForkArbiter forkArbiter, string uri) {
         require(forkArbiter != IEthereumForkArbiter(0x0));
-        ethereumForkArbiter = forkArbiter;
-        agreementUri = uri;
+        ETHEREUM_FORK_ARBITER = forkArbiter;
+        AGREEMENT_URI = uri;
+    }
+
+    function ethereumForkArbiter()
+        public
+        constant
+        returns (IEthereumForkArbiter)
+    {
+        return ETHEREUM_FORK_ARBITER;
+    }
+
+    function agreementUri()
+        public
+        constant
+        returns (string)
+    {
+        return AGREEMENT_URI;
     }
 }

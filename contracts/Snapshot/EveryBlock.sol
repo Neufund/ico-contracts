@@ -5,6 +5,14 @@ import './MPolicy.sol';
 
 contract EveryBlock is MPolicy {
 
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
+
+    //
+    // Implements MPolicy
+    //
+
     function mNextSnapshotId()
         internal
         returns (uint256)

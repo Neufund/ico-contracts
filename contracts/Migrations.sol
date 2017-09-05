@@ -3,25 +3,67 @@ pragma solidity 0.4.15;
 
 contract Migrations {
 
-    address public owner;
+    ////////////////////////
+    // Immutable state
+    ////////////////////////
 
-    uint public last_completed_migration;
+    address private OWNER;
+
+    ////////////////////////
+    // Mutable state
+    ////////////////////////
+
+    uint private _lastCompletedMigration;
+
+    ////////////////////////
+    // Modifiers
+    ////////////////////////
 
     modifier restricted() {
-        if (msg.sender == owner)
+        if (msg.sender == OWNER)
             _;
     }
 
+    ////////////////////////
+    // Constructor
+    ////////////////////////
+
     function Migrations() {
-        owner = msg.sender;
+        OWNER = msg.sender;
     }
 
-    function setCompleted(uint completed) restricted {
-        last_completed_migration = completed;
+    ////////////////////////
+    // Public functions
+    ////////////////////////
+
+    function setCompleted(uint completed)
+        public
+        restricted
+    {
+        _lastCompletedMigration = completed;
     }
 
-    function upgrade(address new_address) restricted {
+    function upgrade(address new_address)
+        public
+        restricted
+    {
         Migrations upgraded = Migrations(new_address);
-        upgraded.setCompleted(last_completed_migration);
+        upgraded.setCompleted(_lastCompletedMigration);
+    }
+
+    function lastCompletedMigration()
+        public
+        constant
+        returns (uint)
+    {
+        return _lastCompletedMigration;
+    }
+
+    function owner()
+        public
+        constant
+        returns (address)
+    {
+        return OWNER;
     }
 }

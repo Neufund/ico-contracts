@@ -23,6 +23,10 @@ contract IERC223Token is IBasicToken, ITokenMetadata {
     //     public
     //     returns (bool);
 
+    ////////////////////////
+    // Public functions
+    ////////////////////////
+
     function transfer(address to, uint amount, bytes data)
         public
         returns (bool);

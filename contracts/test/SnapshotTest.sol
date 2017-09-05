@@ -8,7 +8,21 @@ contract SnapshotTest is
     Snapshot,
     DailyAndSnapshotable
 {
-    Values[] val;
+    ////////////////////////
+    // Mutable state
+    ////////////////////////
+
+    Values[] private _val;
+
+    ////////////////////////
+    // Public functions
+    ////////////////////////}
+
+    function setValue(uint256 x)
+        public
+    {
+        setValue(_val, x);
+    }
 
     function curDays()
         public
@@ -23,7 +37,7 @@ contract SnapshotTest is
         constant
         returns (bool)
     {
-        return hasValue(val);
+        return hasValue(_val);
     }
 
     function getValue(uint256 def)
@@ -31,7 +45,7 @@ contract SnapshotTest is
         constant
         returns (uint256)
     {
-        return getValue(val, def);
+        return getValue(_val, def);
     }
 
     function hasValueAt(uint256 snapshot)
@@ -39,7 +53,7 @@ contract SnapshotTest is
         constant
         returns (bool)
     {
-        return hasValueAt(val, snapshot);
+        return hasValueAt(_val, snapshot);
     }
 
     function getValueAt(uint256 snapshot, uint256 def)
@@ -47,12 +61,6 @@ contract SnapshotTest is
         constant
         returns (uint256)
     {
-        return getValueAt(val, snapshot, def);
-    }
-
-    function setValue(uint256 x)
-        public
-    {
-        setValue(val, x);
+        return getValueAt(_val, snapshot, def);
     }
 }

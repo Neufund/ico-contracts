@@ -7,52 +7,17 @@ import '../Standards/IERC677Token.sol';
 
 contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigration {
 
-    LockedAccount public migrationSource;
-    bool public shouldMigrationFail;
+    ////////////////////////
+    // Mutable state
+    ////////////////////////
 
-    function setMigrationSource(LockedAccount source)
-        only(ROLE_LOCKED_ACCOUNT_ADMIN)
-        public
-    {
-        migrationSource = source;
-    }
+    LockedAccount private _migrationSource;
 
-    function setShouldMigrationFail(bool shouldFail)
-        only(ROLE_LOCKED_ACCOUNT_ADMIN)
-        public
-    {
-        shouldMigrationFail = shouldFail;
-    }
+    bool private _shouldMigrationFail;
 
-    /// implement test migration interface
-    function getMigrationFrom()
-        public
-        constant
-        returns (address)
-    {
-        return address(migrationSource);
-    }
-
-    function migrateInvestor(address investor, uint256 balance, uint256 neumarksDue, uint256 unlockDate)
-        onlyMigrationFrom
-        public
-        returns(bool)
-    {
-        if (shouldMigrationFail)
-            return false;
-
-        // just move account
-        accounts[investor] = Account({
-            balance: balance,
-            neumarksDue: neumarksDue,
-            unlockDate: unlockDate
-        });
-        // minimal bookkeeping
-        _addBalance(balance, balance);
-        totalInvestors += 1;
-
-        return true;
-    }
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     function TestLockedAccountMigrationTarget(
         IAccessPolicy _policy,
@@ -67,4 +32,51 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
     {
     }
 
+    ////////////////////////
+    // Public functions
+    ////////////////////////
+
+    function setMigrationSource(LockedAccount source)
+        public
+        only(ROLE_LOCKED_ACCOUNT_ADMIN)
+    {
+        _migrationSource = source;
+    }
+
+    function setShouldMigrationFail(bool shouldFail)
+        only(ROLE_LOCKED_ACCOUNT_ADMIN)
+        public
+    {
+        _shouldMigrationFail = shouldFail;
+    }
+
+    function migrateInvestor(address investor, uint256 balance, uint256 neumarksDue, uint256 unlockDate)
+        public
+        onlyMigrationFrom
+        returns(bool)
+    {
+        if (_shouldMigrationFail)
+            return false;
+
+        // just move account
+        _accounts[investor] = Account({
+            balance: balance,
+            neumarksDue: neumarksDue,
+            unlockDate: unlockDate
+        });
+        // minimal bookkeeping
+        addBalance(balance, balance);
+        _totalInvestors += 1;
+
+        return true;
+    }
+
+    /// implement test migration interface
+    function getMigrationFrom()
+        public
+        constant
+        returns (address)
+    {
+        return address(_migrationSource);
+    }
 }

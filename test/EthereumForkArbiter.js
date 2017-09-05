@@ -37,7 +37,6 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
     expect(
       eventValue(tx, "ForkAnnounced", "blockNumber")
     ).to.be.bignumber.equal(blockNumber);
-    expect(tx).to.respectGasLimit(160000);
   });
 
   it("should not anounce past blocks", async () => {

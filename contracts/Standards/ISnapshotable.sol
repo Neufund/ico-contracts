@@ -3,15 +3,15 @@ pragma solidity 0.4.15;
 
 contract ISnapshotable {
 
-////////////////
-// Events
-////////////////
+    ////////////////////////
+    // Events
+    ////////////////////////
 
     event SnapshotCreated(uint256 snapshot);
 
-////////////////
-// Public functions
-////////////////
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     function createSnapshot()
         public

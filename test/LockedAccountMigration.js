@@ -63,7 +63,7 @@ contract("TestLockedAccountMigrationTarget", ([admin, investor, investor2]) => {
     const ticket = chain.ether(1);
     const neumarks = ticket.mul(6.5);
     // lock investor
-    await chain.commitment._investFor(investor, ticket, neumarks, {
+    await chain.commitment.investFor(investor, ticket, neumarks, {
       value: ticket,
       from: investor
     });
@@ -93,7 +93,7 @@ contract("TestLockedAccountMigrationTarget", ([admin, investor, investor2]) => {
     const ticket = chain.ether(1);
     const neumarks = ticket.mul(6.5);
     // lock investor
-    await chain.commitment._investFor(investor, ticket, neumarks, {
+    await chain.commitment.investFor(investor, ticket, neumarks, {
       value: ticket,
       from: investor
     });

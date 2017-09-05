@@ -4,6 +4,11 @@ import "../LockedAccount.sol";
 
 
 contract TestLockedAccount is LockedAccount {
+
+    ////////////////////////
+    // Public functions
+    ////////////////////////
+
     // invests in equity token ICO
     function invest(address ico, uint256 amount)
         onlyState(LockState.AcceptingUnlocks)
@@ -12,7 +17,7 @@ contract TestLockedAccount is LockedAccount {
     {
         require(amount > 0);
         require(ico != address(0));
-        Account storage a = accounts[msg.sender];
+        Account storage a = _accounts[msg.sender];
         if (amount > a.balance)
             return logError(Status.INSUFFICIENT_FUNDS);
         //if (canInvest(ico) {
@@ -27,7 +32,7 @@ contract TestLockedAccount is LockedAccount {
             a.neumarksDue = 0;
         else
             a.neumarksDue -= freedNeumarks;
-        accounts[msg.sender] = a;
+        _accounts[msg.sender] = a;
 
         return Status.SUCCESS;
     }
