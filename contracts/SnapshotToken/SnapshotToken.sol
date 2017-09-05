@@ -102,7 +102,7 @@ contract SnapshotToken is
         return transfer(msg.sender, to, amount);
     }
 
-    function transfer(address to, uint amount, bytes data)
+    function transfer(address to, uint256 amount, bytes data)
         public
         returns (bool success)
     {
@@ -170,7 +170,7 @@ contract SnapshotToken is
     /// @param amount The amount of tokens to be transferred
     /// @return True if the transfer was successful
     /// Implements the abstract function from AllowanceBase
-    function transfer(address from, address to, uint amount)
+    function transfer(address from, address to, uint256 amount)
         internal
         returns(bool)
     {
@@ -191,7 +191,7 @@ contract SnapshotToken is
     /// @param amount The amount of tokens to be transferred
     /// @return True if the transfer was successful
     /// Implements the abstract function from AllowanceBase
-    function mAllowanceTransfer(address from, address to, uint amount)
+    function mAllowanceTransfer(address from, address to, uint256 amount)
         internal
         returns(bool)
     {

@@ -13,7 +13,7 @@ contract Migrations {
     // Mutable state
     ////////////////////////
 
-    uint private _lastCompletedMigration;
+    uint256 private _lastCompletedMigration;
 
     ////////////////////////
     // Modifiers
@@ -36,7 +36,7 @@ contract Migrations {
     // Public functions
     ////////////////////////
 
-    function setCompleted(uint completed)
+    function setCompleted(uint256 completed)
         public
         restricted
     {
@@ -54,7 +54,7 @@ contract Migrations {
     function lastCompletedMigration()
         public
         constant
-        returns (uint)
+        returns (uint256)
     {
         return _lastCompletedMigration;
     }

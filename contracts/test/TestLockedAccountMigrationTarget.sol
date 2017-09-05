@@ -31,10 +31,18 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
         string _agreementUri,
         IERC677Token _assetToken,
         Neumark _neumark,
-        uint _lockPeriod,
-        uint _penaltyFraction
+        uint256 _lockPeriod,
+        uint256 _penaltyFraction
     )
-        LockedAccount(_policy, _forkArbiter, _agreementUri, _assetToken, _neumark, _lockPeriod, _penaltyFraction)
+        LockedAccount(
+            _policy,
+            _forkArbiter,
+            _agreementUri,
+            _assetToken,
+            _neumark,
+            _lockPeriod,
+            _penaltyFraction
+        )
     {
         ASSET_TOKEN = _assetToken;
     }
@@ -57,7 +65,12 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
         _shouldMigrationFail = shouldFail;
     }
 
-    function migrateInvestor(address investor, uint256 balance, uint256 neumarksDue, uint256 unlockDate)
+    function migrateInvestor(
+        address investor,
+        uint256 balance,
+        uint256 neumarksDue,
+        uint256 unlockDate
+    )
         public
         onlyMigrationFrom
         returns(bool)

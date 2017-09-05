@@ -21,7 +21,7 @@ contract IBasicToken {
     function totalSupply()
         public
         constant
-        returns (uint);
+        returns (uint256);
 
     /// @param owner The address that's balance is being requested
     /// @return The balance of `owner` at the current block

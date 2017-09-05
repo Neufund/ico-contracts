@@ -79,7 +79,7 @@ contract Disbursal is IERC677Callback {
         returns (uint256[100])
     {
         uint256[100] memory result;
-        uint j = 0;
+        uint256 j = 0;
         for (uint256 i = from; i < _disbursments.length; ++i) {
             if (claimable(beneficiary, i)) {
                 result[j] = i;

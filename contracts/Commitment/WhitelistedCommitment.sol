@@ -167,7 +167,7 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
     function rollbackCurve()
         internal
     {
-        uint neumarks = NEUMARK.balanceOf(address(this));
+        uint256 neumarks = NEUMARK.balanceOf(address(this));
         if (neumarks > 0) {
             NEUMARK.burnNeumark(neumarks);
         }

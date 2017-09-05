@@ -56,20 +56,20 @@ contract LockedAccount is
     Neumark private NEUMARK;
 
     // longstop period in seconds
-    uint private LOCK_PERIOD;
+    uint256 private LOCK_PERIOD;
 
     // penalty: fraction of stored amount on escape hatch
-    uint private PENALTY_FRACTION;
+    uint256 private PENALTY_FRACTION;
 
     ////////////////////////
     // Mutable state
     ////////////////////////
 
     // total amount of tokens locked
-    uint private _totalLockedAmount;
+    uint256 private _totalLockedAmount;
 
     // total number of locked investors
-    uint internal _totalInvestors;
+    uint256 internal _totalInvestors;
 
     // current state of the locking contract
     LockState private _lockState;
@@ -154,8 +154,8 @@ contract LockedAccount is
         string agreementUri,
         IERC677Token assetToken,
         Neumark neumark,
-        uint lockPeriod,
-        uint penaltyFraction
+        uint256 lockPeriod,
+        uint256 penaltyFraction
     )
         AccessControlled(policy)
         Agreement(forkArbiter, agreementUri)
@@ -429,9 +429,9 @@ contract LockedAccount is
     // Internal functions
     ////////////////////////
 
-    function addBalance(uint balance, uint amount)
+    function addBalance(uint256 balance, uint256 amount)
         internal
-        returns (uint)
+        returns (uint256)
     {
         _totalLockedAmount = add(_totalLockedAmount, amount);
         uint256 newBalance = add(balance, amount);
@@ -439,9 +439,9 @@ contract LockedAccount is
         return newBalance;
     }
 
-    function subBalance(uint balance, uint amount)
+    function subBalance(uint256 balance, uint256 amount)
         internal
-        returns (uint)
+        returns (uint256)
     {
         _totalLockedAmount -= amount;
         return balance - amount;

@@ -17,7 +17,7 @@ contract MTokenController {
     function mOnTransfer(
         address from,
         address to,
-        uint amount
+        uint256 amount
     )
         internal
         returns (bool allow);
@@ -31,7 +31,7 @@ contract MTokenController {
     function mOnApprove(
         address owner,
         address spender,
-        uint amount
+        uint256 amount
     )
         internal
         returns (bool allow);

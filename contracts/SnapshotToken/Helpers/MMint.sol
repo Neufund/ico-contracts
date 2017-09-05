@@ -16,7 +16,7 @@ contract MMint {
     function mTransfer(
         address from,
         address to,
-        uint amount
+        uint256 amount
     )
         internal
         returns(bool);
@@ -25,7 +25,7 @@ contract MMint {
     /// @param owner The address that will be assigned the new tokens
     /// @param amount The quantity of tokens generated
     /// @return True if the tokens are generated correctly
-    function mGenerateTokens(address owner, uint amount)
+    function mGenerateTokens(address owner, uint256 amount)
         internal
         returns (bool);
 
@@ -33,7 +33,7 @@ contract MMint {
     /// @param owner The address that will lose the tokens
     /// @param amount The quantity of tokens to burn
     /// @return True if the tokens are burned correctly
-    function mDestroyTokens(address owner, uint amount)
+    function mDestroyTokens(address owner, uint256 amount)
         internal
         returns (bool);
 }

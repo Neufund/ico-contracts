@@ -64,7 +64,7 @@ contract Vote {
     // Public functions
     ////////////////////////
 
-    function initChoice(uint index, string choice)
+    function initChoice(uint256 index, string choice)
     {
         require(index < CHOICE_HASHES.length);
         require(keccak256(choice) == CHOICE_HASHES[index]);

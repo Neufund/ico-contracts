@@ -156,7 +156,7 @@ contract Neumark is
     function mOnTransfer(
         address from,
         address to,
-        uint // amount
+        uint256 // amount
     )
         internal
         acceptAgreement(from)
@@ -169,7 +169,7 @@ contract Neumark is
     function mOnApprove(
         address owner,
         address, // spender,
-        uint // amount
+        uint256 // amount
     )
         internal
         acceptAgreement(owner)

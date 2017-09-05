@@ -27,7 +27,7 @@ contract SnapshotTest is
     function curDays()
         public
         constant
-        returns (uint)
+        returns (uint256)
     {
         return block.timestamp / 1 days;
     }
