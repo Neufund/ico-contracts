@@ -8,18 +8,34 @@ contract DailyAndSnapshotable is
     MPolicy,
     ISnapshotable
 {
+    ////////////////////////
+    // Constants
+    ////////////////////////
 
     // Floor[2**128 / 1 days]
     uint256 MAX_TIMESTAMP = 3938453320844195178974243141571391;
 
+    ////////////////////////
+    // Mutable state
+    ////////////////////////
+
     uint256 nextSnapshotId;
+
     bool nextSnapshotModified;
+
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     function DailyAndSnapshotable() {
         uint256 dayBase = 2**128 * (block.timestamp / 1 days);
         nextSnapshotId = dayBase + 1;
         nextSnapshotModified = false;
     }
+
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     function snapshotAt(uint256 timestamp)
         public
@@ -66,6 +82,14 @@ contract DailyAndSnapshotable is
         SnapshotCreated(snapshotId);
         return snapshotId;
     }
+
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
+
+    //
+    // Implements MPolicy
+    //
 
     function mNextSnapshotId()
         internal

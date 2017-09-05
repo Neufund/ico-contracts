@@ -5,6 +5,10 @@ import './MPolicy.sol';
 
 contract Daily is MPolicy {
 
+    ////////////////////////
+    // Public functions
+    ////////////////////////
+
     function snapshotAt(uint256 timestamp)
         public
         constant
@@ -15,6 +19,14 @@ contract Daily is MPolicy {
 
         return timestamp;
     }
+
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
+
+    //
+    // Implements MPolicy
+    //
 
     function mNextSnapshotId()
         internal

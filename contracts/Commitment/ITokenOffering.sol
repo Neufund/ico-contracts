@@ -4,6 +4,10 @@ pragma solidity 0.4.15;
 /// Base class for any token offering on Neufund platform
 contract ITokenOffering {
 
+    ////////////////////////
+    // Events
+    ////////////////////////
+
     /// on every investment transaction
     /// `investor` invested `amount` in `paymentToken` currency which was converted to `eurEquivalent` that purchases `purchasedAmount` of `ofToken`
     event FundsInvested(
@@ -19,6 +23,10 @@ contract ITokenOffering {
     event CommitmentCompleted(
         bool isSuccess
     );
+
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     /// says if end criteria are met
     function hasEnded()

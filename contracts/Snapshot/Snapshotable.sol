@@ -8,9 +8,17 @@ contract Snapshotable is
     MPolicy,
     ISnapshotable
 {
+    ////////////////////////
+    // Mutable state
+    ////////////////////////
 
     uint256 nextSnapshotId;
+
     bool nextSnapshotModified;
+
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     function Snapshotable(uint256 start)
         internal
@@ -18,6 +26,10 @@ contract Snapshotable is
         nextSnapshotId = start;
         nextSnapshotModified = true;
     }
+
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     function createSnapshot()
         public
@@ -46,6 +58,10 @@ contract Snapshotable is
         SnapshotCreated(snapshotId);
         return snapshotId;
     }
+
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
 
     function mixinNextSnapshotId()
         internal

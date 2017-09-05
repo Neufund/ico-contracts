@@ -4,9 +4,9 @@ pragma solidity 0.4.15;
 // Mixin for the snapshot policy
 contract MPolicy {
 
-////////////////
-// Internal abstract functions
-////////////////
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
 
     // The snapshot Ids need to be monotonically increasing.
     // Whenever the snaspshot id changes, a new snapshot will
