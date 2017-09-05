@@ -3,6 +3,10 @@ pragma solidity 0.4.15;
 
 contract ISnapshotTokenParent {
 
+    ////////////////////////
+    // Public functions
+    ////////////////////////
+
     /// @notice Total amount of tokens at a specific `_snapshot`.
     /// @param _snapshot The block number when the totalSupply is queried
     /// @return The total amount of tokens at `_snapshot`

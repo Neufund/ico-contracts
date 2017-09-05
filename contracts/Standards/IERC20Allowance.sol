@@ -3,18 +3,18 @@ pragma solidity 0.4.15;
 
 contract IERC20Allowance {
 
-////////////////
-// Events
-////////////////
+    ////////////////////////
+    // Events
+    ////////////////////////
 
     event Approval(
         address indexed owner,
         address indexed spender,
         uint256 amount);
 
-///////////////////
-// ERC20 Basic Methods
-///////////////////
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     /// @dev This function makes it easy to read the `allowed[]` map
     /// @param _owner The address of the account that owns the token

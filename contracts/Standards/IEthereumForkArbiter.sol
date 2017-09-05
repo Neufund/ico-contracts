@@ -3,6 +3,10 @@ pragma solidity 0.4.15;
 
 contract IEthereumForkArbiter {
 
+    ////////////////////////
+    // Events
+    ////////////////////////
+
     event ForkAnnounced(
         string name,
         string url,
@@ -13,6 +17,10 @@ contract IEthereumForkArbiter {
         uint256 blockNumber,
         bytes32 blockHash
     );
+
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     function nextForkName()
         public

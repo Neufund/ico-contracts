@@ -3,18 +3,18 @@ pragma solidity 0.4.15;
 
 contract IBasicToken {
 
-////////////////
-// Events
-////////////////
+    ////////////////////////
+    // Events
+    ////////////////////////
 
     event Transfer(
         address indexed from,
         address indexed to,
         uint256 amount);
 
-///////////////////
-// Methods
-///////////////////
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     /// @dev This function makes it easy to get the total number of tokens
     /// @return The total number of tokens
