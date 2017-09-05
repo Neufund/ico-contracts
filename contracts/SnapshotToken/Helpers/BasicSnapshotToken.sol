@@ -10,6 +10,9 @@ contract BasicSnapshotToken is
     MMint,
     Snapshot
 {
+    ////////////////////////
+    // Immutable state
+    ////////////////////////
 
     // `parentToken` is the Token address that was cloned to produce this token;
     //  it will be 0x0 for a token that was not cloned
@@ -19,6 +22,10 @@ contract BasicSnapshotToken is
     //  used to determine the initial distribution of the Clone Token
     uint256 public parentSnapshot;
 
+    ////////////////////////
+    // Mutable state
+    ////////////////////////
+
     // `balances` is the map that tracks the balance of each address, in this
     //  contract when the balance changes the block number that the change
     //  occurred is also included in the map
@@ -27,9 +34,9 @@ contract BasicSnapshotToken is
     // Tracks the history of the `totalSupply` of the token
     Values[] totalSupplyValues;
 
-////////////////
-// Constructor
-////////////////
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     /// @notice Constructor to create a MiniMeToken
     /// @param _parentToken Address of the parent token, set to 0x0 if it is a
@@ -45,9 +52,13 @@ contract BasicSnapshotToken is
         parentSnapshot = _parentSnapshot;
     }
 
-///////////////////
-// ERC20 Basic Methods
-///////////////////
+    ////////////////////////
+    // Public functions
+    ////////////////////////
+
+    //
+    // Implements IBasicToken
+    //
 
     /// @dev This function makes it easy to get the total number of tokens
     /// @return The total number of tokens
@@ -80,9 +91,9 @@ contract BasicSnapshotToken is
         return mTransfer(msg.sender, _to, _amount);
     }
 
-////////////////
-// Query balance and totalSupply in History
-////////////////
+    //
+    // Implements ISnapshotTokenParent
+    //
 
     /// @notice Total amount of tokens at a specific `_snapshot`.
     /// @param _snapshot The block number when the totalSupply is queried
@@ -133,9 +144,13 @@ contract BasicSnapshotToken is
         return 0;
     }
 
-////////////////
-// Generate and destroy tokens
-////////////////
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
+
+    //
+    // Implements MMint
+    //
 
     /// @dev This is the actual transfer function in the token contract, it can
     ///  only be called by other functions in this contract.

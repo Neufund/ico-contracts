@@ -11,25 +11,25 @@ contract Allowance is
     MAllowance
 {
 
-////////////////
-// State
-////////////////
+    ////////////////////////
+    // Mutable state
+    ////////////////////////
 
     // `allowed` tracks any extra transfer rights as in all ERC20 tokens
     mapping (address => mapping (address => uint256)) allowed;
 
-////////////////
-// Constructor
-////////////////
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     function Allowance()
         internal
     {
     }
 
-////////////////
-// Public functions
-////////////////
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     /// @dev This function makes it easy to read the `allowed[]` map
     /// @param _owner The address of the account that owns the token

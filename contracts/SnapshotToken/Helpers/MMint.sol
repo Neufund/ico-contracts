@@ -3,6 +3,10 @@ pragma solidity 0.4.15;
 
 contract MMint {
 
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
+
     /// @dev This is the actual transfer function in the token contract, it can
     ///  only be called by other functions in this contract.
     /// @param _from The address holding the tokens being transferred

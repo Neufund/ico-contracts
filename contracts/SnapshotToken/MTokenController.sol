@@ -4,6 +4,10 @@ pragma solidity 0.4.15;
 /// @dev The token controller contract must implement these functions
 contract MTokenController {
 
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
+
     /// @notice Notifies the controller about a token transfer allowing the
     ///  controller to react if desired
     /// @param from The origin of the transfer

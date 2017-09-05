@@ -26,12 +26,27 @@ import '../../Standards/ISnapshotableToken.sol';
 // TODO:
 contract Vote {
 
+    ////////////////////////
+    // Immutable state
+    ////////////////////////
+
     ISnapshotableToken public TOKEN;
+
     uint256 public SNAPSHOT;
+
     bytes32[] public CHOICE_HASHES;
 
+    ////////////////////////
+    // Mutable state
+    ////////////////////////
+
     string[] public choices;
+
     uint256[] totals;
+
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     // Note: we use hashes because Solidity currently does not support passing
     //     string[] as an argument for external functions.
@@ -44,6 +59,10 @@ contract Vote {
         CHOICE_HASHES = choiceHashes;
         choices.length = CHOICE_HASHES.length;
     }
+
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     function initChoice(uint index, string choice)
     {

@@ -5,10 +5,25 @@ import '../../Standards/ITokenMetadata.sol';
 
 contract TokenMetadata is ITokenMetadata {
 
-    string private tokenName;                //The Token's name: e.g. DigixDAO Tokens
-    uint8 private tokenDecimals;             //Number of decimals of the smallest unit
-    string private tokenSymbol;              //An identifier: e.g. REP
-    string private tokenVersion;             //An arbitrary versioning scheme
+    ////////////////////////
+    // Immutable state
+    ////////////////////////
+
+    // The Token's name: e.g. DigixDAO Tokens
+    string private tokenName;
+
+    // Number of decimals of the smallest unit
+    uint8 private tokenDecimals;
+
+    // An identifier: e.g. REP
+    string private tokenSymbol;
+
+    // An arbitrary versioning scheme
+    string private tokenVersion;
+
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     /// @notice Constructor to create a MiniMeToken
     /// @param _tokenName Name of the new token
@@ -26,7 +41,12 @@ contract TokenMetadata is ITokenMetadata {
         tokenVersion = _version;
     }
 
+    ////////////////////////
+    // Public functions
+    ////////////////////////
+
     function symbol()
+        public
         constant
         returns (string)
     {
@@ -34,6 +54,7 @@ contract TokenMetadata is ITokenMetadata {
     }
 
     function name()
+        public
         constant
         returns (string)
     {
@@ -41,6 +62,7 @@ contract TokenMetadata is ITokenMetadata {
     }
 
     function decimals()
+        public
         constant
         returns (uint8)
     {
@@ -48,6 +70,7 @@ contract TokenMetadata is ITokenMetadata {
     }
 
     function version()
+        public
         constant
         returns (string)
     {

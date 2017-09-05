@@ -56,11 +56,15 @@ contract SnapshotToken is
     TokenMetadata,
     IsContract
 {
+    ////////////////////////
+    // Constants
+    ////////////////////////
+
     string private constant VERSION = "ST_1.0";
 
-////////////////
-// Constructor
-////////////////
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     /// @notice Constructor to create a MiniMeToken
     ///  is a new token
@@ -79,9 +83,9 @@ contract SnapshotToken is
     {
     }
 
-///////////////////
-// Public functions
-///////////////////
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     /// @notice Send `_amount` tokens to `_to` from `msg.sender`
     /// @param _to The address of the recipient
@@ -155,23 +159,9 @@ contract SnapshotToken is
         return success;
     }
 
-////////////////
-// Internal functions
-////////////////
-
-    /// @dev This is the actual transfer function in the token contract, it can
-    ///  only be called by other functions in this contract.
-    /// @param _from The address holding the tokens being transferred
-    /// @param _to The address of the recipient
-    /// @param _amount The amount of tokens to be transferred
-    /// @return True if the transfer was successful
-    /// Implements the abstract function from AllowanceBase
-    function mAllowanceTransfer(address _from, address _to, uint _amount)
-        internal
-        returns(bool)
-    {
-        return transfer(_from, _to, _amount);
-    }
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
 
     /// @dev This is the actual transfer function in the token contract, it can
     ///  only be called by other functions in this contract.
@@ -189,4 +179,23 @@ contract SnapshotToken is
 
         return mTransfer(_from, _to, _amount);
     }
+
+    //
+    // Implements MAllowance
+    //
+
+    /// @dev This is the actual transfer function in the token contract, it can
+    ///  only be called by other functions in this contract.
+    /// @param _from The address holding the tokens being transferred
+    /// @param _to The address of the recipient
+    /// @param _amount The amount of tokens to be transferred
+    /// @return True if the transfer was successful
+    /// Implements the abstract function from AllowanceBase
+    function mAllowanceTransfer(address _from, address _to, uint _amount)
+        internal
+        returns(bool)
+    {
+        return transfer(_from, _to, _amount);
+    }
+
 }

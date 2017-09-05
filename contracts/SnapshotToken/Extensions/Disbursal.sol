@@ -13,9 +13,9 @@ import '../../Standards/IERC677Callback.sol';
 //        * Allow claims in any order
 contract Disbursal is IERC677Callback {
 
-////////////////
-// Types
-////////////////
+    ////////////////////////
+    // Types
+    ////////////////////////
 
     struct Disbursment {
         uint256 snapshot;
@@ -24,19 +24,23 @@ contract Disbursal is IERC677Callback {
         uint256 remainingShares;
     }
 
-////////////////
-// State
-////////////////
+    ////////////////////////
+    // Immutabel state
+    ////////////////////////
 
     ISnapshotableToken public SHARE_TOKEN;
+
+    ////////////////////////
+    // Mutable state
+    ////////////////////////
 
     Disbursment[] disbursments;
 
     mapping(address => mapping(uint256 => bool)) claimed;
 
-////////////////
-// Events
-////////////////
+    ////////////////////////
+    // Events
+    ////////////////////////
 
     event Disbursed(
         uint256 disbursalIndex,
@@ -53,9 +57,9 @@ contract Disbursal is IERC677Callback {
         uint256 amount
     );
 
-////////////////
-// Constructor
-////////////////
+    ////////////////////////
+    // Constructor
+    ////////////////////////
 
     function Disbursal(
         ISnapshotableToken shareToken
@@ -65,9 +69,9 @@ contract Disbursal is IERC677Callback {
         SHARE_TOKEN = shareToken;
     }
 
-////////////////
-// Public functions
-////////////////
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     function claimables(address beneficiary, uint256 from)
         public
@@ -204,9 +208,9 @@ contract Disbursal is IERC677Callback {
 
     // TODO: ERC223 style receiver
 
-////////////////
-// Internal functions
-////////////////
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
 
     // TODO: Ideally we make this function public, and allow
     //       disbursal of any basic token. When counting how
