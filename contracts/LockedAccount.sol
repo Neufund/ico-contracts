@@ -285,10 +285,16 @@ contract LockedAccount is
         require(address(_migration) != 0);
 
         // migrates
-        Account storage a = _accounts[msg.sender];
+        Account memory a = _accounts[msg.sender];
 
         // if there is anything to migrate
         if (a.balance > 0) {
+
+            // this will clear investor storage
+            removeInvestor(msg.sender, a.balance);
+
+            // let migration target to own asset balance that belongs to investor
+            require(ASSET_TOKEN.approve(address(_migration), a.balance));
             bool migrated = _migration.migrateInvestor(
                 msg.sender,
                 a.balance,
@@ -297,7 +303,6 @@ contract LockedAccount is
             );
             assert(migrated);
             InvestorMigrated(msg.sender, a.balance, a.neumarksDue, a.unlockDate);
-            removeInvestor(msg.sender, a.balance);
         }
     }
 
