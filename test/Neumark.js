@@ -3,6 +3,7 @@ import { prettyPrintGasCost } from "./helpers/gasUtils";
 import { eventValue } from "./helpers/events";
 import createAccessPolicy from "./helpers/createAccessPolicy";
 import roles from "./helpers/roles";
+import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
 
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const Neumark = artifacts.require("./Neumark.sol");
@@ -13,11 +14,12 @@ const NMK_DECIMALS = new BigNumber(10).toPower(18);
 
 contract("Neumark", accounts => {
   const agreementUri = "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT";
+  let snapshot;
   let rbac;
   let forkArbiter;
   let neumark;
 
-  beforeEach(async () => {
+  before(async () => {
     rbac = await createAccessPolicy([
       { subject: accounts[0], role: roles.transferAdmin },
       { subject: accounts[0], role: roles.neumarkIssuer },
@@ -28,10 +30,16 @@ contract("Neumark", accounts => {
     ]);
     forkArbiter = await EthereumForkArbiter.new(rbac);
     neumark = await Neumark.new(rbac, forkArbiter.address, agreementUri);
+    snapshot = await saveBlockchain();
+  });
+
+  beforeEach(async () => {
+    await restoreBlockchain(snapshot);
+    snapshot = await saveBlockchain();
   });
 
   it("should deploy", async () => {
-    prettyPrintGasCost("Neumark deploy", neumark);
+    await prettyPrintGasCost("Neumark deploy", neumark);
   });
 
   it("should have agreement and fork arbiter", async () => {
@@ -60,7 +68,7 @@ contract("Neumark", accounts => {
     const r1 = await neumark.issueForEuro(EUR_DECIMALS.mul(100), {
       from: accounts[1]
     }); // TODO check result
-    prettyPrintGasCost("Issue", r1);
+    await prettyPrintGasCost("Issue", r1);
     assert.equal(
       (await neumark.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(),
       100
@@ -80,7 +88,7 @@ contract("Neumark", accounts => {
     const r2 = await neumark.issueForEuro(EUR_DECIMALS.mul(900), {
       from: accounts[2]
     });
-    prettyPrintGasCost("Issue", r2);
+    await prettyPrintGasCost("Issue", r2);
     assert.equal(
       (await neumark.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(),
       1000
@@ -114,7 +122,7 @@ contract("Neumark", accounts => {
     // Issue Neumarks for 1 mln Euros
     const euroUlps = EUR_DECIMALS.mul(1000000);
     const r = await neumark.issueForEuro(euroUlps, { from: accounts[1] });
-    prettyPrintGasCost("Issue", r);
+    await prettyPrintGasCost("Issue", r);
     const neumarkUlps = await neumark.balanceOf.call(accounts[1]);
     const neumarks = neumarkUlps.div(NMK_DECIMALS).floor().valueOf();
 
@@ -122,7 +130,7 @@ contract("Neumark", accounts => {
     const toBurn = Math.floor(neumarks / 3);
     const toBurnUlps = NMK_DECIMALS.mul(toBurn);
     const burned = await neumark.burnNeumark(toBurnUlps, { from: accounts[1] });
-    prettyPrintGasCost("Burn", burned);
+    await prettyPrintGasCost("Burn", burned);
     assert.equal(
       (await neumark.balanceOf.call(accounts[1]))
         .div(NMK_DECIMALS)
@@ -171,7 +179,7 @@ contract("Neumark", accounts => {
     const balance1 = await neumark.balanceOf.call(accounts[1]);
     const balance3 = await neumark.balanceOf.call(accounts[3]);
 
-    prettyPrintGasCost("Transfer", tx);
+    await prettyPrintGasCost("Transfer", tx);
     expect(amount).to.be.bignumber.not.equal(0);
     expect(balance1).to.be.bignumber.equal(0);
     expect(balance3).to.be.bignumber.equal(amount);

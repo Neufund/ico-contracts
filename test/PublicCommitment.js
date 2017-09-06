@@ -3,15 +3,17 @@ import * as chain from "./helpers/spawnContracts";
 import { eventValue } from "./helpers/events";
 import { setTimeTo } from "./helpers/increaseTime";
 import { latestTimestamp } from "./helpers/latestTime";
+import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
 
 contract("PublicCommitment", ([lockAdmin, investor]) => {
+  let snapshot;
   let startTimestamp;
   const commitmentDuration = chain.months;
 
   beforeEach(async () => {
     await chain.spawnLockedAccount(lockAdmin, 18, 0.1);
     // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurrate
-    startTimestamp = latestTimestamp() + chain.days;
+    startTimestamp = (await latestTimestamp()) + chain.days;
     // apply time limit to ICO
     await chain.spawnPublicCommitment(
       lockAdmin,
@@ -22,6 +24,12 @@ contract("PublicCommitment", ([lockAdmin, investor]) => {
       chain.ether(1),
       218.1192809
     );
+    snapshot = await saveBlockchain();
+  });
+
+  beforeEach(async () => {
+    await restoreBlockchain(snapshot);
+    snapshot = await saveBlockchain();
   });
 
   it("should be able to read Commitment parameters", async () => {

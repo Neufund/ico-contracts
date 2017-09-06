@@ -23,7 +23,7 @@ export default async function deploy(
   const { unlockDateMonths = 18, unlockPenalty = 0.1 } = lockedAccountCfg;
 
   const {
-    startTimestamp = closeFutureDate(),
+    startTimestamp = await closeFutureDate(),
     duration = MONTH,
     minAbsCap = etherToWei(10),
     maxAbsCap = etherToWei(1000),

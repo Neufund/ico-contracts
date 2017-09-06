@@ -9,6 +9,11 @@ import EvmError from "./helpers/EVMThrow";
 import { TriState } from "./helpers/triState";
 import forceEther from "./helpers/forceEther";
 import roles from "./helpers/roles";
+import {
+  promisify,
+  saveBlockchain,
+  restoreBlockchain
+} from "./helpers/evmCommands";
 
 const TestFeeDistributionPool = artifacts.require("TestFeeDistributionPool");
 const TestNullContract = artifacts.require("TestNullContract");
@@ -25,12 +30,13 @@ const LockState = {
 const gasPrice = new web3.BigNumber(0x01);
 
 contract("LockedAccount", ([_, admin, investor, investor2]) => {
+  let snapshot;
   let startTimestamp;
 
-  beforeEach(async () => {
+  before(async () => {
     await chain.spawnLockedAccount(admin, 18, 0.1);
     // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurrate
-    startTimestamp = latestTimestamp();
+    startTimestamp = await latestTimestamp();
     await chain.spawnPublicCommitment(
       admin,
       startTimestamp,
@@ -40,6 +46,12 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
       chain.ether(1),
       300.1219871
     );
+    snapshot = await saveBlockchain();
+  });
+
+  beforeEach(async () => {
+    await restoreBlockchain(snapshot);
+    snapshot = await saveBlockchain();
   });
 
   it("should be able to read lock parameters", async () => {
@@ -85,7 +97,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
       from: investorAddress
     });
     await expectLockEvent(tx, investorAddress, ticket, neumarks);
-    const timebase = latestTimestamp(); // timestamp of block _investFor was mined
+    const timebase = await latestTimestamp(); // timestamp of block _investFor was mined
     const investorBalance = await chain.lockedAccount.balanceOf(
       investorAddress
     );
@@ -291,12 +303,12 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
   }
 
   async function withdrawAsset(investorAddress, amount) {
-    const initalBalance = await web3.eth.getBalance(investorAddress);
+    const initalBalance = await promisify(web3.eth.getBalance)(investorAddress);
     const tx = await chain.etherToken.withdraw(amount, {
       from: investorAddress,
       gasPrice
     });
-    const afterBalance = await web3.eth.getBalance(investorAddress);
+    const afterBalance = await promisify(web3.eth.getBalance)(investorAddress);
     const gasCost = gasPrice.mul(tx.receipt.gasUsed);
     expect(afterBalance).to.be.bignumber.eq(
       initalBalance.add(amount).sub(gasCost)
@@ -608,13 +620,13 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
     const amount = chain.ether(1);
     await forceEther(chain.lockedAccount.address, amount, investor);
     await allowToReclaim(admin);
-    const adminEthBalance = await web3.eth.getBalance(admin);
+    const adminEthBalance = await promisify(web3.eth.getBalance)(admin);
     const tx = await chain.lockedAccount.reclaim(RECLAIM_ETHER, {
       from: admin,
       gasPrice
     });
     const gasCost = gasPrice.mul(tx.receipt.gasUsed);
-    const adminEthAfterBalance = await web3.eth.getBalance(admin);
+    const adminEthAfterBalance = await promisify(web3.eth.getBalance)(admin);
     expect(adminEthAfterBalance).to.be.bignumber.eq(
       adminEthBalance.add(amount).sub(gasCost)
     );

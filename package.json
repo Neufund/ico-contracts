@@ -23,7 +23,7 @@
     "eslint-plugin-jsx-a11y": "^5.0.1",
     "eslint-plugin-prettier": "^2.2.0",
     "eslint-plugin-react": "^7.0.1",
-    "ethereumjs-testrpc": "^4.0.0",
+    "ethereumjs-testrpc": "^4.1.1",
     "invariant": "^2.2.2",
     "istanbul": "next",
     "lodash": "^4.17.4",

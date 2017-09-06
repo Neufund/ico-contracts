@@ -3,12 +3,14 @@ import moment from "moment";
 import { prettyPrintGasCost } from "./helpers/gasUtils";
 import { latestTimestamp } from "./helpers/latestTime";
 import increaseTime from "./helpers/increaseTime";
+import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
 
 const SnapshotTest = artifacts.require("./test/SnapshotTest.sol");
 
 const day = 24 * 3600;
 
 contract("Snapshot", () => {
+  let snapshot;
   let snapshotTest;
 
   const createSnapshot = async () => {
@@ -20,6 +22,12 @@ contract("Snapshot", () => {
 
   beforeEach(async () => {
     snapshotTest = await SnapshotTest.new();
+    snapshot = await saveBlockchain();
+  });
+
+  beforeEach(async () => {
+    await restoreBlockchain(snapshot);
+    snapshot = await saveBlockchain();
   });
 
   it("should deploy", async () => {
@@ -80,15 +88,15 @@ contract("Snapshot", () => {
 
   it("should create daily snapshots", async () => {
     const day0 = await snapshotTest.snapshotAt.call(
-      latestTimestamp() + 0 * day
+      (await latestTimestamp()) + 0 * day
     );
     const day1 = await snapshotTest.snapshotAt.call(
-      latestTimestamp() + 1 * day
+      (await latestTimestamp()) + 1 * day
     );
     const day2 = await snapshotTest.snapshotAt.call(
-      latestTimestamp() + 2 * day
+      (await latestTimestamp()) + 2 * day
     );
-    await snapshotTest.snapshotAt.call(latestTimestamp() + 3 * day);
+    await snapshotTest.snapshotAt.call((await latestTimestamp()) + 3 * day);
 
     await snapshotTest.setValue(100);
     await increaseTime(moment.duration({ days: 1 }));
@@ -103,7 +111,7 @@ contract("Snapshot", () => {
 
   it("should throw when queried in the future", async () => {
     const day1 = await snapshotTest.snapshotAt.call(
-      latestTimestamp() + 1 * day
+      (await latestTimestamp()) + 1 * day
     );
     await expect(snapshotTest.getValueAt.call(day1, 41)).to.revert;
   });

@@ -35,7 +35,7 @@ export default increaseTime;
 
 // sets time to given timestamp based on current block time
 export async function setTimeTo(timestamp) {
-  const ct = latestTimestamp();
+  const ct = await latestTimestamp();
   if (ct > timestamp) {
     throw new Error(`cannot decrease time to ${timestamp} from ${ct}`);
   }

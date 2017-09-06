@@ -2,11 +2,17 @@ import { expect } from "chai";
 import createAccessPolicy from "./helpers/createAccessPolicy";
 import forceEther from "./helpers/forceEther";
 import roles from "./helpers/roles";
+import {
+  promisify,
+  saveBlockchain,
+  restoreBlockchain
+} from "./helpers/evmCommands";
 
 const TestReclaimable = artifacts.require("TestReclaimable");
 const TestToken = artifacts.require("TestToken");
 
 contract("Reclaimable", ([deployer, reclaimer, other]) => {
+  let snapshot;
   let reclaimable;
   const RECLAIM_ETHER = "0x0";
 
@@ -15,17 +21,23 @@ contract("Reclaimable", ([deployer, reclaimer, other]) => {
       { subject: reclaimer, role: roles.reclaimer }
     ]);
     reclaimable = await TestReclaimable.new(accessPolicy);
+    snapshot = await saveBlockchain();
+  });
+
+  beforeEach(async () => {
+    await restoreBlockchain(snapshot);
+    snapshot = await saveBlockchain();
   });
 
   it("should reclaim ether", async () => {
     const amount = web3.toWei(1, "ether");
 
     await forceEther(reclaimable.address, amount, deployer);
-    const reclaimerBefore = await web3.eth.getBalance(reclaimer);
-    const before = await web3.eth.getBalance(reclaimable.address);
+    const reclaimerBefore = await promisify(web3.eth.getBalance)(reclaimer);
+    const before = await promisify(web3.eth.getBalance)(reclaimable.address);
     await reclaimable.reclaim(RECLAIM_ETHER, { from: reclaimer });
-    const after = await web3.eth.getBalance(reclaimable.address);
-    const reclaimerAfter = await web3.eth.getBalance(reclaimer);
+    const after = await promisify(web3.eth.getBalance)(reclaimable.address);
+    const reclaimerAfter = await promisify(web3.eth.getBalance)(reclaimer);
 
     expect(before).to.be.bignumber.equal(amount);
     expect(after).to.be.bignumber.zero;

@@ -11,6 +11,7 @@ import {
   deployMutableCurve,
   ethToEur
 } from "./helpers/verification";
+import { promisify } from "./helpers/evmCommands";
 
 contract(
   "WhitelistedCommitment",
@@ -75,7 +76,7 @@ contract(
       });
 
       it("should not be possible to set it after commitment is started", async () => {
-        const startingDate = closeFutureDate();
+        const startingDate = await closeFutureDate();
         const {
           commitment
         } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
@@ -154,7 +155,7 @@ contract(
       });
 
       it("should not be possible to set it after commitment is started", async () => {
-        const startingDate = closeFutureDate();
+        const startingDate = await closeFutureDate();
         const {
           commitment
         } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
@@ -273,7 +274,7 @@ contract(
 
     describe("ordered whitelist commitment", () => {
       it("should work with tickets below declared", async () => {
-        const startingDate = closeFutureDate();
+        const startingDate = await closeFutureDate();
         const mutableCurve = await deployMutableCurve();
         const fixedInvestors = [accounts[0], accounts[1]];
         const fixedDeclaredTickets = [etherToWei(2), etherToWei(3)];
@@ -330,7 +331,7 @@ contract(
       });
 
       it("should send all funds in case of rounding errors", async () => {
-        const startingDate = closeFutureDate();
+        const startingDate = await closeFutureDate();
         const investor1 = accounts[0];
         const fixedInvestors = [investor1];
         const fixedDeclaredTickets = [etherToWei(2)];
@@ -385,7 +386,7 @@ contract(
       });
 
       async function commitWithoutRemainder(remainderWei) {
-        const startingDate = closeFutureDate();
+        const startingDate = await closeFutureDate();
         const investor1 = accounts[0];
         const fixedInvestors = [investor1];
         const fixedDeclaredTickets = [etherToWei(2.1092830910928081)];
@@ -454,7 +455,7 @@ contract(
       }
 
       it("should work with ticket exactly the same as declared", async () => {
-        const startingDate = closeFutureDate();
+        const startingDate = await closeFutureDate();
         const mutableCurve = await deployMutableCurve();
         const investor1 = accounts[0];
         const fixedInvestors = [investor1, accounts[1]];
@@ -505,7 +506,7 @@ contract(
       });
 
       it("should allow fixed investor to make commitment in mulitple tickets", async () => {
-        const startingDate = closeFutureDate();
+        const startingDate = await closeFutureDate();
         const mutableCurve = await deployMutableCurve();
         const investor = accounts[0];
         const actualInvestorTickets = [
@@ -560,7 +561,7 @@ contract(
     describe("whitelisted commitment", () => {
       it("should work for whitelisted investors", async () => {
         const verificationCurve = await deployMutableCurve();
-        const startingDate = closeFutureDate();
+        const startingDate = await closeFutureDate();
         const whitelistedInvestors = [accounts[0], accounts[1]];
         const ticketSizes = [etherToWei(1.5), etherToWei(5)];
 
@@ -607,7 +608,7 @@ contract(
       });
 
       it("should not work with not whitelisted investors", async () => {
-        const startingDate = closeFutureDate();
+        const startingDate = await closeFutureDate();
         const whitelistedInvestors = [accounts[0], accounts[1]];
         const investor = accounts[2];
         const ticketSize = etherToWei(1.5);
@@ -628,7 +629,7 @@ contract(
       });
 
       it("should not be possible to invest before ICO", async () => {
-        const startingDate = closeFutureDate();
+        const startingDate = await closeFutureDate();
         const whitelistedInvestors = [accounts[0], accounts[1]];
         const investor = accounts[2];
         const ticketSize = etherToWei(1.5);
@@ -648,7 +649,7 @@ contract(
       });
 
       it("should not be possible to invest after ICO", async () => {
-        const startingDate = closeFutureDate();
+        const startingDate = await closeFutureDate();
         const duration = MONTH;
         const whitelistedInvestors = [accounts[0], accounts[1]];
         const investor = accounts[2];
@@ -673,12 +674,14 @@ contract(
 
     describe("failed commitment", () => {
       it("should unlock all accounts", async () => {
-        const startingDate = closeFutureDate();
+        const startingDate = await closeFutureDate();
         const duration = MONTH;
         const whitelistedInvestors = [accounts[4], accounts[5]];
         const investor = whitelistedInvestors[0];
         const ticketSize = etherToWei(1.5);
-        const initialAccountBalance = await web3.eth.getBalance(investor);
+        const initialAccountBalance = await promisify(web3.eth.getBalance)(
+          investor
+        );
         const gasPrice = 1;
         let accGas;
 
@@ -718,7 +721,9 @@ contract(
         );
 
         const gasCost = accGas.mul(gasPrice);
-        const finalAccountBalance = await web3.eth.getBalance(investor);
+        const finalAccountBalance = await promisify(web3.eth.getBalance)(
+          investor
+        );
 
         expect(finalAccountBalance).to.be.bignumber.eq(
           initialAccountBalance.sub(gasCost)
@@ -742,7 +747,7 @@ contract(
       });
 
       it("should not allow neumark trading", async () => {
-        const startingDate = closeFutureDate();
+        const startingDate = await closeFutureDate();
         const duration = MONTH;
         const mutableCurve = await deployMutableCurve();
         const investor1 = accounts[0];
@@ -788,7 +793,7 @@ contract(
     });
 
     async function shouldBurnUnusedNeumarks(minAbsCap) {
-      const startingDate = closeFutureDate();
+      const startingDate = await closeFutureDate();
       const duration = MONTH;
       const investor1 = accounts[0];
       const fixedInvestors = [investor1, accounts[1]];
@@ -837,7 +842,7 @@ contract(
       investorDeclaration,
       firstInvestorTicket
     ) {
-      const startingDate = closeFutureDate();
+      const startingDate = await closeFutureDate();
       const mutableCurve = await deployMutableCurve();
       const equalShareSize = investorDeclaration[0];
       const curveShareSize = firstInvestorTicket.sub(equalShareSize);

@@ -1,24 +1,21 @@
 import moment from "moment";
+import { promisify, mineBlock } from "./evmCommands";
 
 let firstTimeRequestedTime = true;
 
 // Returns a moment.js instance representing the time of the last mined block
-export default function latestTime() {
-  return moment.unix(latestTimestamp());
+export default async function latestTime() {
+  return moment.unix(await latestTimestamp());
 }
 
-export function latestTimestamp() {
+export async function latestTimestamp() {
   // this is done as a workaround for a bug when first requested block get return wrong timestamp
   if (firstTimeRequestedTime) {
-    web3.currentProvider.send({
-      jsonrpc: "2.0",
-      method: "evm_mine",
-      id: 12345
-    });
+    await mineBlock();
     firstTimeRequestedTime = false;
   }
 
-  return web3.eth.getBlock("latest").timestamp;
+  return (await promisify(web3.eth.getBlock)("latest")).timestamp;
 }
 
 export const HOUR = 60 * 60;
@@ -26,11 +23,11 @@ export const DAY = 24 * 60 * 60;
 export const MONTH = HOUR * 24 * 31;
 
 // useful for spawning time sensitive contracts
-export function closeFutureDate() {
-  return latestTimestamp() + DAY;
+export async function closeFutureDate() {
+  return (await latestTimestamp()) + DAY;
 }
 
 // useful for spawning time sensitive contracts
-export function furtherFutureDate() {
-  return latestTimestamp() + MONTH;
+export async function furtherFutureDate() {
+  return (await latestTimestamp()) + MONTH;
 }
