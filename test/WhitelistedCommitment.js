@@ -13,6 +13,12 @@ import {
 } from "./helpers/verification";
 import { promisify } from "./helpers/evmCommands";
 
+const TokenType = {
+  None: 0,
+  EtherToken: 1,
+  EuroToken: 2
+};
+
 contract(
   "WhitelistedCommitment",
   ([_, lockAdminAccount, whitelistAdminAccount, ...accounts]) => {
@@ -20,6 +26,7 @@ contract(
       it("should work", async () => {
         const mutableCurve = await deployMutableCurve();
         const investors = [accounts[0], accounts[1]];
+        const tokens = [TokenType.EtherToken, TokenType.EtherToken];
         const tickets = [etherToWei(1), etherToWei(2)];
         const expectedNeumarks = [
           await mutableCurve.issueInEth(tickets[0]),
@@ -30,27 +37,43 @@ contract(
           lockAdminAccount,
           whitelistAdminAccount
         );
-        await commitment.setOrderedWhitelist(investors, tickets, {
+        await commitment.setPreAllocatedTickets(investors, tokens, tickets, {
           from: whitelistAdminAccount
         });
 
-        expect(await commitment.fixedCostInvestors(0)).to.be.eq(investors[0]);
-        expect(await commitment.fixedCostInvestors(1)).to.be.eq(investors[1]);
-        await expect(commitment.fixedCostInvestors).to.blockchainArrayOfSize(2);
-
-        expect(
-          await commitment.fixedCostTickets(investors[0])
-        ).to.be.bignumber.eq(tickets[0]);
-        expect(
-          await commitment.fixedCostTickets(investors[1])
-        ).to.be.bignumber.eq(tickets[1]);
-
-        expect(
-          await commitment.fixedCostNeumarks(investors[0])
-        ).to.be.bignumber.eq(expectedNeumarks[0]);
-        expect(
-          await commitment.fixedCostNeumarks(investors[1])
-        ).to.be.bignumber.eq(expectedNeumarks[1]);
+        await expect(commitment.preAllocatedByIndex).to.blockchainArrayOfSize(
+          2
+        );
+        const preAllocatedByIndex = [
+          await commitment.preAllocatedByIndex(0),
+          await commitment.preAllocatedByIndex(1)
+        ];
+        const preAllocatedByInvestor = [
+          await commitment.preAllocatedByInvestor(investors[0]),
+          await commitment.preAllocatedByInvestor(investors[1])
+        ];
+        expect(preAllocatedByIndex[0][0]).to.be.eq(investors[0]);
+        expect(preAllocatedByIndex[0][1]).to.be.bignumber.eq(tokens[0]);
+        expect(preAllocatedByIndex[0][2]).to.be.bignumber.eq(tickets[0]);
+        expect(preAllocatedByIndex[0][3]).to.be.bignumber.eq(
+          expectedNeumarks[0]
+        );
+        expect(preAllocatedByIndex[1][0]).to.be.eq(investors[1]);
+        expect(preAllocatedByIndex[1][1]).to.be.bignumber.eq(tokens[1]);
+        expect(preAllocatedByIndex[1][2]).to.be.bignumber.eq(tickets[1]);
+        expect(preAllocatedByIndex[1][3]).to.be.bignumber.eq(
+          expectedNeumarks[1]
+        );
+        expect(preAllocatedByInvestor[0][0]).to.be.bignumber.eq(tokens[0]);
+        expect(preAllocatedByInvestor[0][1]).to.be.bignumber.eq(tickets[0]);
+        expect(preAllocatedByInvestor[0][2]).to.be.bignumber.eq(
+          expectedNeumarks[0]
+        );
+        expect(preAllocatedByInvestor[1][0]).to.be.bignumber.eq(tokens[1]);
+        expect(preAllocatedByInvestor[1][1]).to.be.bignumber.eq(tickets[1]);
+        expect(preAllocatedByInvestor[1][2]).to.be.bignumber.eq(
+          expectedNeumarks[1]
+        );
 
         expect(await commitment.whitelisted(investors[0])).to.be.true;
         expect(await commitment.whitelisted(investors[1])).to.be.true;
@@ -62,14 +85,15 @@ contract(
           whitelistAdminAccount
         );
         const investors = [accounts[0], accounts[1]];
+        const tokens = [TokenType.EtherToken, TokenType.EtherToken];
         const tickets = [etherToWei(1), etherToWei(2)];
 
-        await commitment.setOrderedWhitelist(investors, tickets, {
+        await commitment.setPreAllocatedTickets(investors, tokens, tickets, {
           from: whitelistAdminAccount
         });
 
         await expect(
-          commitment.setOrderedWhitelist(investors, tickets, {
+          commitment.setPreAllocatedTickets(investors, tokens, tickets, {
             from: whitelistAdminAccount
           })
         ).to.be.rejectedWith(EvmError);
@@ -83,12 +107,13 @@ contract(
           commitmentCfg: { startTimestamp: startingDate }
         });
         const investors = [accounts[0], accounts[1]];
+        const tokens = [TokenType.EtherToken, TokenType.EtherToken];
         const tickets = [etherToWei(1), etherToWei(2)];
 
         await setTimeTo(startingDate);
 
         await expect(
-          commitment.setOrderedWhitelist(investors, tickets, {
+          commitment.setPreAllocatedTickets(investors, tokens, tickets, {
             from: whitelistAdminAccount
           })
         ).to.be.rejectedWith(EvmError);
@@ -100,10 +125,11 @@ contract(
           whitelistAdminAccount
         );
         const investors = [accounts[0]];
+        const tokens = [TokenType.EtherToken, TokenType.EtherToken];
         const tickets = [etherToWei(1), etherToWei(2)];
 
         await expect(
-          commitment.setOrderedWhitelist(investors, tickets, {
+          commitment.setPreAllocatedTickets(investors, tokens, tickets, {
             from: whitelistAdminAccount
           })
         ).to.be.rejectedWith(EvmError);

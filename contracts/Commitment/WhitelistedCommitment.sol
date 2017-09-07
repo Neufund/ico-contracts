@@ -6,20 +6,58 @@ import './PublicCommitment.sol';
 contract WhitelistedCommitment is AccessRoles, CommitmentBase {
 
     ////////////////////////
+    // Types
+    ////////////////////////
+
+    // The two tokens accepted in a pre-allocated ticket.
+    enum TokenType {
+        None,
+        EtherToken,
+        EuroToken
+    }
+
+    // Pre-allocated tickets with a pre-allocated neumark reward.
+    struct PreAllocatedTicket {
+
+        // The currency the investor wants to commited.
+        TokenType ticketToken;
+
+        // The amount the investor commited. The investor can invest more or
+        // less than this amount.
+        uint256 ticketSize;
+
+        // The amount of Neumark reward for this commitment (computed by
+        // contract). Investor can still invest more, but that would be at
+        // spot price.
+        uint256 neumarkReward;
+    }
+
+    ////////////////////////
+    // Constants
+    ////////////////////////
+
+    uint256 private MIN_PRE_ALLOCATED_TICKET_SIZE_EURO_ULPS = 1;
+
+    ////////////////////////
     // Mutable State
     ////////////////////////
 
-    // mapping of addresses allowed to participate
+    bool _preAllocatedTicketsSet;
+
+    bool _whiteListSet;
+
+    // Mapping of investor to pre-allocated tickets.
+    mapping (address => PreAllocatedTicket) private _preAllocatedTickets;
+
+    // List of pre-allocated ticket investors.
+    // NOTE: The order of of the investors matters when computing the reward.
+    address[] private _preAllocatedTicketInvestors;
+
+    // Set of whitelisted investors.
     mapping (address => bool) private _whitelisted;
 
+    // List of whitelisted investors.
     address[] private _whitelistedInvestors;
-
-    // mapping of addresses allowed to participate for fixed Neumark cost
-    mapping (address => uint256) private _fixedCostTickets;
-
-    mapping (address => uint256) private _fixedCostNeumarks;
-
-    address[] private _fixedCostInvestors;
 
     ////////////////////////
     // Constructor
@@ -52,6 +90,8 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
             platformOperatorWallet
         )
     {
+        _preAllocatedTicketsSet = false;
+        _whiteListSet = false;
     }
 
     ////////////////////////
@@ -59,56 +99,80 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
     ////////////////////////
 
     // order of investors matter! first will get better terms on neumarks
-    function setOrderedWhitelist(address[] addresses, uint256[] tickets)
+    function setPreAllocatedTickets(
+        address[] investors,
+        TokenType[] ticketTokens,
+        uint256[] ticketSizes
+    )
         public
         only(ROLE_WHITELIST_ADMIN)
     {
-        // can be set only once
-        require(_fixedCostInvestors.length == 0);
-        require(addresses.length == tickets.length);
+        require(investors.length == ticketTokens.length);
+        require(investors.length == ticketSizes.length);
 
-        // before commitment starts
+        // Can be called only once before commitment starts
+        require(_preAllocatedTicketsSet == false);
         require(currentTime() < startDate());
+        _preAllocatedTicketsSet = true;
 
-        // move to storage
-        for (uint256 idx = 0; idx < addresses.length; idx++) {
-            uint256 ticket = tickets[idx];
+        // Process tickets
+        for (uint256 i = 0; i < investors.length; i++) {
 
-            // tickets of size 0 will not be accepted
-            require(ticket > 0);
+            // Fetch input
+            address investor = investors[i];
+            TokenType ticketToken = ticketTokens[i];
+            uint256 ticketSize = ticketSizes[i];
+            bool isEuro = ticketToken == TokenType.EuroToken;
+            bool isEther = ticketToken == TokenType.EtherToken;
 
-            // allow to invest up to ticket on fixed cost
-            _fixedCostTickets[addresses[idx]] = ticket;
+            // Validate
+            require(investor != 0x0);
+            require(isEuro || isEther);
+            require(ticketSize > 0);
 
-            // issue neumarks for given investor
-            uint256 ticketEuroUlps = convertToEUR(ticket);
-            _fixedCostNeumarks[addresses[idx]] = NEUMARK.issueForEuro(ticketEuroUlps);
+            // Compute euro equivalent amount for ticket
+            uint256 euroUlps = isEther ? convertToEUR(ticketSize) : ticketSize;
+            require(euroUlps >= MIN_PRE_ALLOCATED_TICKET_SIZE_EURO_ULPS);
 
-            // also allow to invest from unordered whitelist along the curve
-            _whitelisted[addresses[idx]] = true;
+            // Allocate Neumarks (will be issued to `this`)
+            uint256 neumarkReward = NEUMARK.issueForEuro(euroUlps);
+
+            // Add to pre-allocated tickets
+            _preAllocatedTickets[investor] = PreAllocatedTicket({
+                ticketToken: ticketToken,
+                ticketSize: ticketSize,
+                neumarkReward: neumarkReward
+            });
+            _preAllocatedTicketInvestors.push(investor);
+
+            // Also add pre-allocated investors to whitelist
+            _whitelisted[investor] = true;
+            _whitelistedInvestors.push(investor);
         }
-
-        // leave array for easy enumeration
-        _fixedCostInvestors = addresses;
     }
 
-    function setWhitelist(address[] addresses)
+    function setWhitelist(address[] investors)
         public
         only(ROLE_WHITELIST_ADMIN)
     {
-        // can be set only once
-        require(_whitelistedInvestors.length == 0);
-
-        // before commitment starts
+        // Can be called only once before commitment starts
+        require(_whiteListSet == false);
         require(currentTime() < startDate());
+        _whiteListSet = true;
 
-        // move to storage
-        for (uint256 idx = 0; idx < addresses.length; idx++) {
-            _whitelisted[addresses[idx]] = true;
+        // Process tickets
+        for (uint256 i = 0; i < investors.length; i++) {
+
+            // Fetch input
+            address investor = investors[i];
+
+            // Validate
+            require(investor != 0x0);
+
+            // Add to whitelisted investors
+            _whitelisted[investor] = true;
+            _whitelistedInvestors.push(investor);
         }
-
-        // leave array for easy enumeration
-        _whitelistedInvestors = addresses;
     }
 
     /// allows to abort commitment process before it starts and rollback curve
@@ -122,37 +186,46 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
         selfdestruct(address(msg.sender));
     }
 
+    function preAllocatedByInvestor(address investor)
+        public
+        constant
+        returns (
+            TokenType ticketToken,
+            uint256 ticketSize,
+            uint256 neumarkReward
+        )
+    {
+        PreAllocatedTicket memory ticket = _preAllocatedTickets[investor];
+        return (ticket.ticketToken, ticket.ticketSize, ticket.neumarkReward);
+    }
+
+    function preAllocatedByIndex(uint256 index)
+        public
+        constant
+        returns (
+            address investor,
+            TokenType ticketToken,
+            uint256 ticketSize,
+            uint256 neumarkReward
+        )
+    {
+        require(index < _preAllocatedTicketInvestors.length);
+        investor = _preAllocatedTicketInvestors[index];
+        PreAllocatedTicket memory ticket = _preAllocatedTickets[investor];
+        return (
+            investor,
+            ticket.ticketToken,
+            ticket.ticketSize,
+            ticket.neumarkReward
+        );
+    }
+
     function whitelisted(address investor)
         public
         constant
         returns (bool)
     {
         return _whitelisted[investor];
-    }
-
-    function fixedCostInvestors(uint256 index)
-        public
-        constant
-        returns (address)
-    {
-        require(index < _fixedCostInvestors.length);
-        return _fixedCostInvestors[index];
-    }
-
-    function fixedCostTickets(address investor)
-        public
-        constant
-        returns (uint256)
-    {
-        return _fixedCostTickets[investor];
-    }
-
-    function fixedCostNeumarks(address investor)
-        public
-        constant
-        returns (uint256)
-    {
-        return _fixedCostNeumarks[investor];
     }
 
     function whitelistedInvestors(uint256 index)
@@ -210,38 +283,39 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
         LOCKED_ACCOUNT.controllerFailed();
     }
 
-    function giveNeumarks(address investor, uint256 amount)
+    function giveNeumarks(
+        address investor,
+        uint256 investmentWei
+    )
         internal
         returns (uint256)
     {
-        // returns 0 in case of investor has no fixed cost ticket
-        uint256 fixedInvestorTicket = _fixedCostTickets[investor];
+        uint256 remainingWei = investmentWei;
+        uint256 neumarkUlps = 0;
 
-        // what is above limit for fixed price should be rewarded from curve
-        uint256 whitelistReward = 0;
-        uint256 remainingAmount = amount;
-        if (amount > fixedInvestorTicket) {
-            uint256 whitelistedAmount = amount - fixedInvestorTicket;
-            uint256 whitelistedEuroUlps = convertToEUR(whitelistedAmount);
-            whitelistReward = NEUMARK.issueForEuro(whitelistedEuroUlps);
-            remainingAmount = fixedInvestorTicket;
+        // Fetch investors pre-allocated ticket. This will return zeroed out
+        // data if the investor had no pre-allocated ticket.
+        PreAllocatedTicket storage ticket = _preAllocatedTickets[investor];
+        if (ticket.ticketToken == TokenType.EtherToken) {
+            // We try to pay as much as possible from the ticket
+            uint256 ticketWei = min(remainingWei, ticket.ticketSize);
+            uint256 ticketNmk = proportion(
+                ticket.neumarkReward,
+                ticketWei,
+                ticket.ticketSize
+            );
+            ticket.ticketSize -= ticketWei;
+            ticket.neumarkReward -= ticketNmk;
+            remainingWei -= ticketWei;
+            neumarkUlps += ticketNmk;
         }
 
-        // get pro rata neumark reward for any eth left
-        uint256 fixedReward = 0;
-        if (remainingAmount > 0) {
-            uint256 fixedInvestorNeumarks = _fixedCostNeumarks[investor];
-            fixedReward = proportion(fixedInvestorNeumarks, remainingAmount, fixedInvestorTicket);
+        // The remainder (if any) receives Neumark reward at spot price.
+        uint256 remainingEuroUlps = convertToEUR(remainingWei);
+        neumarkUlps += NEUMARK.issueForEuro(remainingEuroUlps);
 
-            // if investor gets neumark with `k` tranches of different wei sizes a1...ak and `ticket` is total declared ticket
-            // then last proportion must be: ak / (ticket - sum(a1...ak-1)) == 1
-            // which gives fixedReward == fixedInvestorNeumarks, therefore we may safely do the following:
-            _fixedCostNeumarks[investor] -= fixedReward;
-            _fixedCostTickets[investor] -= remainingAmount;
-        }
-
-        // distribute to investor and platform operator
-        return distributeAndReturnInvestorNeumarks(investor, whitelistReward + fixedReward);
+        // Distribute to investor and platform operator
+        return distributeAndReturnInvestorNeumarks(investor, neumarkUlps);
     }
 
     function validCommitment()
@@ -249,8 +323,7 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
         constant
         returns (bool)
     {
-        // latter part of this condition is not needed because we whitelist every fixed cost investor
-        // kept to make condition clear
-        return (_whitelisted[msg.sender] || _fixedCostTickets[msg.sender] > 0);
+        // Pre-allocated investors are also whitelisted
+        return (_whitelisted[msg.sender]);
     }
 }
