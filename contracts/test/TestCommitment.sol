@@ -10,7 +10,11 @@ contract TestCommitment is PublicCommitment {
     ////////////////////////
 
     // this will make truffle to find this event in receipt
-    event FundsLocked(address indexed investor, uint256 amount, uint256 neumarks);
+    event LogFundsLocked(
+        address indexed investor,
+        uint256 amount,
+        uint256 neumarks
+    );
 
     ////////////////////////
     // Constructor

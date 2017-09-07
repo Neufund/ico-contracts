@@ -12,7 +12,7 @@ contract IsContract {
         constant
         returns (bool)
     {
-        uint size;
+        uint256 size;
         // takes 700 gas
         assembly { size := extcodesize(addr) }
         return size > 0;

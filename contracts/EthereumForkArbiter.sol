@@ -59,7 +59,7 @@ contract EthereumForkArbiter is
         _nextForkBlockNumber = blockNumber;
 
         // Log
-        ForkAnnounced(_nextForkName, _nextForkUrl, _nextForkBlockNumber);
+        LogForkAnnounced(_nextForkName, _nextForkUrl, _nextForkBlockNumber);
     }
 
     /// @notice Declare that the current fork (as identified by a blockhash) is the valid fork. The valid fork is always the one with the most recent signature.
@@ -80,7 +80,7 @@ contract EthereumForkArbiter is
         _lastSignedTimestamp = block.timestamp;
 
         // Log
-        ForkSigned(_lastSignedBlockNumber, _lastSignedBlockHash);
+        LogForkSigned(_lastSignedBlockNumber, _lastSignedBlockHash);
     }
 
     function nextForkName()

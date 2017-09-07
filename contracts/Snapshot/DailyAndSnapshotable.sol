@@ -59,7 +59,7 @@ contract DailyAndSnapshotable is
             _nextSnapshotId = dayBase + 1;
             _nextSnapshotModified = false;
 
-            SnapshotCreated(dayBase);
+            LogSnapshotCreated(dayBase);
             return dayBase;
         }
 
@@ -69,7 +69,7 @@ contract DailyAndSnapshotable is
 
             // Log the event anyway, some logic may depend
             // depend on it.
-            SnapshotCreated(previousSnapshot);
+            LogSnapshotCreated(previousSnapshot);
             return previousSnapshot;
         }
 
@@ -79,7 +79,7 @@ contract DailyAndSnapshotable is
         _nextSnapshotModified = false;
 
         // Log and return
-        SnapshotCreated(snapshotId);
+        LogSnapshotCreated(snapshotId);
         return snapshotId;
     }
 
@@ -102,7 +102,7 @@ contract DailyAndSnapshotable is
             _nextSnapshotId = dayBase + 1;
             _nextSnapshotModified = false;
 
-            SnapshotCreated(dayBase);
+            LogSnapshotCreated(dayBase);
             return _nextSnapshotId;
         }
 

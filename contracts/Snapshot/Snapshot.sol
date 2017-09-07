@@ -38,7 +38,7 @@ contract Snapshot is MPolicy {
 
     function hasValueAt(
         Values[] storage values,
-        uint _snapshot
+        uint256 _snapshot
     )
         internal
         constant
@@ -50,16 +50,16 @@ contract Snapshot is MPolicy {
 
     function getValue(
         Values[] storage values,
-        uint _defaultValue
+        uint256 _defaultValue
     )
         internal
         constant
-        returns (uint)
+        returns (uint256)
     {
         if (values.length == 0) {
             return _defaultValue;
         } else {
-            uint last = values.length - 1;
+            uint256 last = values.length - 1;
             return values[last].value;
         }
     }
@@ -70,12 +70,12 @@ contract Snapshot is MPolicy {
     /// @return The number of tokens being queried
     function getValueAt(
         Values[] storage values,
-        uint _snapshot,
-        uint _defaultValue
+        uint256 _snapshot,
+        uint256 _defaultValue
     )
         internal
         constant
-        returns (uint)
+        returns (uint256)
     {
         require(_snapshot < mNextSnapshotId());
 
@@ -85,21 +85,21 @@ contract Snapshot is MPolicy {
         }
 
         // Shortcut for the out of bounds snapshots
-        uint last = values.length - 1;
-        uint lastSnapshot = values[last].snapshot;
+        uint256 last = values.length - 1;
+        uint256 lastSnapshot = values[last].snapshot;
         if (_snapshot >= lastSnapshot) {
             return values[last].value;
         }
-        uint firstSnapshot = values[0].snapshot;
+        uint256 firstSnapshot = values[0].snapshot;
         if (_snapshot < firstSnapshot) {
             return _defaultValue;
         }
 
         // Binary search of the value in the array
-        uint min = 0;
-        uint max = last;
+        uint256 min = 0;
+        uint256 max = last;
         while (max > min) {
-            uint mid = (max + min + 1) / 2;
+            uint256 mid = (max + min + 1) / 2;
             if (values[mid].snapshot <= _snapshot) {
                 min = mid;
             } else {
@@ -140,7 +140,7 @@ contract Snapshot is MPolicy {
             return;
         }
 
-        uint last = values.length - 1;
+        uint256 last = values.length - 1;
         bool frozen = values[last].snapshot < nextSnapshot;
         if (frozen) {
 

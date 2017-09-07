@@ -7,9 +7,9 @@ export const Status = Object.freeze({
 });
 export default function error(tx) {
   // Default to zero on no error
-  if (!hasEvent(tx, "Error")) {
+  if (!hasEvent(tx, "LogError")) {
     return 0;
   }
 
-  return parseInt(eventValue(tx, "Error", "code"), 10);
+  return parseInt(eventValue(tx, "LogError", "code"), 10);
 }

@@ -19,7 +19,7 @@ contract IERC223Token is IBasicToken, ITokenMetadata {
     /// @dev Departure: We do not use the callback on regular transfer calls to
     ///     stay compatible with constracts that expect and ERC20 token.
 
-    // function transfer(address to, uint amount)
+    // function transfer(address to, uint256 amount)
     //     public
     //     returns (bool);
 
@@ -27,7 +27,7 @@ contract IERC223Token is IBasicToken, ITokenMetadata {
     // Public functions
     ////////////////////////
 
-    function transfer(address to, uint amount, bytes data)
+    function transfer(address to, uint256 amount, bytes data)
         public
         returns (bool);
 }

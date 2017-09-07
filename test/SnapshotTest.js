@@ -16,7 +16,7 @@ contract("Snapshot", () => {
   const createSnapshot = async () => {
     const r = await snapshotTest.createSnapshot();
     assert.equal(r.logs.length, 1);
-    assert.equal(r.logs[0].event, "SnapshotCreated");
+    assert.equal(r.logs[0].event, "LogSnapshotCreated");
     return r.logs[0].args.snapshot;
   };
 

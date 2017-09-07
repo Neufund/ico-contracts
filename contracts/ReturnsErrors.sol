@@ -21,7 +21,7 @@ contract ReturnsErrors {
     // Events
     ////////////////////////
 
-    event Error(
+    event LogError(
         Status code
     );
 
@@ -39,7 +39,7 @@ contract ReturnsErrors {
         internal
         returns (Status)
     {
-        Error(code);
+        LogError(code);
         return code;
     }
 }

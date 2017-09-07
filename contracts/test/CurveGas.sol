@@ -13,9 +13,9 @@ contract CurveGas is NeumarkIssuanceCurve {
         external
         returns (uint256, uint256)
     {
-        uint start = msg.gas;
-        uint result = cumulative(n);
-        uint finish = msg.gas;
+        uint256 start = msg.gas;
+        uint256 result = cumulative(n);
+        uint256 finish = msg.gas;
         return (result, start - finish);
     }
 }

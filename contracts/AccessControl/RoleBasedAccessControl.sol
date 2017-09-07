@@ -48,7 +48,7 @@ contract RoleBasedAccessControl is
     // Events
     ////////////////////////
 
-    event AccessChanged(
+    event LogAccessChanged(
         address controller,
         address indexed subject,
         bytes32 role,
@@ -57,7 +57,7 @@ contract RoleBasedAccessControl is
         TriState newValue
     );
 
-    event Access(
+    event LogAccess(
         address indexed subject,
         bytes32 role,
         IAccessControlled indexed object,
@@ -131,7 +131,7 @@ contract RoleBasedAccessControl is
         }
 
         // Log and return
-        Access(subject, role, object, verb, allow);
+        LogAccess(subject, role, object, verb, allow);
         return allow;
     }
 
@@ -161,7 +161,7 @@ contract RoleBasedAccessControl is
         require(subjects.length == roles.length);
         require(subjects.length == objects.length);
         require(subjects.length == newValues.length);
-        for(uint i = 0; i < subjects.length; i++) {
+        for(uint256 i = 0; i < subjects.length; i++) {
             setUserRolePrivate(subjects[i], roles[i], objects[i], newValues[i]);
         }
     }
@@ -222,7 +222,7 @@ contract RoleBasedAccessControl is
             list.push(subject);
         }
         if(oldValue != TriState.Unset && newValue == TriState.Unset) {
-            for(uint i = 0; i < list.length; i++) {
+            for(uint256 i = 0; i < list.length; i++) {
                 if(list[i] == subject) {
                     list[i] = list[list.length - 1];
                     delete list[list.length - 1];
@@ -232,6 +232,6 @@ contract RoleBasedAccessControl is
         }
 
         // Log
-        AccessChanged(msg.sender, subject, role, object, oldValue, newValue);
+        LogAccessChanged(msg.sender, subject, role, object, oldValue, newValue);
     }
 }

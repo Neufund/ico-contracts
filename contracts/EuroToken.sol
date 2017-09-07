@@ -48,18 +48,18 @@ contract EuroToken is
     // Events
     ////////////////////////
 
-    event AllowedFromAddress(
+    event LogAllowedFromAddress(
         address indexed from,
         bool allowed
     );
 
-    event AllowedToAddress(
+    event LogAllowedToAddress(
         address indexed to,
         bool allowed
     );
 
     /// @notice logged on successful migration
-    event OwnerMigrated(
+    event LogOwnerMigrated(
         address indexed owner,
         uint256 amount
     );
@@ -110,7 +110,7 @@ contract EuroToken is
         _balances[to] = add(_balances[to], amount);
         _totalSupply = add(_totalSupply, amount);
         setAllowedTransferTo(to, true);
-        Deposit(to, amount);
+        LogDeposit(to, amount);
         return true;
     }
 
@@ -123,7 +123,7 @@ contract EuroToken is
         require(_balances[msg.sender] >= amount);
         _balances[msg.sender] -= amount;
         _totalSupply -= amount;
-        Withdrawal(msg.sender, amount);
+        LogWithdrawal(msg.sender, amount);
     }
 
     /// @notice enables or disables address to be receipient of EUR-T
@@ -132,7 +132,7 @@ contract EuroToken is
         only(ROLE_EURT_DEPOSIT_MANAGER)
     {
         _allowedTransferTo[to] = allowed;
-        AllowedToAddress(to, allowed);
+        LogAllowedToAddress(to, allowed);
     }
 
     /// @notice enables or disables address to be sender of EUR-T
@@ -141,7 +141,7 @@ contract EuroToken is
         only(ROLE_EURT_DEPOSIT_MANAGER)
     {
         _allowedTransferFrom[from] = allowed;
-        AllowedFromAddress(from, allowed);
+        LogAllowedFromAddress(from, allowed);
     }
 
     function allowedTransferTo(address to)
@@ -200,7 +200,7 @@ contract EuroToken is
         bool success = EuroTokenMigrationTarget(_migration).migrateOwner(msg.sender, amount);
         require(success);
         // set event
-        OwnerMigrated(msg.sender, amount);
+        LogOwnerMigrated(msg.sender, amount);
     }
 
     //

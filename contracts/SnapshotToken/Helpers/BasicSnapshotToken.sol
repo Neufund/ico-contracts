@@ -65,7 +65,7 @@ contract BasicSnapshotToken is
     function totalSupply()
         public
         constant
-        returns (uint)
+        returns (uint256)
     {
         return getValue(_totalSupplyValues, 0);
     }
@@ -98,10 +98,10 @@ contract BasicSnapshotToken is
     /// @notice Total amount of tokens at a specific `snapshot`.
     /// @param snapshot The block number when the totalSupply is queried
     /// @return The total amount of tokens at `snapshot`
-    function totalSupplyAt(uint snapshot)
+    function totalSupplyAt(uint256 snapshot)
         public
         constant
-        returns(uint)
+        returns(uint256)
     {
         Values[] storage values = _totalSupplyValues;
 
@@ -123,10 +123,10 @@ contract BasicSnapshotToken is
     /// @param owner The address from which the balance will be retrieved
     /// @param snapshot The block number when the balance is queried
     /// @return The balance at `snapshot`
-    function balanceOfAt(address owner, uint snapshot)
+    function balanceOfAt(address owner, uint256 snapshot)
         public
         constant
-        returns (uint)
+        returns (uint256)
     {
         Values[] storage values = _balances[owner];
 
@@ -161,7 +161,7 @@ contract BasicSnapshotToken is
     function mTransfer(
         address from,
         address to,
-        uint amount
+        uint256 amount
     )
         internal
         returns(bool)
@@ -198,15 +198,15 @@ contract BasicSnapshotToken is
     /// @param owner The address that will be assigned the new tokens
     /// @param amount The quantity of tokens generated
     /// @return True if the tokens are generated correctly
-    function mGenerateTokens(address owner, uint amount)
+    function mGenerateTokens(address owner, uint256 amount)
         internal
         returns (bool)
     {
-        uint curTotalSupply = totalSupply();
+        uint256 curTotalSupply = totalSupply();
         uint256 newTotalSupply = curTotalSupply + amount;
         require(newTotalSupply >= curTotalSupply); // Check for overflow
 
-        uint previousBalanceTo = balanceOf(owner);
+        uint256 previousBalanceTo = balanceOf(owner);
         uint256 newBalanceTo = previousBalanceTo + amount;
         assert(newBalanceTo >= previousBalanceTo); // Check for overflow
 
@@ -221,18 +221,18 @@ contract BasicSnapshotToken is
     /// @param owner The address that will lose the tokens
     /// @param amount The quantity of tokens to burn
     /// @return True if the tokens are burned correctly
-    function mDestroyTokens(address owner, uint amount)
+    function mDestroyTokens(address owner, uint256 amount)
         internal
         returns (bool)
     {
-        uint curTotalSupply = totalSupply();
+        uint256 curTotalSupply = totalSupply();
         require(curTotalSupply >= amount);
 
-        uint previousBalanceFrom = balanceOf(owner);
+        uint256 previousBalanceFrom = balanceOf(owner);
         require(previousBalanceFrom >= amount);
 
-        uint newTotalSupply = curTotalSupply - amount;
-        uint newBalanceFrom = previousBalanceFrom - amount;
+        uint256 newTotalSupply = curTotalSupply - amount;
+        uint256 newBalanceFrom = previousBalanceFrom - amount;
         setValue(_totalSupplyValues, newTotalSupply);
         setValue(_balances[owner], newBalanceFrom);
 

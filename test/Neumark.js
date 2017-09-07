@@ -112,7 +112,7 @@ contract("Neumark", accounts => {
     const tx = await neumark.issueForEuro(EUR_DECIMALS.mul(100), { from });
 
     const agreements = tx.logs
-      .filter(e => e.event === "AgreementAccepted")
+      .filter(e => e.event === "LogAgreementAccepted")
       .map(({ args: { accepter } }) => accepter);
     expect(agreements).to.have.length(1);
     expect(agreements).to.contain(from);
@@ -148,7 +148,7 @@ contract("Neumark", accounts => {
     const tx = await neumark.burnNeumark(toBurnUlps, { from: accounts[1] });
 
     const agreements = tx.logs
-      .filter(e => e.event === "AgreementAccepted")
+      .filter(e => e.event === "LogAgreementAccepted")
       .map(({ args: { accepter } }) => accepter);
     expect(agreements).to.have.length(1);
     expect(agreements).to.contain(from);
@@ -162,10 +162,10 @@ contract("Neumark", accounts => {
     // issue for 1 ether
     const euro1EthUlps = EUR_DECIMALS.mul(1).mul(eurRate);
     let tx = await neumark.issueForEuro(euro1EthUlps);
-    const p1NMK = eventValue(tx, "NeumarksIssued", "neumarkUlp");
+    const p1NMK = eventValue(tx, "LogNeumarksIssued", "neumarkUlp");
     // issue for 100 wei
     tx = await neumark.issueForEuro(new BigNumber(100).mul(eurRate));
-    const p2NMK = eventValue(tx, "NeumarksIssued", "neumarkUlp");
+    const p2NMK = eventValue(tx, "LogNeumarksIssued", "neumarkUlp");
     expect(totNMK).to.be.bignumber.equal(p1NMK.plus(p2NMK));
   });
 
@@ -194,7 +194,7 @@ contract("Neumark", accounts => {
     const tx = await neumark.transfer(accounts[3], amount, { from });
 
     const agreements = tx.logs
-      .filter(e => e.event === "AgreementAccepted")
+      .filter(e => e.event === "LogAgreementAccepted")
       .map(({ args: { accepter } }) => accepter);
     expect(agreements).to.have.length(2);
     expect(agreements).to.contain(accounts[1]);

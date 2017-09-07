@@ -162,7 +162,7 @@ contract CommitmentBase is
 
         // convert weis into euro
         uint256 euroUlps = convertToEUR(msg.value);
-        FundsInvested(msg.sender, msg.value, PAYMENT_TOKEN, euroUlps, neumarks, NEUMARK);
+        LogFundsInvested(msg.sender, msg.value, PAYMENT_TOKEN, euroUlps, neumarks, NEUMARK);
     }
 
     /// when commitment end criteria are met ANYONE can finalize
@@ -179,10 +179,10 @@ contract CommitmentBase is
         // public commitment ends ETH locking
         if (wasSuccessful()) {
             onCommitmentSuccessful();
-            CommitmentCompleted(true);
+            LogCommitmentCompleted(true);
         } else {
             onCommitmentFailed();
-            CommitmentCompleted(false);
+            LogCommitmentCompleted(false);
         }
         _finalCommitedAmount = LOCKED_ACCOUNT.totalLockedAmount();
         _finalized = true;

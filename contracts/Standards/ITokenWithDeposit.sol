@@ -9,14 +9,14 @@ contract ITokenWithDeposit is IERC20Token {
     // Events
     ////////////////////////
 
-    event Deposit(
+    event LogDeposit(
         address indexed to,
-        uint amount
+        uint256 amount
     );
 
-    event Withdrawal(
+    event LogWithdrawal(
         address indexed to,
-        uint amount
+        uint256 amount
     );
 
     ////////////////////////
