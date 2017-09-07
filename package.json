@@ -40,10 +40,10 @@
     "lint:eslint": "eslint --ignore-path .gitignore .",
     "lint:solium": "solium --dir contracts --reporter=pretty",
     "testrpc": "./scripts/testrpc.sh",
-    "test": "truffle compile && truffle test",
+    "test": "truffle compile && truffle test --network inprocess",
     "test:coverage": "SKIP_GAS_CHECKS=true solidity-coverage && codecov",
     "build": "rm -rf ./build && truffle compile --all",
-    "deploy": "truffle migrate --reset --compile-all"
+    "deploy": "truffle migrate --reset --compile-all --network localhost"
   },
   "devDependencies": {
     "eslint-plugin-mocha": "^4.11.0",
