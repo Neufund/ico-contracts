@@ -59,11 +59,7 @@ module.exports = function deployContracts(deployer, network, accounts) {
       accessControl.address,
       etherToken.address,
       lock.address,
-      neumark.address
-    );
-    const publicCommitment = await PublicCommitment.deployed();
-    console.log("Setting commitment terms...");
-    await publicCommitment.setCommitmentTerms(
+      neumark.address,
       Date.now() / 1000 + 60,
       Date.now() / 1000 + 900,
       ether(1),
@@ -72,6 +68,7 @@ module.exports = function deployContracts(deployer, network, accounts) {
       ether(200), // eur rate to eth
       platformOperatorWallet
     );
+    const publicCommitment = await PublicCommitment.deployed();
     console.log("Commitment terms set");
     console.log("Seting permissions");
     await accessControl.setUserRole(

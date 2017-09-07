@@ -20,8 +20,32 @@ contract TestCommitment is PublicCommitment {
     // Constructor
     ////////////////////////
 
-    function TestCommitment(IAccessPolicy accessPolicy, EtherToken _ethToken, LockedAccount _lockedAccount, Neumark _neumark)
-         PublicCommitment(accessPolicy, _ethToken, _lockedAccount, _neumark)
+    function TestCommitment(
+        IAccessPolicy accessPolicy,
+        EtherToken ethToken,
+        LockedAccount lockedAccount,
+        Neumark neumark,
+        uint256 startDate,
+        uint256 endDate,
+        uint256 minAbsCap,
+        uint256 maxAbsCap,
+        uint256 minTicket,
+        uint256 ethEurFraction,
+        address platformOperatorWallet
+    )
+         PublicCommitment(
+            accessPolicy,
+            ethToken,
+            lockedAccount,
+            neumark,
+            startDate,
+            endDate,
+            minAbsCap,
+            maxAbsCap,
+            minTicket,
+            ethEurFraction,
+            platformOperatorWallet
+        )
     {
     }
 

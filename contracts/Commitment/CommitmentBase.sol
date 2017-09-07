@@ -82,23 +82,7 @@ contract CommitmentBase is
         IAccessPolicy accessPolicy,
         ITokenWithDeposit paymentToken,
         LockedAccount lockedAccount,
-        Neumark neumark
-    )
-        AccessControlled(accessPolicy)
-        Reclaimable()
-    {
-        require(address(paymentToken) == address(lockedAccount.assetToken()));
-        require(neumark == lockedAccount.neumark());
-        LOCKED_ACCOUNT = lockedAccount;
-        NEUMARK = neumark;
-        PAYMENT_TOKEN = paymentToken;
-    }
-
-    ////////////////////////
-    // Public functions
-    ////////////////////////
-
-    function setCommitmentTerms(
+        Neumark neumark,
         uint256 startDate,
         uint256 endDate,
         uint256 minAbsCap,
@@ -107,11 +91,11 @@ contract CommitmentBase is
         uint256 ethEurFraction,
         address platformOperatorWallet
     )
-        public
-        // TODO: Access control
+        AccessControlled(accessPolicy)
+        Reclaimable()
     {
-        // set only once
-        require(_endDate == 0);
+        require(address(paymentToken) == address(lockedAccount.assetToken()));
+        require(neumark == lockedAccount.neumark());
 
         // Validate
         require(startDate > 0);
@@ -121,6 +105,9 @@ contract CommitmentBase is
         require(platformOperatorWallet != address(0));
 
         // Set
+        LOCKED_ACCOUNT = lockedAccount;
+        NEUMARK = neumark;
+        PAYMENT_TOKEN = paymentToken;
         _startDate = startDate;
         _endDate = endDate;
         _minAbsCap = minAbsCap;
@@ -129,6 +116,10 @@ contract CommitmentBase is
         _ethEURFraction = ethEurFraction;
         _platformOperatorWallet = platformOperatorWallet;
     }
+
+    ////////////////////////
+    // Public functions
+    ////////////////////////
 
     function commit()
         public
