@@ -75,32 +75,6 @@ contract TestCommitment is PublicCommitment {
         _finalized = true;
     }
 
-    // a test function to change start date of ICO - may be useful for UI demo
-    function changeStartDate(uint256 date)
-        public
-    {
-        _startDate = date;
-    }
-
-    // a test function to change start date of ICO - may be useful for UI demo
-    function changeEndDate(uint256 date)
-        public
-    {
-        _endDate = date;
-    }
-
-    function changeMaxCap(uint256 _cap)
-        public
-    {
-        _maxAbsCap = _cap;
-    }
-
-    function changeMinCap(uint256 _cap)
-        public
-    {
-        _minAbsCap = _cap;
-    }
-
     function investFor(address investor, uint256 amount, uint256 neumarks)
         public
         payable
