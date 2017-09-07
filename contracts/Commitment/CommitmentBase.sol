@@ -59,6 +59,9 @@ contract CommitmentBase is
 
     uint256 internal _ethEURFraction;
 
+    // wallet that keeps Platform Operator share of neumarks
+    address private _platformOperatorWallet;
+
     //
     // Mutable
     //
@@ -67,9 +70,6 @@ contract CommitmentBase is
 
     // amount stored in LockedAccount on finalized
     uint256 private _finalCommitedAmount;
-
-    // wallet that keeps Platform Operator share of neumarks
-    address private _platformOperatorWallet;
 
     ////////////////////////
     // Constructor
