@@ -86,6 +86,7 @@ contract EuroToken is
         AccessControlled(accessPolicy)
         StandardToken()
         TokenMetadata(NAME, DECIMALS, SYMBOL, "")
+        MigrationSource(accessPolicy, ROLE_EURT_DEPOSIT_MANAGER)
         Reclaimable()
     {
     }
@@ -200,14 +201,6 @@ contract EuroToken is
         require(success);
         // set event
         OwnerMigrated(msg.sender, amount);
-    }
-
-    function enableMigration(IMigrationTarget migration)
-        public
-        only(ROLE_EURT_DEPOSIT_MANAGER)
-        onlyMigrationEnabledOnce
-    {
-        return MigrationSource.enableMigration(migration);
     }
 
     //

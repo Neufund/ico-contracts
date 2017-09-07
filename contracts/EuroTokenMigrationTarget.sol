@@ -21,7 +21,7 @@ contract EuroTokenMigrationTarget is
     ////////////////////////
 
     /// @notice accept migration of single eur-t token holder
-    /// @dev allowed to be called only from migration source
+    /// @dev allowed to be called only from migration source, do not forget to add accessor modifier in implementation
     function migrateOwner(address owner, uint256 amount)
         public
         onlyMigrationSource

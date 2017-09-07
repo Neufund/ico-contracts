@@ -57,14 +57,16 @@ contract MigrationSource is
     ////////////////////////
 
     /// @notice should migrate state that belongs to msg.sender
+    /// @dev do not forget to add accessor modifier in implementation
     function migrate()
         onlyMigrationEnabled
         public;
 
     /// @notice should enable migration to migration target
-    /// @dev please note that it allows migration target to be set more than once
+    /// @dev do not forget to add accessor modifier in override
     function enableMigration(IMigrationTarget migration)
         public
+        onlyMigrationEnabledOnce
         only(MIGRATION_ADMIN)
     {
         // we must be the source
