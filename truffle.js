@@ -11,7 +11,9 @@ module.exports = {
     },
     inprocess: {
       network_id: "*",
-      provider: TestRPC.provider()
+      provider: TestRPC.provider({
+        accounts: Array(10).fill({ balance: "10000000000000000000000" })
+      })
     }
   }
 };
