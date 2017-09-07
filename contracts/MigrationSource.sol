@@ -28,7 +28,8 @@ contract MigrationSource is
     // Modifiers
     ////////////////////////
 
-    /// @notice add to enableMigration function to prevent changing of migration target once set
+    /// @notice add to enableMigration function to prevent changing of migration
+    ///     target once set
     modifier onlyMigrationEnabledOnce() {
         require(address(_migration) == 0);
         _;
@@ -59,14 +60,14 @@ contract MigrationSource is
     /// @notice should migrate state that belongs to msg.sender
     /// @dev do not forget to add accessor modifier in implementation
     function migrate()
-        onlyMigrationEnabled
+        onlyMigrationEnabled()
         public;
 
     /// @notice should enable migration to migration target
     /// @dev do not forget to add accessor modifier in override
     function enableMigration(IMigrationTarget migration)
         public
-        onlyMigrationEnabledOnce
+        onlyMigrationEnabledOnce()
         only(MIGRATION_ADMIN)
     {
         // we must be the source
@@ -74,5 +75,4 @@ contract MigrationSource is
         _migration = migration;
         MigrationEnabled(_migration);
     }
-
 }

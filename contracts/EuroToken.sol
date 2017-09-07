@@ -165,18 +165,18 @@ contract EuroToken is
     //
 
     function transfer(address to, uint256 amount)
+        public
         onlyAllowedTransferFrom(msg.sender)
         onlyAllowedTransferTo(to)
-        public
         returns (bool success)
     {
         return BasicToken.transfer(to, amount);
     }
 
     function transferFrom(address from, address to, uint256 amount)
+        public
         onlyAllowedTransferFrom(from)
         onlyAllowedTransferTo(to)
-        public
         returns (bool success)
     {
         return StandardToken.transferFrom(from, to, amount);
@@ -188,13 +188,13 @@ contract EuroToken is
 
     function migrate()
         public
-        onlyMigrationEnabled
+        onlyMigrationEnabled()
         onlyAllowedTransferTo(msg.sender)
     {
         // burn deposit
         uint256 amount = _balances[msg.sender];
-        require( amount > 0);
-        _balances[msg.sender] -= amount;
+        require(amount > 0);
+        _balances[msg.sender] = 0;
         _totalSupply -= amount;
         // migrate to
         bool success = EuroTokenMigrationTarget(_migration).migrateOwner(msg.sender, amount);
@@ -208,6 +208,7 @@ contract EuroToken is
     //
 
     function approveAndCall(address spender, uint256 amount, bytes extraData)
+        public
         returns (bool success)
     {
         require(approve(spender, amount));
@@ -220,16 +221,5 @@ contract EuroToken is
         );
 
         return success;
-    }
-
-    //
-    // Overrides Reclaimable
-    //
-
-    function reclaim(IBasicToken token)
-        public
-    {
-        // can reclaim Eur-T. reclaimer must be allowed to address
-        Reclaimable.reclaim(token);
     }
 }
