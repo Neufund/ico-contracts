@@ -9,7 +9,9 @@ contract ITokenOffering {
     ////////////////////////
 
     /// on every investment transaction
-    /// `investor` invested `amount` in `paymentToken` currency which was converted to `eurEquivalent` that purchases `purchasedAmount` of `ofToken`
+    /// `investor` invested `amount` in `paymentToken` currency which was
+    /// converted to `eurEquivalent` that purchases `purchasedAmount` of
+    /// `ofToken`.
     event LogFundsInvested(
         address indexed investor,
         uint256 amount,

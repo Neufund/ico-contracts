@@ -1,6 +1,7 @@
 pragma solidity 0.4.15;
 
 import './PublicCommitment.sol';
+import '../Standards/IERC677Token.sol';
 
 
 contract WhitelistedCommitment is AccessRoles, CommitmentBase {
@@ -37,6 +38,14 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
     ////////////////////////
 
     uint256 private MIN_PRE_ALLOCATED_TICKET_SIZE_EURO_ULPS = 1;
+
+    ////////////////////////
+    // Immutable state
+    ////////////////////////
+
+    LockedAccount private EURO_LOCK;
+
+    IERC677Token private EURO_TOKEN;
 
     ////////////////////////
     // Mutable State
@@ -90,6 +99,9 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
             platformOperatorWallet
         )
     {
+        require(euroLock.assetToken() == EURO_TOKEN);
+        EURO_LOCK = euroLock;
+        EURO_TOKEN = euroToken;
         _preAllocatedTicketsSet = false;
         _whiteListSet = false;
     }
@@ -173,6 +185,62 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
             _whitelisted[investor] = true;
             _whitelistedInvestors.push(investor);
         }
+    }
+
+    function commitEuro()
+        public
+    {
+        // Must be in ongoing
+        require(_startDate > 0);
+        require(currentTime() >= _startDate);
+        require(!hasEnded());
+
+        // must control locked account
+        require(address(EURO_LOCK.controller()) == address(this));
+
+        // Receive EuroTokens (Eur an Nmk in units of least precision)
+        address investor = msg.sender;
+        uint256 investedEur = EURO_TOKEN.allowance(investor, this);
+        uint256 remainingEur = investedEur;
+        uint256 nmkCreated = 0;
+
+        // Fetch investors pre-allocated ticket. This will return zeroed out
+        // data if the investor had no pre-allocated ticket.
+        PreAllocatedTicket storage ticket = _preAllocatedTickets[investor];
+        if (ticket.ticketToken == TokenType.EuroToken) {
+            // We try to pay as much as possible from the ticket
+            uint256 ticketEur = min(remainingEur, ticket.ticketSize);
+            uint256 ticketNmk = proportion(
+                ticket.neumarkReward,
+                ticketEur,
+                ticket.ticketSize
+            );
+            ticket.ticketSize -= ticketEur;
+            ticket.neumarkReward -= ticketNmk;
+            remainingEur -= ticketEur;
+            nmkCreated += ticketNmk;
+        }
+
+        // The remainder (if any) receives Neumark reward at spot price.
+        nmkCreated += NEUMARK.issueForEuro(remainingEur);
+
+        // Distribute to investor and platform operator
+        uint256 investorNmk = distributeAndReturnInvestorNeumarks(
+            investor, nmkCreated);
+
+        // Send EURO_TOKENs to EURO_LOCK contract
+        EURO_TOKEN.transferFrom(investor, this, investedEur);
+        EURO_TOKEN.approve(EURO_LOCK, investedEur);
+        EURO_LOCK.lock(investor, investedEur, investorNmk);
+
+        LogFundsInvested(
+            msg.sender,
+            investedEur,
+            EURO_TOKEN,
+            investedEur,
+            investorNmk,
+            NEUMARK
+        );
     }
 
     /// allows to abort commitment process before it starts and rollback curve
