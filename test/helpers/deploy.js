@@ -32,6 +32,7 @@ export default async function deploy(
     operatorWallet = "0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c",
     whitelistedInvestors,
     fixedInvestors,
+    fixedTokens,
     fixedTickets
   } = commitmentCfg;
 
@@ -117,9 +118,12 @@ export default async function deploy(
       fixedInvestors && fixedTickets,
       "Both fixedInvestors and fixedTickets has to be provided"
     );
-    await commitment.setOrderedWhitelist(fixedInvestors, fixedTickets, {
-      from: whitelistAdminAccount
-    });
+    await commitment.setPreAllocatedTickets(
+      fixedInvestors,
+      fixedTokens,
+      fixedTickets,
+      { from: whitelistAdminAccount }
+    );
   }
 
   if (whitelistedInvestors) {

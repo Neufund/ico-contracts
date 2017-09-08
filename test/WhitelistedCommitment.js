@@ -200,22 +200,26 @@ contract(
       );
     });
 
-    describe("set whitelist investor with fixed investors", () => {
-      it("should be possible to whitelist investors before fixed investors", async () => {
+    describe("set whitelist investor with pre-allocated investors", () => {
+      it("should be possible to whitelist investors before pre-allocated investors", async () => {
         const { commitment } = await deployAllContracts(
           lockAdminAccount,
           whitelistAdminAccount
         );
         const whitelistedInvestors = [accounts[0], accounts[1]];
         const fixedInvestors = [accounts[2]];
+        const fixedTokens = [TokenType.EtherToken];
         const fixedTickets = [etherToWei(1)];
 
         await commitment.setWhitelist(whitelistedInvestors, {
           from: whitelistAdminAccount
         });
-        await commitment.setOrderedWhitelist(fixedInvestors, fixedTickets, {
-          from: whitelistAdminAccount
-        });
+        await commitment.setPreAllocatedTickets(
+          fixedInvestors,
+          fixedTokens,
+          fixedTickets,
+          { from: whitelistAdminAccount }
+        );
 
         expect(await commitment.whitelistedInvestors(0)).to.be.eq(
           whitelistedInvestors[0]
@@ -233,20 +237,21 @@ contract(
           .true;
         expect(await commitment.whitelisted(fixedInvestors[0])).to.be.true;
 
-        expect(await commitment.fixedCostInvestors(0)).to.be.eq(
-          fixedInvestors[0]
+        await expect(commitment.preAllocatedByIndex).to.blockchainArrayOfSize(
+          1
         );
-        await expect(commitment.fixedCostInvestors).to.blockchainArrayOfSize(1);
-
-        expect(
-          await commitment.fixedCostTickets(fixedInvestors[0])
-        ).to.be.bignumber.eq(fixedTickets[0]);
-        expect(
-          await commitment.fixedCostTickets(whitelistedInvestors[0])
-        ).to.be.bignumber.eq(0);
-        expect(
-          await commitment.fixedCostTickets(whitelistedInvestors[1])
-        ).to.be.bignumber.eq(0);
+        const preAllocated = [
+          await commitment.preAllocatedByIndex(0),
+          await commitment.preAllocatedByInvestor(whitelistedInvestors[0]),
+          await commitment.preAllocatedByInvestor(whitelistedInvestors[1])
+        ];
+        expect(preAllocated[0][0]).to.be.eq(fixedInvestors[0]);
+        expect(preAllocated[0][1]).to.be.bignumber.eq(fixedTokens[0]);
+        expect(preAllocated[0][2]).to.be.bignumber.eq(fixedTickets[0]);
+        expect(preAllocated[1][0]).to.be.bignumber.eq(0);
+        expect(preAllocated[1][1]).to.be.bignumber.eq(0);
+        expect(preAllocated[2][0]).to.be.bignumber.eq(0);
+        expect(preAllocated[2][1]).to.be.bignumber.eq(0);
       });
 
       it("should be possible to whitelist investors after fixed investors", async () => {
@@ -256,53 +261,60 @@ contract(
         );
         const whitelistedInvestors = [accounts[0], accounts[1]];
         const fixedInvestors = [accounts[2]];
+        const fixedTokens = [TokenType.EtherToken];
         const fixedTickets = [etherToWei(1)];
 
-        await commitment.setOrderedWhitelist(fixedInvestors, fixedTickets, {
-          from: whitelistAdminAccount
-        });
+        await commitment.setPreAllocatedTickets(
+          fixedInvestors,
+          fixedTokens,
+          fixedTickets,
+          { from: whitelistAdminAccount }
+        );
         await commitment.setWhitelist(whitelistedInvestors, {
           from: whitelistAdminAccount
         });
 
-        expect(await commitment.whitelistedInvestors(0)).to.be.eq(
-          whitelistedInvestors[0]
-        );
-        expect(await commitment.whitelistedInvestors(1)).to.be.eq(
-          whitelistedInvestors[1]
-        );
         await expect(commitment.whitelistedInvestors).to.blockchainArrayOfSize(
-          2
+          3
         );
-
+        const whitelisted = [
+          await commitment.whitelistedInvestors(0),
+          await commitment.whitelistedInvestors(1),
+          await commitment.whitelistedInvestors(2)
+        ];
+        expect(whitelisted[0]).to.be.eq(fixedInvestors[0]);
+        expect(whitelisted[1]).to.be.eq(whitelistedInvestors[0]);
+        expect(whitelisted[2]).to.be.eq(whitelistedInvestors[1]);
         expect(await commitment.whitelisted(whitelistedInvestors[0])).to.be
           .true;
         expect(await commitment.whitelisted(whitelistedInvestors[1])).to.be
           .true;
         expect(await commitment.whitelisted(fixedInvestors[0])).to.be.true;
 
-        expect(await commitment.fixedCostInvestors(0)).to.be.eq(
-          fixedInvestors[0]
-        );
-        await expect(commitment.fixedCostInvestors).to.blockchainArrayOfSize(1);
-
-        expect(
-          await commitment.fixedCostTickets(fixedInvestors[0])
-        ).to.be.bignumber.eq(fixedTickets[0]);
-        expect(
-          await commitment.fixedCostTickets(whitelistedInvestors[0])
-        ).to.be.bignumber.eq(0);
-        expect(
-          await commitment.fixedCostTickets(whitelistedInvestors[1])
-        ).to.be.bignumber.eq(0);
+        await expect(
+          commitment.preAllocatedByInvestor
+        ).to.blockchainArrayOfSize(1);
+        const preAllocated = [
+          await commitment.preAllocatedByIndex(0),
+          await commitment.preAllocatedByInvestor(whitelistedInvestors[0]),
+          await commitment.preAllocatedByInvestor(whitelistedInvestors[1])
+        ];
+        expect(preAllocated[0][0]).to.be.eq(fixedInvestors[0]);
+        expect(preAllocated[0][1]).to.be.bignumber.eq(fixedTokens[0]);
+        expect(preAllocated[0][2]).to.be.bignumber.eq(fixedTickets[0]);
+        expect(preAllocated[1][0]).to.be.bignumber.eq(0);
+        expect(preAllocated[1][1]).to.be.bignumber.eq(0);
+        expect(preAllocated[2][0]).to.be.bignumber.eq(0);
+        expect(preAllocated[2][1]).to.be.bignumber.eq(0);
       });
     });
 
-    describe("ordered whitelist commitment", () => {
+    describe("pre-allocated commitment", () => {
       it("should work with tickets below declared", async () => {
         const startingDate = await closeFutureDate();
         const mutableCurve = await deployMutableCurve();
         const fixedInvestors = [accounts[0], accounts[1]];
+        const fixedTokens = [TokenType.EtherToken, TokenType.EtherToken];
         const fixedDeclaredTickets = [etherToWei(2), etherToWei(3)];
         const actualInvestorsCommitments = [etherToWei(1), etherToWei(2)];
         const expectedNeumarkAmmountForDeclaredTickets = [
@@ -328,6 +340,7 @@ contract(
         } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
           commitmentCfg: {
             fixedInvestors,
+            fixedTokens,
             fixedTickets: fixedDeclaredTickets,
             startTimestamp: startingDate
           }
@@ -360,6 +373,7 @@ contract(
         const startingDate = await closeFutureDate();
         const investor1 = accounts[0];
         const fixedInvestors = [investor1];
+        const fixedTokens = [TokenType.EtherToken];
         const fixedDeclaredTickets = [etherToWei(2)];
         const actualInvestor1Commitment1 = etherToWei(1.9);
         const actualInvestor1Commitment2 = etherToWei(0.1);
@@ -378,6 +392,7 @@ contract(
         } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
           commitmentCfg: {
             fixedInvestors,
+            fixedTokens,
             fixedTickets: fixedDeclaredTickets,
             startTimestamp: startingDate,
             minTicket: etherToWei(0.01)
@@ -415,6 +430,7 @@ contract(
         const startingDate = await closeFutureDate();
         const investor1 = accounts[0];
         const fixedInvestors = [investor1];
+        const fixedTokens = [TokenType.EtherToken];
         const fixedDeclaredTickets = [etherToWei(2.1092830910928081)];
         const eurEthRate = 0.4398719873;
         const eurEthRateWei = etherToWei(eurEthRate); // sets up a rate allowing for rounding errors
@@ -426,6 +442,7 @@ contract(
         } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
           commitmentCfg: {
             fixedInvestors,
+            fixedTokens,
             fixedTickets: fixedDeclaredTickets,
             startTimestamp: startingDate,
             minTicket: etherToWei(0),
@@ -460,7 +477,7 @@ contract(
           neumarks: expectedInvestor1NeumarkShare
         });
         expect(
-          await commitment.fixedCostTickets(investor1)
+          (await commitment.preAllocatedByInvestor(investor1))[1]
         ).to.be.bignumber.equal(remainderWei);
         // invest remaining weis
         await commitment.commit({
@@ -469,10 +486,10 @@ contract(
         });
         // tickets zeroed
         expect(
-          await commitment.fixedCostTickets(investor1)
+          (await commitment.preAllocatedByInvestor(investor1))[1]
         ).to.be.bignumber.equal(0);
         expect(
-          await commitment.fixedCostNeumarks(investor1)
+          (await commitment.preAllocatedByInvestor(investor1))[2]
         ).to.be.bignumber.equal(0);
         // neumakrs held by commitment contract zeroed
         expect(await neumark.balanceOf(commitment.address)).to.be.bignumber.eq(
@@ -485,6 +502,7 @@ contract(
         const mutableCurve = await deployMutableCurve();
         const investor1 = accounts[0];
         const fixedInvestors = [investor1, accounts[1]];
+        const fixedTokens = [TokenType.EtherToken, TokenType.EtherToken];
         const fixedDeclaredTickets = [etherToWei(1.21981798), etherToWei(3)];
         const actualInvestor1Commitment = etherToWei(1.21981798);
         const expectedNeumarkAmmount = (await mutableCurve.issueInEth(
@@ -499,6 +517,7 @@ contract(
         } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
           commitmentCfg: {
             fixedInvestors,
+            fixedTokens,
             fixedTickets: fixedDeclaredTickets,
             startTimestamp: startingDate
           }
@@ -557,6 +576,7 @@ contract(
         } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
           commitmentCfg: {
             fixedInvestors: [investor],
+            fixedTokens: [TokenType.EtherToken],
             fixedTickets: [totalDeclaredTicket],
             startTimestamp: startingDate
           }
@@ -779,6 +799,7 @@ contract(
         const investor1 = accounts[0];
         const investor2 = accounts[1];
         const fixedInvestors = [investor1];
+        const fixedTokens = [TokenType.EtherToken];
         const fixedDeclaredTickets = [etherToWei(1.21981798)];
         const actualInvestor1Commitment = etherToWei(1.21981798);
         const expectedNeumarkAmmount = (await mutableCurve.issueInEth(
@@ -794,6 +815,7 @@ contract(
         } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
           commitmentCfg: {
             fixedInvestors,
+            fixedTokens,
             fixedTickets: fixedDeclaredTickets,
             startTimestamp: startingDate,
             duration
@@ -823,6 +845,7 @@ contract(
       const duration = MONTH;
       const investor1 = accounts[0];
       const fixedInvestors = [investor1, accounts[1]];
+      const fixedTokens = [TokenType.EtherToken, TokenType.EtherToken];
       const fixedDeclaredTickets = [etherToWei(1), etherToWei(3)];
       const expectedTicketsSum = fixedDeclaredTickets[0].add(
         fixedDeclaredTickets[1]
@@ -834,6 +857,7 @@ contract(
       } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
         commitmentCfg: {
           fixedInvestors,
+          fixedTokens,
           fixedTickets: fixedDeclaredTickets,
           startTimestamp: startingDate,
           minAbsCap,
@@ -888,6 +912,7 @@ contract(
       } = await deployAllContracts(lockAdminAccount, whitelistAdminAccount, {
         commitmentCfg: {
           fixedInvestors: investorAccounts,
+          fixedTokens: investorAccounts.map(x => TokenType.EtherToken),
           fixedTickets: investorDeclaration,
           startTimestamp: startingDate
         }
