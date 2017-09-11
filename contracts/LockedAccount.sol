@@ -151,14 +151,13 @@ contract LockedAccount is
     function LockedAccount(
         IAccessPolicy policy,
         IEthereumForkArbiter forkArbiter,
-        string agreementUri,
         IERC677Token assetToken,
         Neumark neumark,
         uint256 lockPeriod,
         uint256 penaltyFraction
     )
         AccessControlled(policy)
-        Agreement(forkArbiter, agreementUri)
+        Agreement(policy, forkArbiter)
         Reclaimable()
     {
         ASSET_TOKEN = assetToken;
