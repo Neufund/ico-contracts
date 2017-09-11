@@ -49,7 +49,7 @@ contract EthereumForkArbiter is
         uint256 blockNumber
     )
         public
-        only(ROLE_FORK_ARBITER)
+        only(ROLE_PLATFORM_OPERATOR_REPRESENTATIVE)
     {
         require(blockNumber == 0 || blockNumber > block.number);
 
@@ -65,7 +65,7 @@ contract EthereumForkArbiter is
     /// @notice Declare that the current fork (as identified by a blockhash) is the valid fork. The valid fork is always the one with the most recent signature.
     function signFork(uint256 number, bytes32 hash)
         public
-        only(ROLE_FORK_ARBITER)
+        only(ROLE_PLATFORM_OPERATOR_REPRESENTATIVE)
     {
         require(block.blockhash(number) == hash);
 
