@@ -20,8 +20,32 @@ contract TestCommitment is PublicCommitment {
     // Constructor
     ////////////////////////
 
-    function TestCommitment(IAccessPolicy accessPolicy, EtherToken _ethToken, LockedAccount _lockedAccount, Neumark _neumark)
-         PublicCommitment(accessPolicy, _ethToken, _lockedAccount, _neumark)
+    function TestCommitment(
+        IAccessPolicy accessPolicy,
+        EtherToken ethToken,
+        LockedAccount lockedAccount,
+        Neumark neumark,
+        uint256 startDate,
+        uint256 endDate,
+        uint256 minAbsCap,
+        uint256 maxAbsCap,
+        uint256 minTicket,
+        uint256 ethEurFraction,
+        address platformOperatorWallet
+    )
+         PublicCommitment(
+            accessPolicy,
+            ethToken,
+            lockedAccount,
+            neumark,
+            startDate,
+            endDate,
+            minAbsCap,
+            maxAbsCap,
+            minTicket,
+            ethEurFraction,
+            platformOperatorWallet
+        )
     {
     }
 
@@ -49,32 +73,6 @@ contract TestCommitment is PublicCommitment {
     {
         LOCKED_ACCOUNT.controllerFailed();
         _finalized = true;
-    }
-
-    // a test function to change start date of ICO - may be useful for UI demo
-    function changeStartDate(uint256 date)
-        public
-    {
-        _startDate = date;
-    }
-
-    // a test function to change start date of ICO - may be useful for UI demo
-    function changeEndDate(uint256 date)
-        public
-    {
-        _endDate = date;
-    }
-
-    function changeMaxCap(uint256 _cap)
-        public
-    {
-        _maxAbsCap = _cap;
-    }
-
-    function changeMinCap(uint256 _cap)
-        public
-    {
-        _minAbsCap = _cap;
     }
 
     function investFor(address investor, uint256 amount, uint256 neumarks)

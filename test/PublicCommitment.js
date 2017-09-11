@@ -158,7 +158,7 @@ contract("PublicCommitment", ([lockAdmin, investor]) => {
   });
 
   it("commitment should succeed due to cap reached", async () => {
-    const ticket = 2 * 10 ** 18;
+    const ticket = await chain.commitment.maxAbsCap();
     await setTimeTo(startTimestamp); // commitment starts
     assert.equal(
       await chain.commitment.hasEnded.call(),
@@ -166,9 +166,8 @@ contract("PublicCommitment", ([lockAdmin, investor]) => {
       "commitment should run"
     );
     await chain.commitment.commit({ value: ticket, from: investor });
-    // decrease max cap so it is exactly ticket
+
     await setTimeTo(startTimestamp + chain.days); // day forward
-    await chain.commitment.changeMaxCap(ticket);
     assert.equal(
       await chain.commitment.hasEnded.call(),
       true,

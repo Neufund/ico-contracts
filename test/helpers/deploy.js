@@ -80,9 +80,7 @@ export default async function deploy(
     accessControl.address,
     etherToken.address,
     lockedAccount.address,
-    neumark.address
-  );
-  await commitment.setCommitmentTerms(
+    neumark.address,
     startTimestamp,
     startTimestamp + duration,
     minAbsCap,

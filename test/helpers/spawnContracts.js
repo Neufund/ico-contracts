@@ -109,9 +109,7 @@ export async function spawnPublicCommitment(
     accessControl.address,
     etherToken.address,
     lockedAccount.address,
-    neumark.address
-  );
-  await commitment.setCommitmentTerms(
+    neumark.address,
     startTimestamp,
     startTimestamp + duration,
     minAbsCap,
@@ -140,9 +138,7 @@ export async function spawnWhitelistedCommitment(
     accessControl.address,
     etherToken.address,
     lockedAccount.address,
-    neumark.address
-  );
-  await commitment.setCommitmentTerms(
+    neumark.address,
     startTimestamp,
     startTimestamp + duration,
     minAbsCap,

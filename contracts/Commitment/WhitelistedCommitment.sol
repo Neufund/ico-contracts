@@ -26,12 +26,31 @@ contract WhitelistedCommitment is AccessRoles, CommitmentBase {
     ////////////////////////
 
     function WhitelistedCommitment(
-        IAccessPolicy _policy,
-        EtherToken _ethToken,
-        LockedAccount _lockedAccount,
-        Neumark _neumark
+        IAccessPolicy policy,
+        EtherToken ethToken,
+        LockedAccount lockedAccount,
+        Neumark neumark,
+        uint256 startDate,
+        uint256 endDate,
+        uint256 minAbsCap,
+        uint256 maxAbsCap,
+        uint256 minTicket,
+        uint256 ethEurFraction,
+        address platformOperatorWallet
     )
-         CommitmentBase(_policy, _ethToken, _lockedAccount, _neumark)
+         CommitmentBase(
+            policy,
+            ethToken,
+            lockedAccount,
+            neumark,
+            startDate,
+            endDate,
+            minAbsCap,
+            maxAbsCap,
+            minTicket,
+            ethEurFraction,
+            platformOperatorWallet
+        )
     {
     }
 
