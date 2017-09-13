@@ -75,4 +75,13 @@ contract MigrationSource is
         _migration = migration;
         LogMigrationEnabled(_migration);
     }
+
+    /// @notice returns current migration target
+    function currentMigrationTarget()
+        public
+        constant
+        returns (IMigrationTarget)
+    {
+        return _migration;
+    }
 }
