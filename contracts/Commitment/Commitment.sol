@@ -90,13 +90,7 @@ contract Commitment is
 
     uint256 private _whitelistEtherNmk;
 
-    uint256 private _whitelistEtherEur;
-
     uint256 private _whitelistEuroNmk;
-
-    uint256 private _whitelistEuroEur;
-
-    uint256 private _capRemainingEur;
 
     ////////////////////////
     // Events
@@ -163,10 +157,7 @@ contract Commitment is
         MIN_TICKET_EUR = minTicketEur;
         ETH_EUR_FRACTION = ethEurFraction;
         _whitelistEtherNmk = 0;
-        _whitelistEtherEur = 0;
         _whitelistEuroNmk = 0;
-        _whitelistEuroEur = 0;
-        _capRemainingEur = CAP_EUR;
     }
 
     ////////////////////////
@@ -192,6 +183,9 @@ contract Commitment is
             // Loop body is factored out to keep stack low
             addWhitelistInvestorPrivate(investors[i], tokens[i], amounts[i]);
         }
+
+        // We don't go over the cap
+        require(NEUMARK.totalEuroUlps() <= CAP_EUR);
     }
 
     function abort()
@@ -243,7 +237,7 @@ contract Commitment is
         // Whitelist part
         WhitelistTicket storage ticket = _whitelist[msg.sender];
         bool whitelisted = ticket.token == Token.Euro;
-        if (whitelisted && state() != State.Rollback) {
+        if (whitelisted) {
             uint256 ticketEur = min(remainingEur, ticket.amount);
             uint256 ticketNmk = proportion(
                 ticket.rewardNmk,
@@ -252,23 +246,16 @@ contract Commitment is
             ticket.amount -= ticketEur;
             ticket.amountEur -= ticketEur;
             ticket.rewardNmk -= ticketNmk;
-            _whitelistEtherNmk -= ticketNmk;
-            _whitelistEtherEur -= ticketEur;
+            _whitelistEuroNmk -= ticketNmk;
             remainingEur -= ticketEur;
             totalNmk += ticketNmk;
         }
 
-        // Curve part
-        if (state() != State.Rollback) {
-            require(remainingEur <= _capRemainingEur);
-            uint256 curveNmk = NEUMARK.issueForEuro(remainingEur);
-            _capRemainingEur -= remainingEur;
-            remainingEur = 0;
-            totalNmk += curveNmk;
-        }
+        // Curve
+        totalNmk += NEUMARK.issueForEuro(remainingEur);
 
-        // We don't do partial tickets
-        require(remainingEur == 0);
+        // We don't go over the cap
+        require(NEUMARK.totalEuroUlps() <= CAP_EUR);
 
         // Lock EuroToken
         EURO_TOKEN.approve(EURO_LOCK, euroUlp);
@@ -335,13 +322,11 @@ contract Commitment is
 
             // Rollback unfufilled Ether reservations.
             NEUMARK.burnNeumark(_whitelistEtherNmk);
-            _capRemainingEur += _whitelistEtherEur;
         }
         if (newState == State.Rollback) {
 
             // Rollback unfufilled Euro reservations.
             NEUMARK.burnNeumark(_whitelistEuroNmk);
-            _capRemainingEur += _whitelistEuroEur;
         }
         if (newState == State.Finished) {
 
@@ -354,7 +339,6 @@ contract Commitment is
         }
     }
 
-
     ////////////////////////
     // Private functions
     ////////////////////////
@@ -366,7 +350,6 @@ contract Commitment is
     )
         private
     {
-
         // Validate
         require(investor != 0x0);
         require(_whitelist[investor].token == Token.None);
@@ -390,13 +373,10 @@ contract Commitment is
         _whitelistInvestors.push(investor);
 
         // Add to totals
-        _capRemainingEur -= amountEur;
         if (isEther) {
-            _whitelistEuroNmk += rewardNmk;
-            _whitelistEuroEur += amountEur;
-        } else {
             _whitelistEtherNmk += rewardNmk;
-            _whitelistEtherEur += amountEur;
+        } else {
+            _whitelistEuroNmk += rewardNmk;
         }
     }
 
@@ -424,7 +404,6 @@ contract Commitment is
             ticket.amountEur -= ticketEur;
             ticket.rewardNmk -= ticketNmk;
             _whitelistEtherNmk -= ticketNmk;
-            _whitelistEtherEur -= ticketEur;
             remaining -= ticketEth;
             totalNmk += ticketNmk;
         }
@@ -432,14 +411,15 @@ contract Commitment is
         // Curve part
         if (whitelisted || state() != State.Whitelist) {
             uint256 remainingEur = convertToEur(remaining);
-            require(remainingEur <= _capRemainingEur);
-            _capRemainingEur -= remainingEur;
             remaining = 0;
             totalNmk += NEUMARK.issueForEuro(remainingEur);
         }
 
         // We don't do partial tickets
         require(remaining == 0);
+
+        // We don't go over the cap
+        require(NEUMARK.totalEuroUlps() <= CAP_EUR);
 
         // Lock EtherToken
         ETHER_TOKEN.approve(ETHER_LOCK, commitedWei);
