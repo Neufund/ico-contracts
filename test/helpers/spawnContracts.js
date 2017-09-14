@@ -29,6 +29,7 @@ export const ether = wei => new BigNumber(wei).mul(10 ** 18);
 
 export async function spawnAccessControl() {
   accessControl = await RoleBasedAccessControl.new();
+  forkArbiter = await EthereumForkArbiter.new(accessControl.address);
 }
 
 export async function spawnEtherToken() {
@@ -42,30 +43,7 @@ export async function spawnLockedAccount(
   unlockPenalty
 ) {
   await spawnEtherToken();
-  forkArbiter = await EthereumForkArbiter.new(accessControl.address);
-  // console.log(`\tEtherToken took ${gasCost(etherToken)}.`);
-  neumark = await Neumark.new(
-    accessControl.address,
-    forkArbiter.address
-  );
-  lockedAccount = await LockedAccount.new(
-    accessControl.address,
-    etherToken.address,
-    neumark.address,
-    unlockDateMonths * months,
-    ether(1).mul(unlockPenalty).round()
-  );
-  await accessControl.setUserRole(
-    lockAdminAccount,
-    roles.lockedAccountAdmin,
-    lockedAccount.address,
-    TriState.Allow
-  );
-  await lockedAccount.setPenaltyDisbursal(operatorWallet, {
-    from: lockAdminAccount
-  });
-
-  // TODO: Restrict to correct spawened contracts
+  neumark = await Neumark.new(accessControl.address, forkArbiter.address);
   await accessControl.setUserRole(
     EVERYONE,
     roles.snapshotCreator,
@@ -91,12 +69,30 @@ export async function spawnLockedAccount(
     TriState.Allow
   );
   await accessControl.setUserRole(
-      EVERYONE,
-      roles.platformOperatorRepresentative,
-      neumark.address,
-      TriState.Allow
-    );
-  await neumark.amendAgreement("ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT");
+    EVERYONE,
+    roles.platformOperatorRepresentative,
+    neumark.address,
+    TriState.Allow
+  );
+  await neumark.amendAgreement(
+    "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT"
+  );
+  lockedAccount = await LockedAccount.new(
+    accessControl.address,
+    etherToken.address,
+    neumark.address,
+    unlockDateMonths * months,
+    ether(1).mul(unlockPenalty).round()
+  );
+  await accessControl.setUserRole(
+    lockAdminAccount,
+    roles.lockedAccountAdmin,
+    lockedAccount.address,
+    TriState.Allow
+  );
+  await lockedAccount.setPenaltyDisbursal(operatorWallet, {
+    from: lockAdminAccount
+  });
 }
 
 export async function spawnPublicCommitment(
