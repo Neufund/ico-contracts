@@ -170,7 +170,18 @@ contract Neumark is
         acceptAgreement(from)
         returns (bool allow)
     {
-        return _transferEnabled;
+        // When enabled, anyone can
+        if (_transferEnabled) {
+            return true;
+        }
+
+        // When disabled, require ROLE_TRANSFERER
+        return accessPolicy().allowed(
+            msg.sender,
+            ROLE_TRANSFERER,
+            this,
+            msg.sig
+        );
     }
 
     function mOnApprove(
