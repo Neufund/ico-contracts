@@ -703,6 +703,26 @@ contract(
 
         it("should not commit over cap");
       });
+
+      describe("Estimate neumark reward", async () => {
+        it("should compute from current curve", async () => {
+          await commitment.addWhitelisted(
+            [investors[0]],
+            [Token.Euro],
+            [MIN_TICKET_EUR.mul(5)],
+            { from: whitelistAdmin }
+          );
+          const amountEth = MIN_TICKET_EUR.mul(11);
+          const amountEur = amountEth.mul(ETH_EUR_FRACTION).divToInt(Q18);
+          const totalNmk = await neumark.incremental(amountEur);
+          const platformNmk = totalNmk.divToInt(PLATFORM_SHARE);
+          const investorNmk = totalNmk.sub(platformNmk);
+
+          const estimate = await commitment.estimateNeumarkReward(amountEth);
+
+          expect(estimate).to.be.bignumber.eq(investorNmk);
+        });
+      });
     });
   }
 );
