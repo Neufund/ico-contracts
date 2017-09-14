@@ -35,7 +35,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
 
   before(async () => {
     await chain.spawnLockedAccount(admin, 18, 0.1);
-    // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurrate
+    // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurate
     startTimestamp = await latestTimestamp();
     await chain.spawnPublicCommitment(
       admin,

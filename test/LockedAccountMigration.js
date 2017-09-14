@@ -28,8 +28,6 @@ contract(
     async function deployMigrationTarget() {
       const target = await TestLockedAccountMigrationTarget.new(
         chain.accessControl.address,
-        chain.forkArbiter.address,
-        "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT",
         assetToken.address,
         chain.neumark.address,
         18 * chain.months,
