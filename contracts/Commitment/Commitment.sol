@@ -257,10 +257,6 @@ contract Commitment is
         // We don't go over the cap
         require(NEUMARK.totalEuroUlps() <= CAP_EUR);
 
-        // Lock EuroToken
-        EURO_TOKEN.approve(EURO_LOCK, euroUlp);
-        EURO_LOCK.lock(msg.sender, euroUlp, investorNmk);
-
         // Split the Neumarks
         uint256 platformNmk = divRound(totalNmk, PLATFORM_SHARE);
         assert(platformNmk <= totalNmk);
@@ -269,6 +265,10 @@ contract Commitment is
         // Issue Neumarks and distribute
         NEUMARK.transfer(msg.sender, investorNmk);
         NEUMARK.transfer(PLATFORM_WALLET, platformNmk);
+
+        // Lock EuroToken
+        EURO_TOKEN.approve(EURO_LOCK, euroUlp);
+        EURO_LOCK.lock(msg.sender, euroUlp, investorNmk);
 
         // Log successful commitment
         LogFundsInvested(
@@ -422,10 +422,6 @@ contract Commitment is
         // We don't go over the cap
         require(NEUMARK.totalEuroUlps() <= CAP_EUR);
 
-        // Lock EtherToken
-        ETHER_TOKEN.approve(ETHER_LOCK, commitedWei);
-        ETHER_LOCK.lock(msg.sender, commitedWei, investorNmk);
-
         // Split the Neumarks
         uint256 platformNmk = divRound(totalNmk, PLATFORM_SHARE);
         assert(platformNmk <= totalNmk);
@@ -434,6 +430,10 @@ contract Commitment is
         // Issue Neumarks and distribute
         NEUMARK.transfer(msg.sender, investorNmk);
         NEUMARK.transfer(PLATFORM_WALLET, platformNmk);
+
+        // Lock EtherToken
+        ETHER_TOKEN.approve(ETHER_LOCK, commitedWei);
+        ETHER_LOCK.lock(msg.sender, commitedWei, investorNmk);
 
         // Log successful commitment
         LogFundsInvested(
