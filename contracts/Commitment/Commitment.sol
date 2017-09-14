@@ -384,7 +384,8 @@ contract Commitment is
     function commitEtherPrivate(uint256 commitedWei)
         private
     {
-        require(convertToEur(commitedWei) > MIN_TICKET_EUR);
+        uint256 commitedEur = convertToEur(commitedWei);
+        require(commitedEur > MIN_TICKET_EUR);
         uint256 remaining = commitedWei;
         uint256 totalNmk = 0;
 
@@ -440,7 +441,7 @@ contract Commitment is
             msg.sender,
             commitedWei,
             ETHER_TOKEN,
-            convertToEur(commitedWei),
+            commitedEur,
             investorNmk,
             NEUMARK
         );
