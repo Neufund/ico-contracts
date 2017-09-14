@@ -38,8 +38,10 @@ const CAP_EUR = web3.toBigNumber("200000000").mul(Q18);
 const MIN_TICKET_EUR = web3.toBigNumber("300").mul(Q18);
 const ETH_EUR_FRACTION = web3.toBigNumber("300").mul(Q18);
 const ethToEur = eth => eth.mul(ETH_EUR_FRACTION).div(Q18);
+const eurToEth = eur => eur.mul(Q18).divToInt(ETH_EUR_FRACTION);
 const platformShare = nmk => nmk.divToInt(PLATFORM_SHARE);
 const investorShare = nmk => nmk.sub(platformShare(nmk));
+const MIN_TICKET_ETH = eurToEth(MIN_TICKET_EUR);
 
 contract(
   "Commitment",
@@ -49,6 +51,7 @@ contract(
       platform,
       whitelistAdmin,
       lockedAccountAdmin,
+      eurtDepositManager,
       other,
       ...investors
     ]
@@ -110,6 +113,7 @@ contract(
         await rbac.set([
           { subject: whitelistAdmin, role: roles.whitelistAdmin },
           { subject: lockedAccountAdmin, role: roles.lockedAccountAdmin },
+          { subject: eurtDepositManager, role: roles.eurtDepositManager },
           { subject: commitment.address, role: roles.neumarkIssuer },
           { subject: commitment.address, role: roles.neumarkBurner },
           { subject: commitment.address, role: roles.transferAdmin },
@@ -120,6 +124,22 @@ contract(
         });
         await euroLock.setController(commitment.address, {
           from: lockedAccountAdmin
+        });
+
+        await euroToken.setAllowedTransferFrom(investors[0], true, {
+          from: eurtDepositManager
+        });
+        await euroToken.setAllowedTransferFrom(other, true, {
+          from: eurtDepositManager
+        });
+        await euroToken.setAllowedTransferFrom(commitment.address, true, {
+          from: eurtDepositManager
+        });
+        await euroToken.setAllowedTransferTo(commitment.address, true, {
+          from: eurtDepositManager
+        });
+        await euroToken.setAllowedTransferTo(euroLock.address, true, {
+          from: eurtDepositManager
         });
         // snapshot = await saveBlockchain();
       });
@@ -479,11 +499,27 @@ contract(
           await expect(tx).to.be.rejectedWith(EvmError);
         });
 
+        it("should not commit less than min ticket", async () => {
+          const small = MIN_TICKET_ETH.sub(1);
+          await increaseTime(PUBLIC_START);
+
+          const tx = commitment.commit({ from: investor, value: small });
+
+          await expect(tx).to.be.rejectedWith(EvmError);
+        });
+
         it("should commit from curve", async () => {
           const otherAmount = MIN_TICKET_EUR.mul(10);
           await increaseTime(PUBLIC_START);
-
           await commitment.commit({ from: other, value: otherAmount });
+          const curveNmk = investorShare(
+            await neumark.incremental(ethToEur(amountEth))
+          );
+
+          await commitment.commit({ from: investor, value: amountEth });
+          const investorNmk = await neumark.balanceOf(investor);
+
+          expect(investorNmk).to.be.bignumber.eq(curveNmk);
         });
 
         it("should not commit over cap", async () => {
@@ -493,6 +529,15 @@ contract(
           const tx = commitment.commit({ from: other, value: capEth.plus(1) });
 
           await expect(tx).to.be.rejectedWith(EvmError);
+        });
+
+        it("should issue Neumark", async () => {
+          await increaseTime(PUBLIC_START);
+
+          await commitment.commit({ from: investor, value: amountEth });
+          const investorNmk = await neumark.balanceOf(investor);
+
+          expect(investorNmk).to.be.bignumber.eq(expectedInvestorNmk);
         });
 
         it("should lock EtherToken", async () => {
@@ -737,23 +782,142 @@ contract(
       });
 
       describe("Commit euro not whitelisted", async () => {
-        it("should commit during Public");
+        const investor = investors[0];
+        const amountEur = MIN_TICKET_EUR.mul(10);
+        let expectedTotalNmk;
+        let expectedInvestorNmk;
+        let expectedPlatformNmk;
 
-        it("should not commit during Whitelist");
+        beforeEach(async () => {
+          expectedTotalNmk = await neumark.cumulative(amountEur);
+          expectedPlatformNmk = divRound(expectedTotalNmk, PLATFORM_SHARE);
+          expectedInvestorNmk = expectedTotalNmk.sub(expectedPlatformNmk);
 
-        it("should not commit during Before");
+          await euroToken.deposit(investor, CAP_EUR.mul(2), {
+            from: eurtDepositManager
+          });
+          await euroToken.approve(commitment.address, amountEur, {
+            from: investor
+          });
+        });
 
-        it("should not commit during Finished");
+        it("should commit during Public", async () => {
+          await increaseTime(PUBLIC_START);
 
-        it("should commit from curve");
+          await commitment.commitEuro({
+            from: investor
+          });
+        });
 
-        it("should not commit over cap");
+        it("should not commit during Before", async () => {
+          const tx = commitment.commitEuro({
+            from: investor
+          });
 
-        it("should lock EuroToken");
+          await expect(tx).to.be.rejectedWith(EvmError);
+        });
 
-        it("should commit EtherToken");
+        it("should not commit during Whitelist", async () => {
+          await increaseTime(WHITELIST_START);
 
-        it("should commit Ether and EtherToken");
+          const tx = commitment.commitEuro({
+            from: investor
+          });
+
+          await expect(tx).to.be.rejectedWith(EvmError);
+        });
+
+        it("should not commit during Finished", async () => {
+          await increaseTime(FINISHED_START);
+
+          const tx = commitment.commitEuro({
+            from: investor
+          });
+
+          await expect(tx).to.be.rejectedWith(EvmError);
+        });
+
+        it("should not commit less than min ticket", async () => {
+          await euroToken.approve(commitment.address, 0, {
+            from: investor
+          });
+          await euroToken.approve(commitment.address, MIN_TICKET_EUR.sub(1), {
+            from: investor
+          });
+          await increaseTime(PUBLIC_START);
+
+          const tx = commitment.commitEuro({
+            from: investor
+          });
+
+          await expect(tx).to.be.rejectedWith(EvmError);
+        });
+
+        it("should not commit over cap", async () => {
+          await euroToken.approve(commitment.address, 0, {
+            from: investor
+          });
+          await euroToken.approve(commitment.address, CAP_EUR.add(1), {
+            from: investor
+          });
+          await increaseTime(PUBLIC_START);
+
+          const tx = commitment.commitEuro({
+            from: investor
+          });
+
+          await expect(tx).to.be.rejectedWith(EvmError);
+        });
+
+        it("should issue neumark", async () => {
+          await increaseTime(PUBLIC_START);
+
+          await commitment.commitEuro({ from: investor });
+          const investorNmk = await neumark.balanceOf(investor);
+
+          expect(investorNmk).to.be.bignumber.eq(expectedInvestorNmk);
+        });
+
+        it("should issue neumark from curve", async () => {
+          await euroToken.deposit(other, CAP_EUR.mul(2), {
+            from: eurtDepositManager
+          });
+          await euroToken.approve(commitment.address, amountEur, {
+            from: other
+          });
+          await increaseTime(PUBLIC_START);
+          await commitment.commitEuro({ from: other });
+          const curveNmk = investorShare(await neumark.incremental(amountEur));
+          const epsilon = web3.toBigNumber("10");
+
+          await commitment.commitEuro({ from: investor });
+          const investorNmk = await neumark.balanceOf(investor);
+
+          expect(investorNmk.sub(curveNmk).abs()).to.be.bignumber.lt(epsilon);
+        });
+
+        it("should lock EuroToken", async () => {
+          await increaseTime(PUBLIC_START);
+          await mineBlock();
+          const now = await latestTimestamp();
+          const expectUnlockDate = now + LOCK_DURATION;
+          const epsilon = 3600;
+
+          await commitment.commitEuro({
+            from: investor
+          });
+          const lockEur = await euroToken.balanceOf(euroLock.address);
+          const [balance, neumarksDue, unlockDate] = await euroLock.balanceOf(
+            investor
+          );
+
+          expect(balance).to.be.bignumber.eq(amountEur);
+          expect(neumarksDue).to.be.bignumber.eq(expectedInvestorNmk);
+          expect(unlockDate.sub(expectUnlockDate).abs()).to.be.bignumber.lt(
+            epsilon
+          );
+          expect(lockEur).to.be.bignumber.eq(amountEur);
+        });
       });
 
       describe("Commit euro whitelisted", async () => {

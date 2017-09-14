@@ -9,5 +9,6 @@ export default {
   snapshotCreator: web3.sha3("SnapshotCreator"),
   transferAdmin: web3.sha3("TransferAdmin"),
   whitelistAdmin: web3.sha3("WhitelistAdmin"),
+  eurtDepositManager: web3.sha3("EurtDepositManager"),
   transferer: web3.sha3("Transferer")
 };
