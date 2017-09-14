@@ -206,7 +206,7 @@ contract Commitment is
         external
         payable
         withTimedTransitions()
-        onlyStates3(State.Whitelist, State.Public, State.Rollback)
+        onlyStates(State.Whitelist, State.Public)
     {
         // Take with EtherToken allowance (if any)
         uint256 commitedWei = ETHER_TOKEN.allowance(msg.sender, this);
@@ -318,17 +318,15 @@ contract Commitment is
     function mAfterTransition(State /* oldState */, State newState)
         internal
     {
-        if (newState == State.Pause) {
+        if (newState == State.Public) {
 
             // Rollback unfufilled Ether reservations.
             NEUMARK.burnNeumark(_whitelistEtherNmk);
         }
-        if (newState == State.Rollback) {
+        if (newState == State.Finished) {
 
             // Rollback unfufilled Euro reservations.
             NEUMARK.burnNeumark(_whitelistEuroNmk);
-        }
-        if (newState == State.Finished) {
 
             // Enable Neumark trading in token controller
             NEUMARK.enableTransfer(true);
@@ -411,7 +409,7 @@ contract Commitment is
         }
 
         // Curve part
-        if (whitelisted || state() != State.Whitelist) {
+        if (whitelisted || state() == State.Public) {
             uint256 remainingEur = convertToEur(remaining);
             remaining = 0;
             totalNmk += NEUMARK.issueForEuro(remainingEur);

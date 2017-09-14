@@ -3,7 +3,7 @@ pragma solidity 0.4.15;
 import './MStateMachine.sol';
 
 //
-// Before --> Whitelist --> Pause --> Public --> Rollback --> Finished
+// Before --> Whitelist --> Public --> Finished
 //
 contract StateMachine is MStateMachine {
 
@@ -102,10 +102,8 @@ contract StateMachine is MStateMachine {
     {
         return
             (oldState == State.Before    && newState == State.Whitelist) ||
-            (oldState == State.Whitelist && newState == State.Pause    ) ||
-            (oldState == State.Pause     && newState == State.Public   ) ||
-            (oldState == State.Public    && newState == State.Rollback ) ||
-            (oldState == State.Rollback  && newState == State.Finished );
+            (oldState == State.Whitelist && newState == State.Public   ) ||
+            (oldState == State.Public    && newState == State.Finished );
     }
 
     //

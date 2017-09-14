@@ -10,9 +10,7 @@ contract MStateMachine {
     enum State {
         Before,
         Whitelist,
-        Pause,
         Public,
-        Rollback,
         Finished
     }
 

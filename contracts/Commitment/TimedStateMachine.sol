@@ -4,15 +4,9 @@ import './StateMachine.sol';
 
 
 //  ------ time ----->
-//  +--------+-----------+-------+----------------+----------+
-//  |        |           |       | Public         |          |
-//  | Before | Whitelist | Pause |     +----------| Finished |
-//  |        |           |       |     | Rollback |          |
-//  +--------+-----------+-------+-----+----------+----------+
-//           | EUR                     |
-//           +-----------+-------+-----+----------+
-//           | ETH       |       | ETH            |
-//           +-----------+       +----------------+
+//  +--------+-----------+--------+------------
+//  | Before | Whitelist | Public | Finished …
+//  +--------+-----------+--------+------------
 contract TimedStateMachine is StateMachine {
 
     ////////////////////////
@@ -23,23 +17,15 @@ contract TimedStateMachine is StateMachine {
 
     int256 internal constant WHITELIST_DURATION = 5 days;
 
-    int256 internal constant PAUSE_DURATION = 1 days;
-
     int256 internal constant PUBLIC_DURATION = 30 days;
-
-    int256 internal constant ROLLBACK_DURATION = 7 days;
 
     //
     // Starting time relative to WHITELIST_START
     //
 
-    int256 internal constant PAUSE_START = WHITELIST_DURATION;
-
-    int256 internal constant PUBLIC_START = PAUSE_START + PAUSE_DURATION;
+    int256 internal constant PUBLIC_START = WHITELIST_DURATION;
 
     int256 internal constant PUBLIC_END = PUBLIC_START + PUBLIC_DURATION;
-
-    int256 internal constant ROLLBACK_START = PUBLIC_END - ROLLBACK_DURATION;
 
     ////////////////////////
     // Immutable state
@@ -86,16 +72,10 @@ contract TimedStateMachine is StateMachine {
         if (state() == State.Before && T >= 0) {
             transitionTo(State.Whitelist);
         }
-        if (state() == State.Whitelist && T >= PAUSE_START) {
-            transitionTo(State.Pause);
-        }
-        if (state() == State.Pause && T >= PUBLIC_START) {
+        if (state() == State.Whitelist && T >= PUBLIC_START) {
             transitionTo(State.Public);
         }
-        if (state() == State.Public && T >= ROLLBACK_START) {
-            transitionTo(State.Rollback);
-        }
-        if (state() == State.Rollback && T >= PUBLIC_END) {
+        if (state() == State.Public && T >= PUBLIC_END) {
             transitionTo(State.Finished);
         }
     }
@@ -111,14 +91,8 @@ contract TimedStateMachine is StateMachine {
         if (state == State.Whitelist) {
             return WHITELIST_START;
         }
-        if (state == State.Pause) {
-            return WHITELIST_START + PAUSE_START;
-        }
         if (state == State.Public) {
             return WHITELIST_START + PUBLIC_START;
-        }
-        if (state == State.Rollback) {
-            return WHITELIST_START + ROLLBACK_START;
         }
         if (state == State.Finished) {
             return WHITELIST_START + PUBLIC_END;
