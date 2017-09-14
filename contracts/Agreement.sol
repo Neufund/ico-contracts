@@ -125,7 +125,7 @@ contract Agreement is
             address platformOperatorRepresentative,
             uint256 signedBlockTimestamp,
             string agreementUri,
-            uint256 amendmentIndex
+            uint256 index
         )
     {
         require(_amendments.length > 0);
@@ -147,7 +147,7 @@ contract Agreement is
             address platformOperatorRepresentative,
             uint256 signedBlockTimestamp,
             string agreementUri,
-            uint256
+            uint256 index
         )
     {
         SignedAgreement storage amendment = _amendments[amendmentIndex];
