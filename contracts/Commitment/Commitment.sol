@@ -252,7 +252,13 @@ contract Commitment is
         }
 
         // Curve
-        totalNmk += NEUMARK.issueForEuro(remainingEur);
+        if (whitelisted || state() == State.Public) {
+            totalNmk += NEUMARK.issueForEuro(remainingEur);
+            remainingEur = 0;
+        }
+
+        // We don't do partial tickets
+        require(remainingEur == 0);
 
         // We don't go over the cap
         require(NEUMARK.totalEuroUlps() <= CAP_EUR);
@@ -411,8 +417,8 @@ contract Commitment is
         // Curve part
         if (whitelisted || state() == State.Public) {
             uint256 remainingEur = convertToEur(remaining);
-            remaining = 0;
             totalNmk += NEUMARK.issueForEuro(remainingEur);
+            remaining = 0;
         }
 
         // We don't do partial tickets
