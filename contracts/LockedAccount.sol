@@ -17,7 +17,6 @@ import './TimeSource.sol';
 contract LockedAccount is
     AccessControlled,
     AccessRoles,
-    Agreement,
     TimeSource,
     ReturnsErrors,
     Math,
