@@ -61,7 +61,6 @@ contract EtherToken is
         payable
         public
     {
-        require(msg.value > 0);
         _balances[msg.sender] = add(_balances[msg.sender], msg.value);
         _totalSupply = add(_totalSupply, msg.value);
         LogDeposit(msg.sender, msg.value);
