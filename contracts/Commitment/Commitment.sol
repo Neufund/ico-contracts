@@ -358,9 +358,10 @@ contract Commitment is
         require(isEuro || isEther);
         // Note: amount can be zero, indicating no pre-allocated NMK,
         //       but still the ability to commit before the public.
+        uint256 amountEur = isEuro ? amount : convertToEur(amount);
+        require(amount == 0 || amountEur >= MIN_TICKET_EUR);
 
         // Allocate Neumarks (will be issued to `this`)
-        uint256 amountEur = isEuro ? amount : convertToEur(amount);
         uint256 rewardNmk = NEUMARK.issueForEuro(amountEur);
 
         // Add to pre-allocated tickets
