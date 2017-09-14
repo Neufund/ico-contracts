@@ -12,7 +12,7 @@ module.exports = {
     inprocess: {
       network_id: "*",
       provider: TestRPC.provider({
-        accounts: Array(10).fill({ balance: "10000000000000000000000" })
+        accounts: Array(10).fill({ balance: "12300000000000000000000000" })
       })
     }
   }
