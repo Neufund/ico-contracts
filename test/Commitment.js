@@ -37,6 +37,9 @@ const PENALTY_FRACTION = web3.toBigNumber("0.1").mul(Q18);
 const CAP_EUR = web3.toBigNumber("200000000").mul(Q18);
 const MIN_TICKET_EUR = web3.toBigNumber("300").mul(Q18);
 const ETH_EUR_FRACTION = web3.toBigNumber("300").mul(Q18);
+const ethToEur = eth => eth.mul(ETH_EUR_FRACTION).div(Q18);
+const platformShare = nmk => nmk.divToInt(PLATFORM_SHARE);
+const investorShare = nmk => nmk.sub(platformShare(nmk));
 
 contract(
   "Commitment",
@@ -440,28 +443,60 @@ contract(
           expectedTotalNmk = await neumark.cumulative(amountEur);
           expectedPlatformNmk = divRound(expectedTotalNmk, PLATFORM_SHARE);
           expectedInvestorNmk = expectedTotalNmk.sub(expectedPlatformNmk);
-          await commitment.addWhitelisted(
-            [investor],
-            [Token.Ether],
-            [amountEth],
-            { from: whitelistAdmin }
-          );
         });
 
-        it("should commit during Public");
+        it("should commit during Public", async () => {
+          await increaseTime(PUBLIC_START);
 
-        it("should not commit during Whitelist");
+          await commitment.commit({ from: investor, value: amountEth });
+        });
 
-        it("should not commit during Before");
+        it("should not commit during Whitelist", async () => {
+          await increaseTime(WHITELIST_START);
 
-        it("should not commit during Finished");
+          const tx = commitment.commit({ from: investor, value: amountEth });
 
-        it("should commit from curve");
+          await expect(tx).to.be.rejectedWith(EvmError);
+        });
 
-        it("should not commit over cap");
+        it("should not commit during Before", async () => {
+          const tx = commitment.commit({
+            from: investor,
+            value: amountEth
+          });
+
+          await expect(tx).to.be.rejectedWith(EvmError);
+        });
+
+        it("should not commit during Finished", async () => {
+          await increaseTime(FINISHED_START);
+
+          const tx = commitment.commit({
+            from: investor,
+            value: amountEth
+          });
+
+          await expect(tx).to.be.rejectedWith(EvmError);
+        });
+
+        it("should commit from curve", async () => {
+          const otherAmount = MIN_TICKET_EUR.mul(10);
+          await increaseTime(PUBLIC_START);
+
+          await commitment.commit({ from: other, value: otherAmount });
+        });
+
+        it("should not commit over cap", async () => {
+          const capEth = CAP_EUR.mul(Q18).divToInt(ETH_EUR_FRACTION);
+          await increaseTime(PUBLIC_START);
+
+          const tx = commitment.commit({ from: other, value: capEth.plus(1) });
+
+          await expect(tx).to.be.rejectedWith(EvmError);
+        });
 
         it("should lock EtherToken", async () => {
-          await increaseTime(WHITELIST_START);
+          await increaseTime(PUBLIC_START);
           await mineBlock();
           const now = await latestTimestamp();
           const expectUnlockDate = now + LOCK_DURATION;
@@ -485,7 +520,7 @@ contract(
         });
 
         it("should commit EtherToken", async () => {
-          await increaseTime(WHITELIST_START);
+          await increaseTime(PUBLIC_START);
 
           await etherToken.deposit({
             from: investor,
@@ -505,7 +540,7 @@ contract(
         it("should commit Ether and EtherToken", async () => {
           const lessAmount = amountEth.divToInt(3);
           const remainder = amountEth.sub(lessAmount);
-          await increaseTime(WHITELIST_START);
+          await increaseTime(PUBLIC_START);
 
           await etherToken.deposit({
             from: investor,
@@ -528,8 +563,8 @@ contract(
         const amountEth = Q18.mul(100);
         const amountEur = amountEth.mul(ETH_EUR_FRACTION).div(Q18);
         let expectedTotalNmk;
-        let expectedInvestorNmk;
         let expectedPlatformNmk;
+        let expectedInvestorNmk;
 
         beforeEach(async () => {
           expectedTotalNmk = await neumark.cumulative(amountEur);
@@ -638,10 +673,14 @@ contract(
           expect(platformNmk).to.be.bignumber.eq(expectedPlatformNmk);
         });
 
-        it(
-          "should commit more than ticket" /* , async () => {
+        it("should commit more than ticket", async () => {
           const addedEth = Q18.mul(50);
           const moreEth = amountEth.plus(addedEth);
+          const addedNmk = investorShare(
+            await neumark.incremental(ethToEur(addedEth))
+          );
+          const expectedNmk = expectedInvestorNmk.plus(addedNmk);
+          const epsilon = web3.toBigNumber("10");
           await increaseTime(WHITELIST_START);
 
           await commitment.commit({
@@ -649,17 +688,52 @@ contract(
             value: moreEth
           });
           const investorNmk = await neumark.balanceOf(investor);
-          const platformNmk = await neumark.balanceOf(platform);
 
           // Total result should be exact.
-          expect(investorNmk).to.be.bignumber.eq(expectedInvestorNmk);
-          expect(platformNmk).to.be.bignumber.eq(expectedPlatformNmk);
-        } */
-        );
+          expect(investorNmk.sub(expectedNmk)).to.be.bignumber.lt(epsilon);
+        });
 
-        it("should commit only from curve after Public");
+        it("should commit only from curve during Public", async () => {
+          const otherEth = MIN_TICKET_EUR.mul(10);
+          await increaseTime(PUBLIC_START);
+          await commitment.commit({ value: otherEth, from: other });
+          const curveNmk = investorShare(
+            await neumark.incremental(ethToEur(amountEth))
+          );
 
-        it("should not commit over cap");
+          await commitment.commit({
+            from: investor,
+            value: amountEth
+          });
+          const investorNmk = await neumark.balanceOf(investor);
+
+          // Total result should be exact.
+          expect(investorNmk).to.be.bignumber.eq(curveNmk);
+        });
+
+        it("should not commit over cap during Whitelist", async () => {
+          const capEth = CAP_EUR.mul(Q18).divToInt(ETH_EUR_FRACTION);
+          await increaseTime(WHITELIST_START);
+
+          const tx = commitment.commit({
+            from: investor,
+            value: capEth.plus(1)
+          });
+
+          await expect(tx).to.be.rejectedWith(EvmError);
+        });
+
+        it("should not commit over cap during Public", async () => {
+          const capEth = CAP_EUR.mul(Q18).divToInt(ETH_EUR_FRACTION);
+          await increaseTime(PUBLIC_START);
+
+          const tx = commitment.commit({
+            from: investor,
+            value: capEth.plus(1)
+          });
+
+          await expect(tx).to.be.rejectedWith(EvmError);
+        });
       });
 
       describe("Commit euro not whitelisted", async () => {
