@@ -17,7 +17,6 @@ export let etherToken;
 export let lockedAccount;
 export let curve;
 export let commitment;
-export let feePool;
 export let accessControl;
 export let forkArbiter;
 
@@ -47,13 +46,10 @@ export async function spawnLockedAccount(
   // console.log(`\tEtherToken took ${gasCost(etherToken)}.`);
   neumark = await Neumark.new(
     accessControl.address,
-    forkArbiter.address,
-    "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT"
+    forkArbiter.address
   );
   lockedAccount = await LockedAccount.new(
     accessControl.address,
-    forkArbiter.address,
-    "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT",
     etherToken.address,
     neumark.address,
     unlockDateMonths * months,
@@ -94,6 +90,13 @@ export async function spawnLockedAccount(
     neumark.address,
     TriState.Allow
   );
+  await accessControl.setUserRole(
+      EVERYONE,
+      roles.platformOperatorRepresentative,
+      neumark.address,
+      TriState.Allow
+    );
+  await neumark.amendAgreement("ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT");
 }
 
 export async function spawnPublicCommitment(
