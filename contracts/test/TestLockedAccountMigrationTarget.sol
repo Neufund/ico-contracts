@@ -27,7 +27,6 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
 
     function TestLockedAccountMigrationTarget(
         IAccessPolicy _policy,
-        IEthereumForkArbiter _forkArbiter,
         IERC677Token _assetToken,
         Neumark _neumark,
         uint256 _lockPeriod,
@@ -35,7 +34,6 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
     )
         LockedAccount(
             _policy,
-            _forkArbiter,
             _assetToken,
             _neumark,
             _lockPeriod,
