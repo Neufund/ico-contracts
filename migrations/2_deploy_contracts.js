@@ -115,9 +115,12 @@ module.exports = function deployContracts(deployer, network, accounts) {
       TriState.Allow
     );
     console.log("Amending agreements");
-    await neumark.amendAgreement("ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT", {
-      from: platformOperatorRepresentative
-    });
+    await neumark.amendAgreement(
+      "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT",
+      {
+        from: platformOperatorRepresentative
+      }
+    );
     console.log("Contracts deployed!");
 
     console.log("----------------------------------");

@@ -10,10 +10,7 @@ const Neumark = artifacts.require("Neumark");
 async function deployNeumark() {
   const rbac = await RoleBasedAccessControl.new();
   const ethereumForkArbiter = await EthereumForkArbiter.new(rbac.address);
-  const neumark = await Neumark.new(
-    rbac.address,
-    ethereumForkArbiter.address
-  );
+  const neumark = await Neumark.new(rbac.address, ethereumForkArbiter.address);
 
   // TODO: more specific rights
   await rbac.setUserRole(
@@ -35,12 +32,14 @@ async function deployNeumark() {
     TriState.Allow
   );
   await rbac.setUserRole(
-      EVERYONE,
-      roles.platformOperatorRepresentative,
-      neumark.address,
-      TriState.Allow
-    );
-  await neumark.amendAgreement("ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT");
+    EVERYONE,
+    roles.platformOperatorRepresentative,
+    neumark.address,
+    TriState.Allow
+  );
+  await neumark.amendAgreement(
+    "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT"
+  );
 
   return neumark;
 }
