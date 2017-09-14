@@ -12,8 +12,7 @@ async function deployNeumark() {
   const ethereumForkArbiter = await EthereumForkArbiter.new(rbac.address);
   const neumark = await Neumark.new(
     rbac.address,
-    ethereumForkArbiter.address,
-    "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT"
+    ethereumForkArbiter.address
   );
 
   // TODO: more specific rights
@@ -35,6 +34,13 @@ async function deployNeumark() {
     neumark.address,
     TriState.Allow
   );
+  await rbac.setUserRole(
+      EVERYONE,
+      roles.platformOperatorRepresentative,
+      neumark.address,
+      TriState.Allow
+    );
+  await neumark.amendAgreement("ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT");
 
   return neumark;
 }
