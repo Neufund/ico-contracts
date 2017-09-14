@@ -230,7 +230,7 @@ contract Commitment is
         EURO_TOKEN.transferFrom(msg.sender, this, euroUlp);
 
         // Compute commited funds
-        require(euroUlp > MIN_TICKET_EUR);
+        require(euroUlp >= MIN_TICKET_EUR);
         uint256 remainingEur = euroUlp;
         uint256 totalNmk = 0;
 
@@ -383,7 +383,7 @@ contract Commitment is
         private
     {
         uint256 commitedEur = convertToEur(commitedWei);
-        require(commitedEur > MIN_TICKET_EUR);
+        require(commitedEur >= MIN_TICKET_EUR);
         uint256 remaining = commitedWei;
         uint256 totalNmk = 0;
 
