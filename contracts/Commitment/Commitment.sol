@@ -281,7 +281,7 @@ contract Commitment is
         );
     }
 
-    function neumarkReward(uint256 amountEth)
+    function estimateNeumarkReward(uint256 amountEth)
         external
         constant
         returns (uint256)
