@@ -21,7 +21,7 @@ import './AccessRoles.sol';
  * Details on Agreement base class:
  * 1. We bind smart contract to legal contract by storing uri (preferably ipfs or hash) of the legal contract in the smart contract. It is however crucial that such binding is done by platform operator representation so transaction establishing the link must be signed by respective wallet ('amendAgreement')
  * 2. Mutable part of agreement may change. We should be able to amend the uri later. Previous amendments should not be lost and should be retrievable (`amendAgreement` and 'pastAgreement' functions).
- * 3. It is up to deriving contract to decide where to put 'acceptAgreement' modifier. However situation where there is no cryptographic proof that given address was not really acting in the transaction and sighed this address in should be avoided, simplest example being 'to' address in `transfer` function of ERC20.
+ * 3. It is up to deriving contract to decide where to put 'acceptAgreement' modifier. However situation where there is no cryptographic proof that given address was really acting in the transaction should be avoided, simplest example being 'to' address in `transfer` function of ERC20.
  *
 **/
 contract Agreement is
@@ -159,7 +159,7 @@ contract Agreement is
         );
     }
 
-    function isSignedBy(address signatory)
+    function isAgreementSignedBy(address signatory)
         public
         constant
         returns (bool signed)
