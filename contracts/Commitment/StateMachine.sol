@@ -77,6 +77,8 @@ contract StateMachine is MStateMachine {
     // Internal functions
     ////////////////////////
 
+    // @dev Transitioning to the same state is silently ignored, no log events
+    //  or handlers are called.
     function transitionTo(State newState)
         internal
         returns (State oldState)
