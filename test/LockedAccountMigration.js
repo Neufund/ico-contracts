@@ -13,17 +13,21 @@ import {
 const TestLockedAccountMigrationTarget = artifacts.require(
   "TestLockedAccountMigrationTarget"
 );
+const TestLockedAccountController = artifacts.require(
+  "TestLockedAccountController"
+);
 
 // this low gas price is forced by code coverage
 const gasPrice = new web3.BigNumber(0x01);
 
 contract(
   "TestLockedAccountMigrationTarget",
-  ([_, admin, investor, investor2]) => {
+  ([_, admin, investor, investor2, otherMigrationSource]) => {
     let snapshot;
     let startTimestamp;
     let migrationTarget;
     let assetToken;
+    let controller;
 
     async function deployMigrationTarget() {
       const target = await TestLockedAccountMigrationTarget.new(
@@ -45,6 +49,12 @@ contract(
 
     before(async () => {
       await chain.spawnLockedAccount(admin, 18, 0.1);
+      controller = await TestLockedAccountController.new(
+        chain.lockedAccount.address
+      );
+      await chain.lockedAccount.setController(controller.address, {
+        from: admin
+      });
       // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurrate
       startTimestamp = await latestTimestamp();
       assetToken = chain.etherToken;
@@ -59,78 +69,40 @@ contract(
 
     // it -> check in invalid states in enableMigration
 
-    it.skip("call migrate not from source should throw", async () => {
-      const ticket = 1; // 1 wei ticket
-      // test migration accepts any address
-      await migrationTarget.setMigrationSource(investor2, { from: admin });
-      // set allowance in asset token
-      await assetToken.deposit(investor2, ticket, {
-        from: admin,
-        value: ticket
-      });
-      await assetToken.approve(migrationTarget.address, 1, {
-        from: investor2
-      });
-      await migrationTarget.migrateInvestor(
-        investor,
-        ticket,
-        1,
-        startTimestamp,
-        {
-          from: investor2
-        }
-      );
-      // set allowances again
-      await assetToken.deposit(investor, ticket, {
-        from: admin,
-        value: ticket
-      });
-      await assetToken.approve(migrationTarget.address, ticket, {
-        from: investor
-      });
-      // this should not, only investor2 (which is source) can call migrate on target
-      await expect(
-        migrationTarget.migrateInvestor(investor, ticket, 1, startTimestamp, {
-          from: investor
-        })
-      ).to.be.rejectedWith(EvmError);
-    });
+    async function depositForController(ticket, from) {
+      await chain.etherToken.deposit({ from, value: ticket });
+      await chain.etherToken.transfer(controller.address, ticket, { from });
+    }
 
-    it.skip("target that returns false on migration should throw", async () => {
-      const ticket = chain.ether(1);
-      const neumarks = ticket.mul(6.5);
-      // lock investor
-      await chain.commitment.investFor(investor, ticket, neumarks, {
-        value: ticket,
-        from: investor
-      });
-      await migrationTarget.setMigrationSource(chain.lockedAccount.address, {
-        from: admin
-      });
-      await chain.lockedAccount.enableMigration(migrationTarget.address, {
-        from: admin
-      });
+    function expectMigrationEnabledEvent(tx, target) {
+      const event = eventValue(tx, "LogMigrationEnabled");
+      expect(event).to.exist;
+      expect(event.args.target).to.be.equal(target);
+    }
 
-      await migrationTarget.setShouldMigrationFail(true, { from: admin });
-      await expect(
-        chain.lockedAccount.migrate({ from: investor })
-      ).to.be.rejectedWith(EvmError);
-    });
-
-    it("target with invalid source should throw", async () => {
-      // we set invalid source here
-      await migrationTarget.setMigrationSource(investor, { from: admin });
-      // accepts only lockedAccount as source
-      await expect(
-        chain.lockedAccount.enableMigration(migrationTarget.address)
-      ).to.be.rejectedWith(EvmError);
-    });
+    function expectInvestorMigratedEvent(
+      tx,
+      investorAddress,
+      ticket,
+      neumarks,
+      unlockDate
+    ) {
+      const event = eventValue(tx, "LogInvestorMigrated");
+      expect(event).to.exist;
+      expect(event.args.investor).to.be.equal(investorAddress);
+      expect(event.args.amount).to.be.bignumber.equal(ticket);
+      expect(event.args.neumarks).to.be.bignumber.equal(neumarks);
+      // check unlockDate optionally
+      if (unlockDate) {
+        expect(event.args.unlockDate).to.be.bignumber.equal(unlockDate);
+      }
+    }
 
     async function migrateOne(ticket, investorAddress) {
       const neumarks = ticket.mul(6.5);
       // lock investor
-      await chain.commitment.investFor(investorAddress, ticket, neumarks, {
-        value: ticket,
+      await depositForController(ticket, investorAddress);
+      await controller.investFor(investorAddress, ticket, neumarks, {
         from: investorAddress
       });
       const investorBalanceBefore = await chain.lockedAccount.balanceOf(
@@ -142,26 +114,21 @@ contract(
       await migrationTarget.setMigrationSource(chain.lockedAccount.address, {
         from: admin
       });
-      assert.equal(
-        await migrationTarget.getMigrationFrom(),
-        chain.lockedAccount.address,
-        "correct migration source set"
+      expect(await migrationTarget.currentMigrationSource()).to.eq(
+        chain.lockedAccount.address
       );
       let tx = await chain.lockedAccount.enableMigration(
         migrationTarget.address,
         { from: admin }
       );
-      let event = eventValue(tx, "LogMigrationEnabled");
-      expect(event).to.exist;
-      expect(event.args.target).to.be.equal(migrationTarget.address);
+      expectMigrationEnabledEvent(tx, migrationTarget.address);
       // migrate investor
       tx = await chain.lockedAccount.migrate({ from: investorAddress });
-      event = eventValue(tx, "LogInvestorMigrated");
-      expect(event).to.exist;
-      expect(event.args.investor).to.be.equal(investorAddress);
-      expect(event.args.amount).to.be.bignumber.equal(ticket);
-      expect(event.args.neumarks).to.be.bignumber.equal(neumarks);
-      expect(event.args.unlockDate).to.be.bignumber.equal(
+      expectInvestorMigratedEvent(
+        tx,
+        investorAddress,
+        ticket,
+        neumarks,
         investorBalanceBefore[2]
       );
       // check invariants
@@ -219,11 +186,82 @@ contract(
       );
     }
 
-    it.skip("should migrate investor", async () => {
+    it("call migrate not from source should throw", async () => {
+      const ticket = 1; // 1 wei ticket
+      // test migration accepts any address
+      await migrationTarget.setMigrationSource(otherMigrationSource, {
+        from: admin
+      });
+      // set allowance in asset token
+      await assetToken.deposit({
+        from: otherMigrationSource,
+        value: ticket
+      });
+      await assetToken.approve(migrationTarget.address, 1, {
+        from: otherMigrationSource
+      });
+      await migrationTarget.migrateInvestor(
+        investor2,
+        ticket,
+        1,
+        startTimestamp,
+        {
+          from: otherMigrationSource
+        }
+      );
+      // set allowances again
+      await assetToken.deposit({
+        from: otherMigrationSource,
+        value: ticket
+      });
+      await assetToken.approve(migrationTarget.address, ticket, {
+        from: otherMigrationSource
+      });
+      // this should not, only otherMigrationSource can call migrate on target
+      await expect(
+        migrationTarget.migrateInvestor(investor, ticket, 1, startTimestamp, {
+          from: admin
+        })
+      ).to.be.rejectedWith(EvmError);
+    });
+
+    it("target that returns false on migration should throw", async () => {
+      const ticket = chain.ether(1);
+      const neumarks = ticket.mul(6.5);
+      // lock investor
+      await depositForController(ticket, investor);
+      await controller.investFor(investor, ticket, neumarks, {
+        from: investor
+      });
+      await migrationTarget.setMigrationSource(chain.lockedAccount.address, {
+        from: admin
+      });
+      await chain.lockedAccount.enableMigration(migrationTarget.address, {
+        from: admin
+      });
+
+      await migrationTarget.setShouldMigrationFail(true, { from: admin });
+      await expect(
+        chain.lockedAccount.migrate({ from: investor })
+      ).to.be.rejectedWith(EvmError);
+    });
+
+    it("rejects target with source address not matching contract enabling migration", async () => {
+      // we set invalid source here
+      await migrationTarget.setMigrationSource(otherMigrationSource, {
+        from: admin
+      });
+      // accepts only lockedAccount as source
+      await expect(
+        chain.lockedAccount.enableMigration(migrationTarget.address)
+      ).to.be.rejectedWith(EvmError);
+    });
+
+    it("should migrate investor", async () => {
       await migrateOne(chain.ether(1), investor);
     });
 
-    it.skip("should migrate investor then unlock and withdraw", async () => {
+    it("should migrate investor then unlock and withdraw", async () => {
       const ticket = chain.ether(1);
       await migrateOne(ticket, investor);
       await enableReleaseAll();
@@ -232,19 +270,75 @@ contract(
       await withdrawAsset(investor, ticket);
     });
 
-    it.skip("migrate same investor twice should do nothing", async () => {
+    it("migrate same investor twice should do nothing", async () => {
       await migrateOne(chain.ether(1), investor);
       const tx = await chain.lockedAccount.migrate({ from: investor });
       expect(hasEvent(tx, "LogInvestorMigrated")).to.be.false;
     });
 
-    it.skip("migrate non existing investor should do nothing", async () => {
+    it("migrate non existing investor should do nothing", async () => {
       await migrateOne(chain.ether(1), investor);
       const tx = await chain.lockedAccount.migrate({ from: investor2 });
       expect(hasEvent(tx, "LogInvestorMigrated")).to.be.false;
     });
 
-    it.skip("enabling migration for a second time should throw", async () => {
+    it("should reject investor migration before it is enabled", async () => {
+      const ticket = chain.ether(3.18919182);
+      const neumarks = chain.ether(1.189729111);
+      await depositForController(ticket, investor);
+      await controller.investFor(investor, ticket, neumarks, {
+        from: investor
+      });
+      await migrationTarget.setMigrationSource(chain.lockedAccount.address, {
+        from: admin
+      });
+      // uncomment below for this test to fail
+      /* await chain.lockedAccount.enableMigration(
+        migrationTarget.address,
+        {from: admin}
+      ); */
+      await expect(
+        chain.lockedAccount.migrate({ from: investor })
+      ).to.be.rejectedWith(EvmError);
+    });
+
+    it("should migrate investor in AcceptUnlocks", async () => {
+      const ticket = chain.ether(3.18919182);
+      const neumarks = chain.ether(1.189729111);
+      await depositForController(ticket, investor);
+      await controller.investFor(investor, ticket, neumarks, {
+        from: investor
+      });
+      await migrationTarget.setMigrationSource(chain.lockedAccount.address, {
+        from: admin
+      });
+      await controller.succ();
+      expect(await chain.lockedAccount.lockState.call()).to.be.bignumber.eq(2);
+      await chain.lockedAccount.enableMigration(migrationTarget.address, {
+        from: admin
+      });
+      const tx = await chain.lockedAccount.migrate({ from: investor });
+      expectInvestorMigratedEvent(tx, investor, ticket, neumarks);
+    });
+
+    it("should reject enabling migration from invalid account", async () => {
+      const ticket = chain.ether(3.18919182);
+      const neumarks = chain.ether(1.189729111);
+      await depositForController(ticket, investor);
+      await controller.investFor(investor, ticket, neumarks, {
+        from: investor
+      });
+      await migrationTarget.setMigrationSource(chain.lockedAccount.address, {
+        from: admin
+      });
+      await expect(
+        chain.lockedAccount.enableMigration(migrationTarget.address, {
+          from: otherMigrationSource
+        })
+      ).to.be.rejectedWith(EvmError);
+    });
+
+    it("should reject enabling migration for a second time", async () => {
       await migrationTarget.setMigrationSource(chain.lockedAccount.address, {
         from: admin
       });
@@ -253,7 +347,9 @@ contract(
       });
       // must throw
       await expect(
-        chain.lockedAccount.enableMigration(migrationTarget.address)
+        chain.lockedAccount.enableMigration(migrationTarget.address, {
+          from: admin
+        })
       ).to.be.rejectedWith(EvmError);
     });
   }
