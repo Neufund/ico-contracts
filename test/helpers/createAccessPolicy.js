@@ -6,18 +6,21 @@ const RoleBasedAccessControl = artifacts.require(
 
 export default async roles => {
   const rbac = await RoleBasedAccessControl.new();
-  await Promise.all(
-    roles.map(async policy => {
-      const { subject, role, object, state } = Object.assign(
-        {
-          subject: EVERYONE,
-          object: GLOBAL,
-          state: TriState.Allow
-        },
-        policy
-      );
-      await rbac.setUserRole(subject, role, object, state);
-    })
-  );
-  return rbac.address;
+  rbac.set = async roles => {
+    await Promise.all(
+      roles.map(async policy => {
+        const { subject, role, object, state } = Object.assign(
+          {
+            subject: EVERYONE,
+            object: GLOBAL,
+            state: TriState.Allow
+          },
+          policy
+        );
+        await rbac.setUserRole(subject, role, object, state);
+      })
+    );
+  };
+  await rbac.set(roles);
+  return rbac;
 };
