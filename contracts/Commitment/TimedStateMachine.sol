@@ -19,13 +19,9 @@ contract TimedStateMachine is StateMachine {
 
     int256 internal constant PUBLIC_DURATION = 30 days;
 
-    //
-    // Starting time relative to WHITELIST_START
-    //
+    int256 internal constant PUBLIC_FROM_START = WHITELIST_DURATION;
 
-    int256 internal constant PUBLIC_START = WHITELIST_DURATION;
-
-    int256 internal constant PUBLIC_END = PUBLIC_START + PUBLIC_DURATION;
+    int256 internal constant FINISH_FROM_START = PUBLIC_FROM_START + PUBLIC_DURATION;
 
     ////////////////////////
     // Immutable state
@@ -72,10 +68,10 @@ contract TimedStateMachine is StateMachine {
         if (state() == State.Before && t >= 0) {
             transitionTo(State.Whitelist);
         }
-        if (state() == State.Whitelist && t >= PUBLIC_START) {
+        if (state() == State.Whitelist && t >= PUBLIC_FROM_START) {
             transitionTo(State.Public);
         }
-        if (state() == State.Public && t >= PUBLIC_END) {
+        if (state() == State.Public && t >= FINISH_FROM_START) {
             transitionTo(State.Finished);
         }
     }
@@ -92,10 +88,10 @@ contract TimedStateMachine is StateMachine {
             return WHITELIST_START;
         }
         if (state == State.Public) {
-            return WHITELIST_START + PUBLIC_START;
+            return WHITELIST_START + PUBLIC_FROM_START;
         }
         if (state == State.Finished) {
-            return WHITELIST_START + PUBLIC_END;
+            return WHITELIST_START + FINISH_FROM_START;
         }
     }
 }
