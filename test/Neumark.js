@@ -29,8 +29,12 @@ contract("Neumark", accounts => {
       { subject: accounts[1], role: roles.neumarkBurner },
       { subject: accounts[0], role: roles.platformOperatorRepresentative }
     ]);
-    forkArbiter = await EthereumForkArbiter.new(rbac);
-    neumark = await Neumark.new(rbac, forkArbiter.address);
+    forkArbiter = await EthereumForkArbiter.new(rbac.address);
+    neumark = await Neumark.new(
+      rbac.address,
+      forkArbiter.address,
+      agreementUri
+    );
     await neumark.amendAgreement(agreementUri);
     snapshot = await saveBlockchain();
   });

@@ -11,7 +11,7 @@ contract("EuroToken", () => {
 
   before(async () => {
     rbac = await createAccessPolicy([]);
-    euroToken = await EuroToken.new(rbac);
+    euroToken = await EuroToken.new(rbac.address);
     snapshot = await saveBlockchain();
   });
 
