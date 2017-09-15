@@ -2,9 +2,9 @@ pragma solidity 0.4.15;
 
 import './AccessControl/AccessControlled.sol';
 import './AccessRoles.sol';
-import './Commitment/ITokenOffering.sol';
 import './EtherToken.sol';
 import './IsContract.sol';
+import './MigrationSource.sol';
 import './LockedAccountMigration.sol';
 import './Neumark.sol';
 import './Standards/IERC677Token.sol';
@@ -21,6 +21,7 @@ contract LockedAccount is
     ReturnsErrors,
     Math,
     IsContract,
+    MigrationSource,
     IERC677Callback,
     Reclaimable
 {
@@ -72,14 +73,11 @@ contract LockedAccount is
     // current state of the locking contract
     LockState private _lockState;
 
-    // govering ICO contract that may lock money or unlock all account if fails
-    ITokenOffering private _controller;
+    // controlling contract that may lock money or unlock all account if fails
+    address private _controller;
 
     // fee distribution pool
     address private _penaltyDisbursalAddress;
-
-    // migration target contract
-    LockedAccountMigration private _migration;
 
     // LockedAccountMigration private migration;
     mapping(address => Account) internal _accounts;
@@ -117,10 +115,6 @@ contract LockedAccount is
         uint256 unlockDate
     );
 
-    event LogMigrationEnabled(
-        address target
-    );
-
     ////////////////////////
     // Modifiers
     ////////////////////////
@@ -154,6 +148,7 @@ contract LockedAccount is
         uint256 penaltyFraction
     )
         AccessControlled(policy)
+        MigrationSource(policy, ROLE_LOCKED_ACCOUNT_ADMIN)
         Reclaimable()
     {
         ASSET_TOKEN = assetToken;
@@ -253,62 +248,11 @@ contract LockedAccount is
         changeState(LockState.AcceptingUnlocks);
     }
 
-    /// enables migration to new LockedAccount instance
-    /// it can be set only once to prevent setting temporary migrations that let
-    /// just one investor out
-    /// may be set in AcceptingLocks state (in unlikely event that controller
-    /// fails we let investors out)
-    /// and AcceptingUnlocks - which is normal operational mode
-    function enableMigration(LockedAccountMigration migration)
+    function setController(address controller)
         public
         only(ROLE_LOCKED_ACCOUNT_ADMIN)
-        onlyStates(LockState.AcceptingLocks, LockState.AcceptingUnlocks)
+        onlyState(LockState.Uncontrolled)
     {
-        require(address(_migration) == 0);
-
-        // we must be the source
-        require(migration.getMigrationFrom() == address(this));
-        _migration = migration;
-        LogMigrationEnabled(_migration);
-    }
-
-    /// migrate single investor
-    function migrate()
-        public
-    {
-        require(address(_migration) != 0);
-
-        // migrates
-        Account memory a = _accounts[msg.sender];
-
-        // if there is anything to migrate
-        if (a.balance > 0) {
-
-            // this will clear investor storage
-            removeInvestor(msg.sender, a.balance);
-
-            // let migration target to own asset balance that belongs to investor
-            require(ASSET_TOKEN.approve(address(_migration), a.balance));
-            bool migrated = _migration.migrateInvestor(
-                msg.sender,
-                a.balance,
-                a.neumarksDue,
-                a.unlockDate
-            );
-            assert(migrated);
-            LogInvestorMigrated(msg.sender, a.balance, a.neumarksDue, a.unlockDate);
-        }
-    }
-
-    function setController(ITokenOffering controller)
-        public
-        only(ROLE_LOCKED_ACCOUNT_ADMIN)
-        onlyStates(LockState.Uncontrolled, LockState.AcceptingLocks)
-    {
-        // do not let change controller that didn't yet finished
-        if (address(_controller) != 0) {
-            require(_controller.isFinalized());
-        }
         _controller = controller;
         changeState(LockState.AcceptingLocks);
     }
@@ -405,6 +349,51 @@ contract LockedAccount is
         returns (address)
     {
         return _penaltyDisbursalAddress;
+    }
+
+    //
+    // Overrides migration source
+    //
+
+    /// enables migration to new LockedAccount instance
+    /// it can be set only once to prevent setting temporary migrations that let
+    /// just one investor out
+    /// may be set in AcceptingLocks state (in unlikely event that controller
+    /// fails we let investors out)
+    /// and AcceptingUnlocks - which is normal operational mode
+    function enableMigration(IMigrationTarget migration)
+        public
+        onlyStates(LockState.AcceptingLocks, LockState.AcceptingUnlocks)
+    {
+        // will enforce other access controls
+        MigrationSource.enableMigration(migration);
+    }
+
+    /// migrates single investor
+    function migrate()
+        public
+        onlyMigrationEnabled()
+    {
+        // migrates
+        Account memory a = _accounts[msg.sender];
+
+        // if there is anything to migrate
+        if (a.balance > 0) {
+
+            // this will clear investor storage
+            removeInvestor(msg.sender, a.balance);
+
+            // let migration target to own asset balance that belongs to investor
+            require(ASSET_TOKEN.approve(address(_migration), a.balance));
+            bool migrated = LockedAccountMigration(_migration).migrateInvestor(
+                msg.sender,
+                a.balance,
+                a.neumarksDue,
+                a.unlockDate
+            );
+            assert(migrated);
+            LogInvestorMigrated(msg.sender, a.balance, a.neumarksDue, a.unlockDate);
+        }
     }
 
     //
