@@ -34,6 +34,8 @@ contract StandardToken is IERC20Token, BasicToken {
         public
         returns (bool)
     {
+        require(to != address(0));
+
         var allowance = _allowed[from][msg.sender];
 
         // Check is not needed because sub(_allowance, _value) will already throw if this condition is not met
