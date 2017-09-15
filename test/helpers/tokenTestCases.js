@@ -44,8 +44,10 @@ export function basicTokenTests(token, fromAddr, toAddr, initialBalance) {
   });
 
   it("should throw an error when trying to transfer more than balance", async () => {
+    const balance = await token().balanceOf.call(fromAddr);
+    expect(balance).to.be.bignumber.eq(initialBalance);
     await expect(
-      token().transfer(toAddr, initialBalance + 1, { from: fromAddr })
+      token().transfer(toAddr, initialBalance.add(1), { from: fromAddr })
     ).to.be.rejectedWith(EvmError);
   });
 
@@ -80,7 +82,7 @@ export function standardTokenTests(
   });
 
   it("should allow approval higher than balance", async () => {
-    const amount = 2 * initialBalance;
+    const amount = initialBalance.mul(2);
     const tx = await token().approve(toAddr, amount, { from: fromAddr });
     expectApproveEvent(tx, fromAddr, toAddr, amount);
     const allowance = await token().allowance.call(fromAddr, toAddr);
