@@ -213,7 +213,7 @@ contract Commitment is
         ETHER_TOKEN.transferFrom(msg.sender, this, commitedWei);
 
         // Turn msg.value into EtherToken (if any)
-        commitedWei += msg.value;
+        commitedWei = add(commitedWei, msg.value);
         ETHER_TOKEN.deposit.value(msg.value)();
 
         // Move to private function to keep stack low
@@ -244,17 +244,17 @@ contract Commitment is
                 ticketEur,
                 ticket.amount
             );
-            ticket.amount -= ticketEur;
-            ticket.amountEur -= ticketEur;
-            ticket.rewardNmk -= ticketNmk;
-            _whitelistEuroNmk -= ticketNmk;
-            remainingEur -= ticketEur;
-            totalNmk += ticketNmk;
+            ticket.amount = sub(ticket.amount, ticketEur);
+            ticket.amountEur = sub(ticket.amountEur, ticketEur);
+            ticket.rewardNmk = sub(ticket.rewardNmk, ticketNmk);
+            _whitelistEuroNmk = sub(_whitelistEuroNmk, ticketNmk);
+            remainingEur = sub(remainingEur, ticketEur);
+            totalNmk = add(totalNmk, ticketNmk);
         }
 
         // Curve
         if (whitelisted || state() == State.Public) {
-            totalNmk += NEUMARK.issueForEuro(remainingEur);
+            totalNmk = add(totalNmk, NEUMARK.issueForEuro(remainingEur));
             remainingEur = 0;
         }
 
@@ -267,7 +267,7 @@ contract Commitment is
         // Split the Neumarks
         uint256 platformNmk = divRound(totalNmk, PLATFORM_SHARE);
         assert(platformNmk <= totalNmk);
-        uint256 investorNmk = totalNmk - platformNmk;
+        uint256 investorNmk = sub(totalNmk, platformNmk);
 
         // Issue Neumarks and distribute
         NEUMARK.transfer(msg.sender, investorNmk);
@@ -380,9 +380,9 @@ contract Commitment is
 
         // Add to totals
         if (isEther) {
-            _whitelistEtherNmk += rewardNmk;
+            _whitelistEtherNmk = add(_whitelistEtherNmk, rewardNmk);
         } else {
-            _whitelistEuroNmk += rewardNmk;
+            _whitelistEuroNmk = add(_whitelistEuroNmk, rewardNmk);
         }
     }
 
@@ -409,18 +409,18 @@ contract Commitment is
                 ticketEth,
                 ticket.amount
             );
-            ticket.amount -= ticketEth;
-            ticket.amountEur -= ticketEur;
-            ticket.rewardNmk -= ticketNmk;
-            _whitelistEtherNmk -= ticketNmk;
-            remaining -= ticketEth;
-            totalNmk += ticketNmk;
+            ticket.amount = sub(ticket.amount, ticketEth);
+            ticket.amountEur = sub(ticket.amountEur, ticketEur);
+            ticket.rewardNmk = sub(ticket.rewardNmk, ticketNmk);
+            _whitelistEtherNmk = sub(_whitelistEtherNmk, ticketNmk);
+            remaining = sub(remaining, ticketEth);
+            totalNmk = add(totalNmk, ticketNmk);
         }
 
         // Curve part
         if (whitelisted || state() == State.Public) {
             uint256 remainingEur = convertToEur(remaining);
-            totalNmk += NEUMARK.issueForEuro(remainingEur);
+            totalNmk = add(totalNmk, NEUMARK.issueForEuro(remainingEur));
             remaining = 0;
         }
 
@@ -433,7 +433,7 @@ contract Commitment is
         // Split the Neumarks
         uint256 platformNmk = divRound(totalNmk, PLATFORM_SHARE);
         assert(platformNmk <= totalNmk);
-        uint256 investorNmk = totalNmk - platformNmk;
+        uint256 investorNmk = sub(totalNmk, platformNmk);
 
         // Issue Neumarks and distribute
         NEUMARK.transfer(msg.sender, investorNmk);
