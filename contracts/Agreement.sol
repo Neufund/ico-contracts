@@ -51,7 +51,7 @@ contract Agreement is
     ////////////////////////
 
     SignedAgreement[] private _amendments;
-    mapping(address => bool) _signatories;
+    mapping(address => bool) private _signatories;
 
     ////////////////////////
     // Events
@@ -73,8 +73,8 @@ contract Agreement is
     /// @notice logs that agreement was accepted by platform user
     /// @dev intended to be added to functions that if used make 'accepter' origin to enter legally binding agreement
     modifier acceptAgreement(address accepter) {
-        require(_amendments.length > 0);
         if(!_signatories[accepter]) {
+            require(_amendments.length > 0);
             _signatories[accepter] = true;
             LogAgreementAccepted(accepter);
         }
