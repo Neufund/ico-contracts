@@ -5,13 +5,11 @@ import './Math.sol';
 import './Reclaimable.sol';
 import './Standards/IERC677Token.sol';
 import './Standards/IERC677Callback.sol';
-import './Standards/ITokenWithDeposit.sol';
 import './SnapshotToken/Helpers/TokenMetadata.sol';
 import './Zeppelin/StandardToken.sol';
 
 
 contract EtherToken is
-    ITokenWithDeposit,
     IERC677Token,
     AccessControlled,
     StandardToken,
@@ -27,6 +25,20 @@ contract EtherToken is
     string private constant SYMBOL = "ETH-T";
 
     uint8 private constant DECIMALS = 18;
+
+    ////////////////////////
+    // Events
+    ////////////////////////
+
+    event LogDeposit(
+        address indexed to,
+        uint256 amount
+    );
+
+    event LogWithdrawal(
+        address indexed to,
+        uint256 amount
+    );
 
     ////////////////////////
     // Constructor
@@ -45,17 +57,14 @@ contract EtherToken is
     ////////////////////////
 
     /// deposit 'amount' of Ether to account 'to'
-    function deposit(address to, uint256 amount)
+    function deposit()
         payable
         public
-        returns (bool)
     {
-        // must have as much ether as declared
-        require(msg.value == amount);
-        _balances[to] = add(_balances[to], amount);
-        _totalSupply = add(_totalSupply, amount);
-        LogDeposit(to, amount);
-        return true;
+        require(msg.value > 0);
+        _balances[msg.sender] = add(_balances[msg.sender], msg.value);
+        _totalSupply = add(_totalSupply, msg.value);
+        LogDeposit(msg.sender, msg.value);
     }
 
     /// withdraws and sends 'amount' of ether to msg.sender
@@ -63,8 +72,8 @@ contract EtherToken is
         public
     {
         require(_balances[msg.sender] >= amount);
-        _balances[msg.sender] -= amount;
-        _totalSupply -= amount;
+        _balances[msg.sender] = sub(_balances[msg.sender], amount);
+        _totalSupply = sub(_totalSupply, amount);
         msg.sender.transfer(amount);
         LogWithdrawal(msg.sender, amount);
     }
