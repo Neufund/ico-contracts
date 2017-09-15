@@ -3,12 +3,23 @@ pragma solidity 0.4.15;
 import './StateMachine.sol';
 
 
-/// @notice Prevents a transaction from being executed twice.
+//  ------ time ----->
+//  +--------+-----------+-------+----------------+----------+
+//  |        |           |       | Public         |          |
+//  | Before | Whitelist | Pause |     +----------| Finished |
+//  |        |           |       |     | Rollback |          |
+//  +--------+-----------+-------+-----+----------+----------+
+//           | EUR                     |
+//           +-----------+-------+-----+----------+
+//           | ETH       |       | ETH            |
+//           +-----------+       +----------------+
 contract TimedStateMachine is StateMachine {
 
     ////////////////////////
     // Constants
     ////////////////////////
+
+    int256 internal constant MIN_BEFORE_DURATION = 1 days;
 
     int256 internal constant WHITELIST_DURATION = 5 days;
 
@@ -18,13 +29,9 @@ contract TimedStateMachine is StateMachine {
 
     int256 internal constant ROLLBACK_DURATION = 7 days;
 
-    //  +------------+-----------+-------+-------------------------+----------+
-    //  | ... before | whitelist | pause |  public ico             | finished |
-    //  |            |           |       |              +----------|          |
-    //  |            |           |       |              | rollback |          |
-    //  +------------+-----------+-------+--------------+----------+----------+
-
-    // Starting times are relative to WHITELIST_START
+    //
+    // Starting time relative to WHITELIST_START
+    //
 
     int256 internal constant PAUSE_START = WHITELIST_DURATION;
 
@@ -38,15 +45,17 @@ contract TimedStateMachine is StateMachine {
     // Immutable state
     ////////////////////////
 
-    int256 internal constant WHITELIST_START;
+    int256 internal WHITELIST_START;
 
     ////////////////////////
     // Modifiers
     ////////////////////////
 
-    // @dev this modifier goes _before_ other state modifiers like `onlyState`.
+    // @dev This modifier needs to be applied to all external non-constant
+    //     functions.
+    // @dev This modifier goes _before_ other state modifiers like `onlyState`.
     modifier withTimedTransitions() {
-        handleTimedTransition();
+        handleTimedTransitions();
         _;
     }
 
@@ -54,7 +63,9 @@ contract TimedStateMachine is StateMachine {
     // Constructor
     ////////////////////////
 
-    function TimedStateMachine(uint256 whitelistStart) {
+    function TimedStateMachine(int256 whitelistStart) {
+        int256 beforeDuration  = whitelistStart - int256(block.timestamp);
+        require(beforeDuration >= MIN_BEFORE_DURATION);
         WHITELIST_START = whitelistStart;
     }
 
@@ -62,16 +73,16 @@ contract TimedStateMachine is StateMachine {
     // Public functions
     ////////////////////////
 
-    // @notice This function is public so that it can be called independantly.
-    function handleTimedTransition()
+    // @notice This function is public so that it can be called independently.
+    function handleTimedTransitions()
         public
     {
         // Time relative to WHITELIST_START
         int256 T = int256(block.timestamp) - WHITELIST_START;
 
         // Time induced state transitions.
-        // @dev Don't use `else if` and keep them sorted by time or multiple
-        //     transitions won't cascade properly.
+        // @dev Don't use `else if` and keep sorted by time and call `state()`
+        //     or else multiple transitions won't cascade properly.
         if (state() == State.Before && T >= 0) {
             transitionTo(State.Whitelist);
         }
@@ -92,7 +103,7 @@ contract TimedStateMachine is StateMachine {
     function startOf(State state)
         public
         constant
-        returns (uint256)
+        returns (int256)
     {
         if (state == State.Before) {
             return 0;
