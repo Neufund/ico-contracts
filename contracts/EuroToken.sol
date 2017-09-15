@@ -5,7 +5,6 @@ import './Math.sol';
 import './Reclaimable.sol';
 import './Standards/IERC677Token.sol';
 import './Standards/IERC677Callback.sol';
-import './Standards/ITokenWithDeposit.sol';
 import './SnapshotToken/Helpers/TokenMetadata.sol';
 import './Zeppelin/StandardToken.sol';
 import './MigrationSource.sol';
@@ -16,7 +15,6 @@ import './EuroTokenMigrationTarget.sol';
 /// pool of Euro. Balances of this token are intended to be migrated to final
 /// implementation that will be available later
 contract EuroToken is
-    ITokenWithDeposit,
     IERC677Token,
     AccessControlled,
     StandardToken,
@@ -47,6 +45,16 @@ contract EuroToken is
     ////////////////////////
     // Events
     ////////////////////////
+
+    event LogDeposit(
+        address indexed to,
+        uint256 amount
+    );
+
+    event LogWithdrawal(
+        address indexed to,
+        uint256 amount
+    );
 
     event LogAllowedFromAddress(
         address indexed from,
@@ -101,12 +109,9 @@ contract EuroToken is
     /// @dev which in this implementation is an off-chain responsibility of EURT_DEPOSIT_MANAGER
     function deposit(address to, uint256 amount)
         public
-        payable
         only(ROLE_EURT_DEPOSIT_MANAGER)
         returns (bool)
     {
-        // cannot receive ether
-        require(msg.value == 0);
         _balances[to] = add(_balances[to], amount);
         _totalSupply = add(_totalSupply, amount);
         setAllowedTransferTo(to, true);
@@ -121,8 +126,8 @@ contract EuroToken is
         public
     {
         require(_balances[msg.sender] >= amount);
-        _balances[msg.sender] -= amount;
-        _totalSupply -= amount;
+        _balances[msg.sender] = sub(_balances[msg.sender], amount);
+        _totalSupply = sub(_totalSupply, amount);
         LogWithdrawal(msg.sender, amount);
     }
 
@@ -195,7 +200,7 @@ contract EuroToken is
         uint256 amount = _balances[msg.sender];
         require(amount > 0);
         _balances[msg.sender] = 0;
-        _totalSupply -= amount;
+        _totalSupply = sub(_totalSupply, amount);
         // migrate to
         bool success = EuroTokenMigrationTarget(_migration).migrateOwner(msg.sender, amount);
         require(success);

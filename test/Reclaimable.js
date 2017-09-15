@@ -20,7 +20,7 @@ contract("Reclaimable", ([deployer, reclaimer, other]) => {
     const accessPolicy = await createAccessPolicy([
       { subject: reclaimer, role: roles.reclaimer }
     ]);
-    reclaimable = await TestReclaimable.new(accessPolicy);
+    reclaimable = await TestReclaimable.new(accessPolicy.address);
     snapshot = await saveBlockchain();
   });
 

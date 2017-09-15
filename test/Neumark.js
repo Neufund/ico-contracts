@@ -9,11 +9,11 @@ const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const Neumark = artifacts.require("./Neumark.sol");
 
 const BigNumber = web3.BigNumber;
+const AGREEMENT = "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT";
 const EUR_DECIMALS = new BigNumber(10).toPower(18);
 const NMK_DECIMALS = new BigNumber(10).toPower(18);
 
 contract("Neumark", accounts => {
-  const agreementUri = "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT";
   let snapshot;
   let rbac;
   let forkArbiter;
@@ -29,9 +29,9 @@ contract("Neumark", accounts => {
       { subject: accounts[1], role: roles.neumarkBurner },
       { subject: accounts[0], role: roles.platformOperatorRepresentative }
     ]);
-    forkArbiter = await EthereumForkArbiter.new(rbac);
-    neumark = await Neumark.new(rbac, forkArbiter.address);
-    await neumark.amendAgreement(agreementUri);
+    forkArbiter = await EthereumForkArbiter.new(rbac.address);
+    neumark = await Neumark.new(rbac.address, forkArbiter.address);
+    await neumark.amendAgreement(AGREEMENT);
     snapshot = await saveBlockchain();
   });
 
@@ -48,7 +48,7 @@ contract("Neumark", accounts => {
     const actualAgreement = await neumark.currentAgreement.call();
     const actualForkArbiter = await neumark.ethereumForkArbiter.call();
 
-    expect(actualAgreement[2]).to.equal(agreementUri);
+    expect(actualAgreement[2]).to.equal(AGREEMENT);
     expect(actualForkArbiter).to.equal(forkArbiter.address);
   });
 

@@ -5,18 +5,22 @@ const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const Neumark = artifacts.require("Neumark");
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
-const PublicCommitment = artifacts.require("PublicCommitment");
+const EuroToken = artifacts.require("EuroToken");
+const Commitment = artifacts.require("Commitment");
 
 // Needs to match contracts/AccessControl/RoleBasedAccessControl.sol:TriState
 const TriState = { Unset: 0, Allow: 1, Deny: 2 };
 const EVERYONE = "0x0";
+const GLOBAL = "0x0";
+const Q18 = web3.toBigNumber("10").pow(18);
 
-const months = 30 * 24 * 60 * 60;
-const ether = Wei => Wei * 10 ** 18;
-
-/* const minCap = new web3.BigNumber(web3.toWei(1, 'ether'));
-const maxCap = new web3.BigNumber(web3.toWei(30, 'ether'));
-const startDate = Date.now.getTime() / 1000; */
+const now = Date.now() / 1000;
+const LOCK_DURATION = 18 * 30 * 24 * 60 * 60;
+const START_DATE = now + 5 * 24 * 60 * 60;
+const PENALTY_FRACTION = web3.toBigNumber("0.1").mul(Q18);
+const CAP_EUR = web3.toBigNumber("200000000").mul(Q18);
+const MIN_TICKET_EUR = web3.toBigNumber("300").mul(Q18);
+const ETH_EUR_FRACTION = web3.toBigNumber("300").mul(Q18);
 
 module.exports = function deployContracts(deployer, network, accounts) {
   deployer.then(async () => {
@@ -28,9 +32,11 @@ module.exports = function deployContracts(deployer, network, accounts) {
     console.log("AccessControl deployment...");
     await deployer.deploy(RoleBasedAccessControl);
     const accessControl = await RoleBasedAccessControl.deployed();
+
     console.log("EthereumForkArbiter deployment...");
     await deployer.deploy(EthereumForkArbiter, accessControl.address);
     const ethereumForkArbiter = await EthereumForkArbiter.deployed();
+
     console.log("Neumark deploying...");
     await deployer.deploy(
       Neumark,
@@ -38,47 +44,65 @@ module.exports = function deployContracts(deployer, network, accounts) {
       ethereumForkArbiter.address
     );
     const neumark = await Neumark.deployed();
+
     console.log("EtherToken deploying...");
     await deployer.deploy(EtherToken, accessControl.address);
     const etherToken = await EtherToken.deployed();
-    console.log("LockedAccount deploying...");
+
+    console.log("EuroToken deploying...");
+    await deployer.deploy(EuroToken, accessControl.address);
+    const euroToken = await EuroToken.deployed();
+
+    console.log("LockedAccount(EtherToken) deploying...");
     await deployer.deploy(
       LockedAccount,
       accessControl.address,
       etherToken.address,
       neumark.address,
-      18 * months,
-      Math.round(0.1 * ether(1)) // fractions are in 10**18
+      LOCK_DURATION,
+      PENALTY_FRACTION
     );
-    const lock = await LockedAccount.deployed();
-    console.log("PublicCommitment deploying...");
+    const etherLock = await LockedAccount.deployed();
+
+    console.log("LockedAccount(EuroToken) deploying...");
     await deployer.deploy(
-      PublicCommitment,
+      LockedAccount,
       accessControl.address,
-      etherToken.address,
-      lock.address,
+      euroToken.address,
       neumark.address,
-      Date.now() / 1000 + 60,
-      Date.now() / 1000 + 900,
-      ether(1),
-      ether(2000),
-      ether(1), // min ticket size
-      ether(200), // eur rate to eth
-      platformOperatorWallet
+      LOCK_DURATION,
+      PENALTY_FRACTION
     );
-    const publicCommitment = await PublicCommitment.deployed();
-    console.log("Commitment terms set");
+    const euroLock = await LockedAccount.deployed();
+
+    console.log("Commitment deploying...");
+    await deployer.deploy(
+      Commitment,
+      accessControl.address,
+      START_DATE,
+      platformOperatorWallet,
+      neumark.address,
+      etherToken.address,
+      euroToken.address,
+      etherLock.address,
+      euroLock.address,
+      CAP_EUR,
+      MIN_TICKET_EUR,
+      ETH_EUR_FRACTION
+    );
+    const commitment = await Commitment.deployed();
+
     console.log("Seting permissions");
     await accessControl.setUserRole(
-      publicCommitment.address,
+      commitment.address,
       web3.sha3("NeumarkIssuer"),
-      neumark.address,
+      GLOBAL,
       TriState.Allow
     );
     await accessControl.setUserRole(
       EVERYONE,
       web3.sha3("NeumarkBurner"),
-      neumark.address,
+      GLOBAL,
       TriState.Allow
     );
     await accessControl.setUserRole(
@@ -88,7 +112,7 @@ module.exports = function deployContracts(deployer, network, accounts) {
       TriState.Allow
     );
     await accessControl.setUserRole(
-      publicCommitment.address,
+      commitment.address,
       web3.sha3("TransfersAdmin"),
       neumark.address,
       TriState.Allow
@@ -96,16 +120,19 @@ module.exports = function deployContracts(deployer, network, accounts) {
     await accessControl.setUserRole(
       lockedAccountAdmin,
       web3.sha3("LockedAccountAdmin"),
-      lock.address,
+      GLOBAL,
       TriState.Allow
     );
-    await lock.setController(publicCommitment.address, {
+    await etherLock.setController(commitment.address, {
+      from: lockedAccountAdmin
+    });
+    await euroLock.setController(commitment.address, {
       from: lockedAccountAdmin
     });
     await accessControl.setUserRole(
       whitelistAdmin,
       web3.sha3("WhitelistAdmin"),
-      PublicCommitment.address,
+      commitment.address,
       TriState.Allow
     );
     await accessControl.setUserRole(
@@ -124,7 +151,7 @@ module.exports = function deployContracts(deployer, network, accounts) {
     console.log("Contracts deployed!");
 
     console.log("----------------------------------");
-    console.log(`ICO contract: ${publicCommitment.address}`);
+    console.log(`ICO contract: ${commitment.address}`);
     console.log("----------------------------------");
   });
 };

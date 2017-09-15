@@ -20,7 +20,7 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
     const accessPolicy = await createAccessPolicy([
       { subject: arbiter, role: roles.platformOperatorRepresentative }
     ]);
-    ethereumForkArbiter = await EthereumForkArbiter.new(accessPolicy);
+    ethereumForkArbiter = await EthereumForkArbiter.new(accessPolicy.address);
     block = await promisify(web3.eth.getBlock)("latest");
     snapshot = await saveBlockchain();
   });

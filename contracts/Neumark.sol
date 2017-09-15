@@ -85,14 +85,10 @@ contract Neumark is
         returns (uint256)
     {
         require(_totalEuroUlps + euroUlps >= _totalEuroUlps);
-        address beneficiary = msg.sender;
-        uint256 neumarkUlps = incremental(_totalEuroUlps, euroUlps);
-
-        _totalEuroUlps = _totalEuroUlps + euroUlps;
-
-        assert(mGenerateTokens(beneficiary, neumarkUlps));
-
-        LogNeumarksIssued(beneficiary, euroUlps, neumarkUlps);
+        uint256 neumarkUlps = incremental(euroUlps);
+        _totalEuroUlps += euroUlps;
+        assert(mGenerateTokens(msg.sender, neumarkUlps));
+        LogNeumarksIssued(msg.sender, euroUlps, neumarkUlps);
         return neumarkUlps;
     }
 
@@ -101,14 +97,10 @@ contract Neumark is
         only(ROLE_NEUMARK_BURNER)
         returns (uint256)
     {
-        address owner = msg.sender;
-        uint256 euroUlps = incrementalInverse(_totalEuroUlps, neumarkUlps);
-
+        uint256 euroUlps = incrementalInverse(neumarkUlps);
         _totalEuroUlps -= euroUlps;
-
-        assert(mDestroyTokens(owner, neumarkUlps));
-
-        LogNeumarksBurned(owner, euroUlps, neumarkUlps);
+        assert(mDestroyTokens(msg.sender, neumarkUlps));
+        LogNeumarksBurned(msg.sender, euroUlps, neumarkUlps);
         return euroUlps;
     }
 
@@ -143,6 +135,23 @@ contract Neumark is
         return _totalEuroUlps;
     }
 
+    function incremental(uint256 euroUlps)
+        public
+        constant
+        returns (uint256 neumarkUlps)
+    {
+        return incremental(_totalEuroUlps, euroUlps);
+    }
+
+    /// @dev The result is rounded down.
+    function incrementalInverse(uint256 neumarkUlps)
+        public
+        constant
+        returns (uint256 euroUlps)
+    {
+        return incrementalInverse(_totalEuroUlps, neumarkUlps);
+    }
+
     ////////////////////////
     // Internal functions
     ////////////////////////
@@ -160,7 +169,18 @@ contract Neumark is
         acceptAgreement(from)
         returns (bool allow)
     {
-        return _transferEnabled;
+        // When enabled, anyone can
+        if (_transferEnabled) {
+            return true;
+        }
+
+        // When disabled, require ROLE_TRANSFERER
+        return accessPolicy().allowed(
+            msg.sender,
+            ROLE_TRANSFERER,
+            this,
+            msg.sig
+        );
     }
 
     function mOnApprove(
