@@ -2,10 +2,12 @@ pragma solidity 0.4.15;
 
 import "../LockedAccount.sol";
 import "../LockedAccountMigration.sol";
-import '../Standards/IERC677Token.sol';
 
 
-contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigration {
+contract TestLockedAccountMigrationTarget is
+    LockedAccount,
+    LockedAccountMigration
+{
 
     ////////////////////////
     // Immutable state
@@ -61,6 +63,10 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
         _shouldMigrationFail = shouldFail;
     }
 
+    //
+    // Implements LockedAccountMigrationTarget
+    //
+
     function migrateInvestor(
         address investor,
         uint256 balance,
@@ -68,7 +74,7 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
         uint256 unlockDate
     )
         public
-        onlyMigrationFrom
+        onlyMigrationSource()
         returns(bool)
     {
         if (_shouldMigrationFail)
@@ -84,12 +90,17 @@ contract TestLockedAccountMigrationTarget is LockedAccount, LockedAccountMigrati
         // minimal bookkeeping
         addBalance(balance, balance);
         _totalInvestors += 1;
+        // raise mandatory event
+        InvestorMigrated(investor, balance, neumarksDue, unlockDate, assetToken());
 
         return true;
     }
 
-    /// implement test migration interface
-    function getMigrationFrom()
+    //
+    // Implements IMigrationTarget
+    //
+
+    function currentMigrationSource()
         public
         constant
         returns (address)
