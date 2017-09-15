@@ -2,28 +2,16 @@ pragma solidity 0.4.15;
 
 import './MStateMachine.sol';
 
-
-/// @notice Prevents a transaction from being executed twice.
+//
+// Before --> Whitelist --> Pause --> Public --> Rollback --> Finished
+//
 contract StateMachine is MStateMachine {
-
-    ////////////////////////
-    // Types
-    ////////////////////////
-
-    enum State {
-        Before,
-        Whitelist,
-        Pause,
-        Public,
-        Rollback,
-        Finished
-    }
 
     ////////////////////////
     // Mutable state
     ////////////////////////
 
-    State _state;
+    State internal _state;
 
     ////////////////////////
     // Events
@@ -48,7 +36,7 @@ contract StateMachine is MStateMachine {
         _;
     }
 
-    modifier onlyStates(State state0, State state1, State state2) {
+    modifier onlyStates3(State state0, State state1, State state2) {
         require(_state == state0 || _state == state1 || _state == state2);
         _;
     }
@@ -59,9 +47,9 @@ contract StateMachine is MStateMachine {
         _;
     }
 
-    modifier transitionsTo(State nextState) {
+    modifier transitionsTo(State newState) {
         _;
-        transitionTo(nextState);
+        transitionTo(newState);
     }
 
     ////////////////////////
@@ -69,7 +57,7 @@ contract StateMachine is MStateMachine {
     ////////////////////////
 
     function StateMachine() {
-        _state = Before;
+        _state = State.Before;
     }
 
     ////////////////////////
@@ -90,15 +78,47 @@ contract StateMachine is MStateMachine {
 
     function transitionTo(State newState)
         internal
-        returns (State)
+        returns (State oldState)
     {
-        State oldState = _state;
+        oldState = _state;
         if (oldState == newState) {
             return;
         }
-        mOnTransition(oldState, newState);
+        require(validTransition(oldState, newState));
+        mBeforeTransition(oldState, newState);
         _state = newState;
         LogStateTransition(oldState, newState);
+
+        // TODO: What if mOnAfterTransition wants to transition
+        // further?
+        mAfterTransition(oldState, newState);
         return oldState;
+    }
+
+    function validTransition(State oldState, State newState)
+        private
+        constant
+        returns (bool valid)
+    {
+        return
+            (oldState == State.Before    && newState == State.Whitelist) ||
+            (oldState == State.Whitelist && newState == State.Pause    ) ||
+            (oldState == State.Pause     && newState == State.Public   ) ||
+            (oldState == State.Public    && newState == State.Rollback ) ||
+            (oldState == State.Rollback  && newState == State.Finished );
+    }
+
+    //
+    // MStateMachine default implementations
+    //
+
+    function mBeforeTransition(State /* oldState */, State /* newState */)
+        internal
+    {
+    }
+
+    function mAfterTransition(State /* oldState */, State /* newState */)
+        internal
+    {
     }
 }
