@@ -43,6 +43,7 @@ contract(
     [
       deployer, // eslint-disable-line no-unused-vars
       platform,
+      representative,
       whitelistAdmin,
       lockedAccountAdmin,
       eurtDepositManager,
@@ -64,13 +65,11 @@ contract(
       const startDate = now + BEFORE_DURATION;
       rbac = await createAccessPolicy();
       forkArbiter = await EthereumForkArbiter.new(rbac.address);
-      neumark = await Neumark.new(rbac.address, forkArbiter.address, AGREEMENT);
+      neumark = await Neumark.new(rbac.address, forkArbiter.address);
       etherToken = await EtherToken.new(rbac.address);
       euroToken = await EuroToken.new(rbac.address);
       etherLock = await LockedAccount.new(
         rbac.address,
-        forkArbiter.address,
-        AGREEMENT,
         etherToken.address,
         neumark.address,
         LOCK_DURATION,
@@ -78,8 +77,6 @@ contract(
       );
       euroLock = await LockedAccount.new(
         rbac.address,
-        forkArbiter.address,
-        AGREEMENT,
         euroToken.address,
         neumark.address,
         LOCK_DURATION,
@@ -99,6 +96,7 @@ contract(
         ETH_EUR_FRACTION
       );
       await rbac.set([
+        { subject: representative, role: roles.platformOperatorRepresentative },
         { subject: whitelistAdmin, role: roles.whitelistAdmin },
         { subject: lockedAccountAdmin, role: roles.lockedAccountAdmin },
         { subject: eurtDepositManager, role: roles.eurtDepositManager },
@@ -107,6 +105,7 @@ contract(
         { subject: commitment.address, role: roles.transferAdmin },
         { subject: commitment.address, role: roles.transferer }
       ]);
+      await neumark.amendAgreement(AGREEMENT, { from: representative });
       await etherLock.setController(commitment.address, {
         from: lockedAccountAdmin
       });

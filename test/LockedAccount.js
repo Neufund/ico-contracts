@@ -30,13 +30,12 @@ const gasPrice = new web3.BigNumber(0x01);
 
 contract("LockedAccount", ([_, admin, investor, investor2]) => {
   let snapshot;
-  let startTimestamp;
 
   before(async () => {
     await chain.spawnLockedAccount(admin, 18, 0.1);
     // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurate
-    startTimestamp = await latestTimestamp();
     /*
+    const startTimestamp = await latestTimestamp();
     await chain.spawnPublicCommitment(
       admin,
       startTimestamp,
