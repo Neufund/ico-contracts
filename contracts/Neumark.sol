@@ -57,12 +57,11 @@ contract Neumark is
 
     function Neumark(
         IAccessPolicy accessPolicy,
-        IEthereumForkArbiter forkArbiter,
-        string agreementUrl
+        IEthereumForkArbiter forkArbiter
     )
         AccessControlled(accessPolicy)
         AccessRoles()
-        Agreement(forkArbiter, agreementUrl)
+        Agreement(accessPolicy, forkArbiter)
         SnapshotToken(
             TOKEN_NAME,
             TOKEN_DECIMALS,
@@ -100,7 +99,6 @@ contract Neumark is
     function burnNeumark(uint256 neumarkUlps)
         public
         only(ROLE_NEUMARK_BURNER)
-        acceptAgreement(msg.sender)
         returns (uint256)
     {
         address owner = msg.sender;
@@ -155,12 +153,11 @@ contract Neumark is
 
     function mOnTransfer(
         address from,
-        address to,
+        address, // to
         uint256 // amount
     )
         internal
         acceptAgreement(from)
-        acceptAgreement(to)
         returns (bool allow)
     {
         return _transferEnabled;

@@ -38,16 +38,10 @@ export default async function deploy(
   const accessControl = await RoleBasedAccessControl.new();
   const forkArbiter = await EthereumForkArbiter.new(accessControl.address);
   const etherToken = await EtherToken.new(accessControl.address);
-  const neumark = await Neumark.new(
-    accessControl.address,
-    forkArbiter.address,
-    "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT"
-  );
+  const neumark = await Neumark.new(accessControl.address, forkArbiter.address);
 
   const lockedAccount = await LockedAccount.new(
     accessControl.address,
-    forkArbiter.address,
-    "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT",
     etherToken.address,
     neumark.address,
     unlockDateMonths * MONTH,
@@ -74,6 +68,15 @@ export default async function deploy(
     roles.snapshotCreator,
     neumark.address,
     TriState.Allow
+  );
+  await accessControl.setUserRole(
+    EVERYONE,
+    roles.platformOperatorRepresentative,
+    neumark.address,
+    TriState.Allow
+  );
+  await neumark.amendAgreement(
+    "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT"
   );
 
   const commitment = await WhitelistedCommitment.new(

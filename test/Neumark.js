@@ -26,10 +26,12 @@ contract("Neumark", accounts => {
       { subject: accounts[1], role: roles.neumarkIssuer },
       { subject: accounts[2], role: roles.neumarkIssuer },
       { subject: accounts[0], role: roles.neumarkBurner },
-      { subject: accounts[1], role: roles.neumarkBurner }
+      { subject: accounts[1], role: roles.neumarkBurner },
+      { subject: accounts[0], role: roles.platformOperatorRepresentative }
     ]);
     forkArbiter = await EthereumForkArbiter.new(rbac);
-    neumark = await Neumark.new(rbac, forkArbiter.address, agreementUri);
+    neumark = await Neumark.new(rbac, forkArbiter.address);
+    await neumark.amendAgreement(agreementUri);
     snapshot = await saveBlockchain();
   });
 
@@ -43,10 +45,10 @@ contract("Neumark", accounts => {
   });
 
   it("should have agreement and fork arbiter", async () => {
-    const actualAgreement = await neumark.agreementUri.call();
+    const actualAgreement = await neumark.currentAgreement.call();
     const actualForkArbiter = await neumark.ethereumForkArbiter.call();
 
-    expect(actualAgreement).to.equal(agreementUri);
+    expect(actualAgreement[2]).to.equal(agreementUri);
     expect(actualForkArbiter).to.equal(forkArbiter.address);
   });
 
@@ -106,18 +108,6 @@ contract("Neumark", accounts => {
     );
   });
 
-  it("should accept agreement on issue", async () => {
-    const from = accounts[1];
-
-    const tx = await neumark.issueForEuro(EUR_DECIMALS.mul(100), { from });
-
-    const agreements = tx.logs
-      .filter(e => e.event === "LogAgreementAccepted")
-      .map(({ args: { accepter } }) => accepter);
-    expect(agreements).to.have.length(1);
-    expect(agreements).to.contain(from);
-  });
-
   it("should issue and then burn Neumarks", async () => {
     // Issue Neumarks for 1 mln Euros
     const euroUlps = EUR_DECIMALS.mul(1000000);
@@ -138,20 +128,6 @@ contract("Neumark", accounts => {
         .valueOf(),
       neumarks - toBurn
     );
-  });
-
-  it("should accept agreement on burn", async () => {
-    const from = accounts[1];
-    await neumark.issueForEuro(EUR_DECIMALS.mul(100), { from });
-    const toBurnUlps = await neumark.balanceOf.call(from);
-
-    const tx = await neumark.burnNeumark(toBurnUlps, { from: accounts[1] });
-
-    const agreements = tx.logs
-      .filter(e => e.event === "LogAgreementAccepted")
-      .map(({ args: { accepter } }) => accepter);
-    expect(agreements).to.have.length(1);
-    expect(agreements).to.contain(from);
   });
 
   it("should issue same amount in multiple issuances", async () => {
@@ -185,20 +161,61 @@ contract("Neumark", accounts => {
     expect(balance3).to.be.bignumber.equal(amount);
   });
 
-  it("should accept agreement on transfer", async () => {
+  it("should accept agreement on issue Neumarks", async () => {
     const from = accounts[1];
-    await neumark.issueForEuro(EUR_DECIMALS.mul(100), { from });
-    const amount = await neumark.balanceOf.call(accounts[1]);
-    await neumark.enableTransfer(true);
-
-    const tx = await neumark.transfer(accounts[3], amount, { from });
+    const tx = await neumark.issueForEuro(EUR_DECIMALS.mul(100), { from });
 
     const agreements = tx.logs
       .filter(e => e.event === "LogAgreementAccepted")
       .map(({ args: { accepter } }) => accepter);
-    expect(agreements).to.have.length(2);
-    expect(agreements).to.contain(accounts[1]);
-    expect(agreements).to.contain(accounts[3]);
+    expect(agreements).to.have.length(1);
+    expect(agreements).to.contain(from);
+    const isSigned = await neumark.isAgreementSignedBy.call(from);
+    expect(isSigned).to.be.true;
+  });
+
+  it("should accept agreement on transfer", async () => {
+    const issuer = accounts[0];
+    const from = accounts[2];
+    const to = accounts[3];
+    await neumark.issueForEuro(EUR_DECIMALS.mul(100), { from: issuer });
+    const amount = await neumark.balanceOf.call(issuer);
+    await neumark.enableTransfer(true);
+    // 'from' address will not be passively signed up here
+    await neumark.transfer(from, amount, { from: issuer });
+
+    // 'from' is making first transaction over Neumark, this will sign it up
+    const tx = await neumark.transfer(to, amount, { from });
+    const agreements = tx.logs
+      .filter(e => e.event === "LogAgreementAccepted")
+      .map(({ args: { accepter } }) => accepter);
+    expect(agreements).to.have.length(1);
+    expect(agreements).to.contain(from);
+    const isFromSigned = await neumark.isAgreementSignedBy.call(from);
+    expect(isFromSigned).to.be.true;
+    // 'to' should not be passively signed
+    const isToSigned = await neumark.isAgreementSignedBy.call(to);
+    expect(isToSigned).to.be.false;
+  });
+
+  it("should accept agreement on approve", async () => {
+    const issuer = accounts[0];
+    const to = accounts[3];
+    await neumark.issueForEuro(EUR_DECIMALS.mul(100), { from: issuer });
+    const amount = await neumark.balanceOf.call(issuer);
+    await neumark.enableTransfer(true);
+    // 'to' address will not be passively signed up here
+    await neumark.transfer(to, amount, { from: issuer });
+
+    // 'from' is making first transaction over Neumark, this will sign it up
+    const tx = await neumark.approve(accounts[1], amount, { from: to });
+    const agreements = tx.logs
+      .filter(e => e.event === "LogAgreementAccepted")
+      .map(({ args: { accepter } }) => accepter);
+    expect(agreements).to.have.length(1);
+    expect(agreements).to.contain(to);
+    const isToSigned = await neumark.isAgreementSignedBy.call(to);
+    expect(isToSigned).to.be.true;
   });
 
   it("should transfer Neumarks only when enabled", async () => {

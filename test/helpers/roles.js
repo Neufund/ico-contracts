@@ -1,7 +1,7 @@
 export default {
   accessController: web3.sha3("AccessController"),
   example: web3.sha3("Example"),
-  forkArbiter: web3.sha3("ForkArbiter"),
+  platformOperatorRepresentative: web3.sha3("PlatformOperatorRepresentative"),
   lockedAccountAdmin: web3.sha3("LockedAccountAdmin"),
   neumarkBurner: web3.sha3("NeumarkBurner"),
   neumarkIssuer: web3.sha3("NeumarkIssuer"),

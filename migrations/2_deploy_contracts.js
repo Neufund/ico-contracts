@@ -23,6 +23,7 @@ module.exports = function deployContracts(deployer, network, accounts) {
     const lockedAccountAdmin = accounts[1];
     const whitelistAdmin = accounts[2];
     const platformOperatorWallet = accounts[3];
+    const platformOperatorRepresentative = accounts[4];
 
     console.log("AccessControl deployment...");
     await deployer.deploy(RoleBasedAccessControl);
@@ -34,8 +35,7 @@ module.exports = function deployContracts(deployer, network, accounts) {
     await deployer.deploy(
       Neumark,
       accessControl.address,
-      ethereumForkArbiter.address,
-      "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT"
+      ethereumForkArbiter.address
     );
     const neumark = await Neumark.deployed();
     console.log("EtherToken deploying...");
@@ -45,8 +45,6 @@ module.exports = function deployContracts(deployer, network, accounts) {
     await deployer.deploy(
       LockedAccount,
       accessControl.address,
-      ethereumForkArbiter.address,
-      "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT",
       etherToken.address,
       neumark.address,
       18 * months,
@@ -109,6 +107,19 @@ module.exports = function deployContracts(deployer, network, accounts) {
       web3.sha3("WhitelistAdmin"),
       PublicCommitment.address,
       TriState.Allow
+    );
+    await accessControl.setUserRole(
+      platformOperatorRepresentative,
+      web3.sha3("PlatformOperatorRepresentative"),
+      neumark.address,
+      TriState.Allow
+    );
+    console.log("Amending agreements");
+    await neumark.amendAgreement(
+      "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT",
+      {
+        from: platformOperatorRepresentative
+      }
     );
     console.log("Contracts deployed!");
 

@@ -2,7 +2,6 @@ pragma solidity 0.4.15;
 
 import './AccessControl/AccessControlled.sol';
 import './AccessRoles.sol';
-import './Agreement.sol';
 import './Commitment/ITokenOffering.sol';
 import './EtherToken.sol';
 import './IsContract.sol';
@@ -18,7 +17,6 @@ import './TimeSource.sol';
 contract LockedAccount is
     AccessControlled,
     AccessRoles,
-    Agreement,
     TimeSource,
     ReturnsErrors,
     Math,
@@ -150,15 +148,12 @@ contract LockedAccount is
     // LockedAccount is allowed to make deposits
     function LockedAccount(
         IAccessPolicy policy,
-        IEthereumForkArbiter forkArbiter,
-        string agreementUri,
         IERC677Token assetToken,
         Neumark neumark,
         uint256 lockPeriod,
         uint256 penaltyFraction
     )
         AccessControlled(policy)
-        Agreement(forkArbiter, agreementUri)
         Reclaimable()
     {
         ASSET_TOKEN = assetToken;
@@ -178,7 +173,6 @@ contract LockedAccount is
         public
         onlyState(LockState.AcceptingLocks)
         onlyController()
-        acceptAgreement(investor)
     {
         require(amount > 0);
 
