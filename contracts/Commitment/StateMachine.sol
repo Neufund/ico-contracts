@@ -2,6 +2,7 @@ pragma solidity 0.4.15;
 
 import './MStateMachine.sol';
 
+
 //
 // Before --> Whitelist --> Public --> Finished
 //
@@ -100,10 +101,11 @@ contract StateMachine is MStateMachine {
         constant
         returns (bool valid)
     {
-        return
-            (oldState == State.Before    && newState == State.Whitelist) ||
-            (oldState == State.Whitelist && newState == State.Public   ) ||
-            (oldState == State.Public    && newState == State.Finished );
+        return (
+            oldState == State.Before && newState == State.Whitelist) || (
+            oldState == State.Whitelist && newState == State.Public) || (
+            oldState == State.Public && newState == State.Finished
+        );
     }
 
     //

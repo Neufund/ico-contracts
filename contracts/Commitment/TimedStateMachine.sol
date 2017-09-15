@@ -50,7 +50,7 @@ contract TimedStateMachine is StateMachine {
     ////////////////////////
 
     function TimedStateMachine(int256 whitelistStart) {
-        int256 beforeDuration  = whitelistStart - int256(block.timestamp);
+        int256 beforeDuration = whitelistStart - int256(block.timestamp);
         require(beforeDuration >= MIN_BEFORE_DURATION);
         WHITELIST_START = whitelistStart;
     }
@@ -64,18 +64,18 @@ contract TimedStateMachine is StateMachine {
         public
     {
         // Time relative to WHITELIST_START
-        int256 T = int256(block.timestamp) - WHITELIST_START;
+        int256 t = int256(block.timestamp) - WHITELIST_START;
 
         // Time induced state transitions.
         // @dev Don't use `else if` and keep sorted by time and call `state()`
         //     or else multiple transitions won't cascade properly.
-        if (state() == State.Before && T >= 0) {
+        if (state() == State.Before && t >= 0) {
             transitionTo(State.Whitelist);
         }
-        if (state() == State.Whitelist && T >= PUBLIC_START) {
+        if (state() == State.Whitelist && t >= PUBLIC_START) {
             transitionTo(State.Public);
         }
-        if (state() == State.Public && T >= PUBLIC_END) {
+        if (state() == State.Public && t >= PUBLIC_END) {
             transitionTo(State.Finished);
         }
     }

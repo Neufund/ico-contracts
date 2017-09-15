@@ -242,7 +242,8 @@ contract Commitment is
             uint256 ticketNmk = proportion(
                 ticket.rewardNmk,
                 ticketEur,
-                ticket.amount);
+                ticket.amount
+            );
             ticket.amount -= ticketEur;
             ticket.amountEur -= ticketEur;
             ticket.rewardNmk -= ticketNmk;
@@ -401,11 +402,13 @@ contract Commitment is
             uint256 ticketNmk = proportion(
                 ticket.rewardNmk,
                 ticketEth,
-                ticket.amount);
+                ticket.amount
+            );
             uint256 ticketEur = proportion(
                 ticket.amountEur,
                 ticketEth,
-                ticket.amount);
+                ticket.amount
+            );
             ticket.amount -= ticketEth;
             ticket.amountEur -= ticketEur;
             ticket.rewardNmk -= ticketNmk;

@@ -152,7 +152,6 @@ contract Neumark is
         return incrementalInverse(_totalEuroUlps, neumarkUlps);
     }
 
-
     ////////////////////////
     // Internal functions
     ////////////////////////
