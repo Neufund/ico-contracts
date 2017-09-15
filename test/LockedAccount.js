@@ -4,7 +4,6 @@ import error, { Status } from "./helpers/error";
 import { eventValue } from "./helpers/events";
 import * as chain from "./helpers/spawnContracts";
 import increaseTime, { setTimeTo } from "./helpers/increaseTime";
-import { latestTimestamp } from "./helpers/latestTime";
 import EvmError from "./helpers/EVMThrow";
 import { TriState } from "./helpers/triState";
 import forceEther from "./helpers/forceEther";
@@ -17,12 +16,15 @@ import {
 
 const TestFeeDistributionPool = artifacts.require("TestFeeDistributionPool");
 const TestNullContract = artifacts.require("TestNullContract");
+const TestLockedAccountController = artifacts.require(
+  "TestLockedAccountController"
+);
 
 const LockState = {
-  Uncontrolled: 1,
-  AcceptingLocks: 2,
-  AcceptingUnlocks: 3,
-  ReleaseAll: 4
+  Uncontrolled: 0,
+  AcceptingLocks: 1,
+  AcceptingUnlocks: 2,
+  ReleaseAll: 3
 };
 
 // this low gas price is forced by code coverage
@@ -30,22 +32,16 @@ const gasPrice = new web3.BigNumber(0x01);
 
 contract("LockedAccount", ([_, admin, investor, investor2]) => {
   let snapshot;
+  let controller;
 
   before(async () => {
     await chain.spawnLockedAccount(admin, 18, 0.1);
-    // achtung! latestTimestamp() must be called after a block is mined, before that time is not accurate
-    /*
-    const startTimestamp = await latestTimestamp();
-    await chain.spawnPublicCommitment(
-      admin,
-      startTimestamp,
-      chain.months,
-      chain.ether(1),
-      chain.ether(2000),
-      chain.ether(1),
-      300.1219871
+    controller = await TestLockedAccountController.new(
+      chain.lockedAccount.address
     );
-    */
+    await chain.lockedAccount.setController(controller.address, {
+      from: admin
+    });
     snapshot = await saveBlockchain();
   });
 
@@ -71,6 +67,11 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
     expect(event.args.neumarks).to.be.bignumber.equal(neumarks);
   }
 
+  async function depositForController(ticket, from) {
+    await chain.etherToken.deposit({ from, value: ticket });
+    await chain.etherToken.transfer(controller.address, ticket, { from });
+  }
+
   async function lockEther(investorAddress, ticket) {
     // initial state of the lock
     const initialLockedAmount = await chain.lockedAccount.totalLockedAmount();
@@ -92,12 +93,14 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
       "neumarks must be allocated"
     ).to.be.bignumber.equal(neumarks.add(initialNeumarksBalance));
     // only controller can lock
-    tx = await chain.commitment.investFor(investorAddress, ticket, neumarks, {
-      value: ticket,
+    await depositForController(ticket, investorAddress);
+    tx = await controller.investFor(investorAddress, ticket, neumarks, {
       from: investorAddress
     });
     await expectLockEvent(tx, investorAddress, ticket, neumarks);
-    const timebase = await latestTimestamp(); // timestamp of block _investFor was mined
+    // timestamp of block _investFor was mined
+    const txBlock = await promisify(web3.eth.getBlock)(tx.receipt.blockNumber);
+    const timebase = txBlock.timestamp;
     const investorBalance = await chain.lockedAccount.balanceOf(
       investorAddress
     );
@@ -109,13 +112,13 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
       investorBalance[1],
       "investor neumarks due should equal neumarks"
     ).to.be.bignumber.equal(neumarks.add(initialLockedBalance[1]));
-    // verify longstop date independently, value is convertable to int so do it
-    let unlockDate = timebase + 18 * 30 * chain.days;
-    if (parseInt(initialLockedBalance[2], 10) > 0) {
+    // verify longstop date independently
+    let unlockDate = new web3.BigNumber(timebase + 18 * 30 * chain.days);
+    if (initialLockedBalance[2] > 0) {
       // earliest date is preserved for repeated investor address
-      unlockDate = parseInt(initialLockedBalance[2], 10);
+      unlockDate = initialLockedBalance[2];
     }
-    expect(parseInt(investorBalance[2], 10), "18 months in future").to.equal(
+    expect(investorBalance[2], "18 months in future").to.be.bignumber.eq(
       unlockDate
     );
     expect(
@@ -126,25 +129,25 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
       await chain.etherToken.totalSupply(),
       "lock should own locked amount"
     ).to.be.bignumber.equal(initialAssetSupply.add(ticket));
-    const newInvestors = parseInt(initialLockedBalance[2], 10) > 0 ? 0 : 1;
+    const hasNewInvestor = initialLockedBalance[2] > 0 ? 0 : 1;
     expect(
       await chain.lockedAccount.totalInvestors(),
       "total number of investors"
-    ).to.be.bignumber.equal(initialNumberOfInvestors.add(newInvestors));
+    ).to.be.bignumber.equal(initialNumberOfInvestors.add(hasNewInvestor));
 
     return neumarks;
   }
 
-  it.skip("should lock ether", async () => {
+  it("should lock ether", async () => {
     await lockEther(investor, chain.ether(1));
   });
 
-  it.skip("should lock ether two different investors", async () => {
+  it("should lock ether two different investors", async () => {
     await lockEther(investor, chain.ether(1));
     await lockEther(investor2, chain.ether(0.5));
   });
 
-  it.skip("should lock ether same investor", async () => {
+  it("should lock ether same investor", async () => {
     await lockEther(investor, chain.ether(1));
     await lockEther(investor, chain.ether(0.5));
   });
@@ -297,7 +300,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
     // move time forward within longstop date
     await increaseTime(moment.duration(chain.days, "s"));
     // controller says yes
-    await chain.commitment.succ();
+    await controller.succ();
     // must enable token transfers
     await chain.neumark.enableTransfer(true);
   }
@@ -315,7 +318,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
     );
   }
 
-  it.skip("should unlock with approval on contract disbursal", async () => {
+  it("should unlock with approval on contract disbursal", async () => {
     const ticket = chain.ether(1);
     const neumarks = await lockEther(investor, ticket);
     await enableUnlocks();
@@ -333,7 +336,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
     await withdrawAsset(investor, ticket.sub(penalty));
   });
 
-  it.skip("should unlock two investors both with penalty", async () => {
+  it("should unlock two investors both with penalty", async () => {
     const ticket1 = chain.ether(1);
     const ticket2 = chain.ether(0.6210939884);
     const neumarks1 = await lockEther(investor, ticket1);
@@ -360,152 +363,127 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
     await expectUnlockEvent(unlockTx, investor2, ticket2.sub(penalty2));
   });
 
-  it.skip(
-    "should reject unlock with approval on contract disbursal that has receiveApproval not implemented",
-    async () => {
-      const ticket = chain.ether(1);
-      const neumarks = await lockEther(investor, ticket);
-      await enableUnlocks();
-      // change disbursal pool to contract without receiveApproval
-      const noCallbackContract = await TestNullContract.new();
-      await chain.lockedAccount.setPenaltyDisbursal(
-        noCallbackContract.address,
-        {
-          from: admin
-        }
-      );
-      const tx = await chain.neumark.approve(
-        chain.lockedAccount.address,
-        neumarks,
-        {
-          from: investor
-        }
-      );
-      expect(eventValue(tx, "Approval", "amount")).to.be.bignumber.equal(
-        neumarks
-      );
-      await expect(
-        chain.lockedAccount.unlock({ from: investor })
-      ).to.be.rejectedWith(EvmError);
-    }
-  );
+  it("should reject unlock with approval on contract disbursal that has receiveApproval not implemented", async () => {
+    const ticket = chain.ether(1);
+    const neumarks = await lockEther(investor, ticket);
+    await enableUnlocks();
+    // change disbursal pool to contract without receiveApproval
+    const noCallbackContract = await TestNullContract.new();
+    await chain.lockedAccount.setPenaltyDisbursal(noCallbackContract.address, {
+      from: admin
+    });
+    const tx = await chain.neumark.approve(
+      chain.lockedAccount.address,
+      neumarks,
+      {
+        from: investor
+      }
+    );
+    expect(eventValue(tx, "Approval", "amount")).to.be.bignumber.equal(
+      neumarks
+    );
+    await expect(
+      chain.lockedAccount.unlock({ from: investor })
+    ).to.be.rejectedWith(EvmError);
+  });
 
-  it.skip(
-    "should unlock with approval on simple address disbursal",
-    async () => {
-      const ticket = chain.ether(1);
-      const neumarks = await lockEther(investor, ticket);
-      await enableUnlocks();
-      const unlockTx = await unlockEtherWithApprove(investor, ticket, neumarks);
-      const penalty = await calculateUnlockPenalty(ticket);
-      await assertCorrectUnlock(unlockTx, investor, ticket, penalty);
-      await expectPenaltyEvent(unlockTx, investor, penalty);
-      await expectUnlockEvent(unlockTx, investor, ticket.sub(penalty));
-      await withdrawAsset(investor, ticket.sub(penalty));
-    }
-  );
+  it("should unlock with approval on simple address disbursal", async () => {
+    const ticket = chain.ether(1);
+    const neumarks = await lockEther(investor, ticket);
+    await enableUnlocks();
+    const unlockTx = await unlockEtherWithApprove(investor, ticket, neumarks);
+    const penalty = await calculateUnlockPenalty(ticket);
+    await assertCorrectUnlock(unlockTx, investor, ticket, penalty);
+    await expectPenaltyEvent(unlockTx, investor, penalty);
+    await expectUnlockEvent(unlockTx, investor, ticket.sub(penalty));
+    await withdrawAsset(investor, ticket.sub(penalty));
+  });
 
-  it.skip(
-    "should unlock with approveAndCall on simple address disbursal",
-    async () => {
-      const ticket = chain.ether(1);
-      const neumarks = await lockEther(investor, ticket);
-      await enableUnlocks();
-      const unlockTx = await unlockEtherWithCallback(
-        investor,
-        ticket,
-        neumarks
-      );
-      const penalty = await calculateUnlockPenalty(ticket);
-      await assertCorrectUnlock(unlockTx, investor, ticket, penalty);
-      // truffle will not return events that are not in ABI of called contract so line below uncommented
-      // await expectPenaltyEvent(unlockTx, investor, penalty, disbursalPool);
-      // look for correct amount of burned neumarks
-      await expectNeumarksBurnedEvent(
-        unlockTx,
-        chain.lockedAccount.address,
-        ticket,
-        neumarks
-      );
-      await withdrawAsset(investor, ticket.sub(penalty));
-    }
-  );
+  it("should unlock with approveAndCall on simple address disbursal", async () => {
+    const ticket = chain.ether(1);
+    const neumarks = await lockEther(investor, ticket);
+    await enableUnlocks();
+    const unlockTx = await unlockEtherWithCallback(investor, ticket, neumarks);
+    const penalty = await calculateUnlockPenalty(ticket);
+    await assertCorrectUnlock(unlockTx, investor, ticket, penalty);
+    // truffle will not return events that are not in ABI of called contract so line below uncommented
+    // await expectPenaltyEvent(unlockTx, investor, penalty, disbursalPool);
+    // look for correct amount of burned neumarks
+    await expectNeumarksBurnedEvent(
+      unlockTx,
+      chain.lockedAccount.address,
+      ticket,
+      neumarks
+    );
+    await withdrawAsset(investor, ticket.sub(penalty));
+  });
 
-  it.skip("should throw on approveAndCall with unknown token", async () => {
+  it("should throw on approveAndCall with unknown token", async () => {
     const ticket = chain.ether(1);
     const neumarks = await lockEther(investor, ticket);
     await enableUnlocks();
     await unlockEtherWithCallbackUnknownToken(investor, ticket, neumarks);
   });
 
-  it.skip(
-    "should allow unlock when neumark allowance and balance is too high",
-    async () => {
-      const ticket = chain.ether(1);
-      const neumarks = await lockEther(investor, ticket);
-      const neumarks2 = await lockEther(investor2, ticket);
-      await enableUnlocks();
-      // simulate trade
-      const tradedAmount = neumarks2.mul(0.71389012).round(0);
-      await chain.neumark.transfer(investor, tradedAmount, { from: investor2 });
+  it("should allow unlock when neumark allowance and balance is too high", async () => {
+    const ticket = chain.ether(1);
+    const neumarks = await lockEther(investor, ticket);
+    const neumarks2 = await lockEther(investor2, ticket);
+    await enableUnlocks();
+    // simulate trade
+    const tradedAmount = neumarks2.mul(0.71389012).round(0);
+    await chain.neumark.transfer(investor, tradedAmount, { from: investor2 });
+    chain.neumark.approveAndCall(
+      chain.lockedAccount.address,
+      neumarks.add(tradedAmount),
+      "",
+      { from: investor }
+    );
+    // should keep traded amount
+    expect(await chain.neumark.balanceOf(investor)).to.be.bignumber.eq(
+      tradedAmount
+    );
+  });
+
+  it("should reject approveAndCall unlock when neumark allowance too low", async () => {
+    const ticket = chain.ether(1);
+    const neumarks = await lockEther(investor, ticket);
+    await enableUnlocks();
+    // simulate trade
+    const tradedAmount = neumarks.mul(0.71389012).round(0);
+    await chain.neumark.transfer(investor2, tradedAmount, { from: investor });
+    await expect(
       chain.neumark.approveAndCall(
         chain.lockedAccount.address,
-        neumarks.add(tradedAmount),
+        neumarks.sub(tradedAmount),
         "",
         { from: investor }
-      );
-      // should keep traded amount
-      expect(await chain.neumark.balanceOf(investor)).to.be.bignumber.eq(
-        tradedAmount
-      );
-    }
-  );
+      )
+    ).to.be.rejectedWith(EvmError);
+  });
 
-  it.skip(
-    "should reject approveAndCall unlock when neumark allowance too low",
-    async () => {
-      const ticket = chain.ether(1);
-      const neumarks = await lockEther(investor, ticket);
-      await enableUnlocks();
-      // simulate trade
-      const tradedAmount = neumarks.mul(0.71389012).round(0);
-      await chain.neumark.transfer(investor2, tradedAmount, { from: investor });
-      await expect(
-        chain.neumark.approveAndCall(
-          chain.lockedAccount.address,
-          neumarks.sub(tradedAmount),
-          "",
-          { from: investor }
-        )
-      ).to.be.rejectedWith(EvmError);
-    }
-  );
+  it("should reject unlock when neumark balance too low but allowance OK", async () => {
+    const ticket = chain.ether(1);
+    const neumarks = await lockEther(investor, ticket);
+    await enableUnlocks();
+    // simulate trade
+    const tradedAmount = neumarks.mul(0.71389012).round(0);
+    await chain.neumark.transfer(investor2, tradedAmount, { from: investor });
+    // allow full amount
+    let tx = await chain.neumark.approve(
+      chain.lockedAccount.address,
+      neumarks,
+      { from: investor }
+    );
+    expect(eventValue(tx, "Approval", "amount")).to.be.bignumber.equal(
+      neumarks
+    );
+    // then try to unlock
+    tx = await chain.lockedAccount.unlock({ from: investor });
+    assert.equal(error(tx), Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
+  });
 
-  it.skip(
-    "should reject unlock when neumark balance too low but allowance OK",
-    async () => {
-      const ticket = chain.ether(1);
-      const neumarks = await lockEther(investor, ticket);
-      await enableUnlocks();
-      // simulate trade
-      const tradedAmount = neumarks.mul(0.71389012).round(0);
-      await chain.neumark.transfer(investor2, tradedAmount, { from: investor });
-      // allow full amount
-      let tx = await chain.neumark.approve(
-        chain.lockedAccount.address,
-        neumarks,
-        { from: investor }
-      );
-      expect(eventValue(tx, "Approval", "amount")).to.be.bignumber.equal(
-        neumarks
-      );
-      // then try to unlock
-      tx = await chain.lockedAccount.unlock({ from: investor });
-      assert.equal(error(tx), Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
-    }
-  );
-
-  it.skip("should unlock after unlock date without penalty", async () => {
+  it("should unlock after unlock date without penalty", async () => {
     const ticket = chain.ether(1);
     const neumarks = await lockEther(investor, ticket);
     await enableUnlocks();
@@ -518,7 +496,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
     await withdrawAsset(investor, ticket);
   });
 
-  it.skip("should unlock two investors both without penalty", async () => {
+  it("should unlock two investors both without penalty", async () => {
     const ticket1 = chain.ether(4.18781092183);
     const ticket2 = chain.ether(0.46210939884);
     const neumarks1 = await lockEther(investor, ticket1);
@@ -540,35 +518,32 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
     await withdrawAsset(investor2, ticket2);
   });
 
-  it.skip(
-    "should unlock two investors one with penalty, second without penalty",
-    async () => {
-      const ticket1 = chain.ether(9.18781092183);
-      const ticket2 = chain.ether(0.06210939884);
-      const neumarks1 = await lockEther(investor, ticket1);
-      // day later
-      await increaseTime(moment.duration(chain.days, "s"));
-      const neumarks2 = await lockEther(investor2, ticket2);
-      await enableUnlocks();
-      // forward to investor1 unlock date
-      const investorBalance = await chain.lockedAccount.balanceOf(investor);
-      await setTimeTo(investorBalance[2]);
-      let unlockTx = await unlockEtherWithApprove(investor, ticket1, neumarks1);
-      await expectUnlockEvent(unlockTx, investor, ticket1);
-      await withdrawAsset(investor, ticket1);
+  it("should unlock two investors one with penalty, second without penalty", async () => {
+    const ticket1 = chain.ether(9.18781092183);
+    const ticket2 = chain.ether(0.06210939884);
+    const neumarks1 = await lockEther(investor, ticket1);
+    // day later
+    await increaseTime(moment.duration(chain.days, "s"));
+    const neumarks2 = await lockEther(investor2, ticket2);
+    await enableUnlocks();
+    // forward to investor1 unlock date
+    const investorBalance = await chain.lockedAccount.balanceOf(investor);
+    await setTimeTo(investorBalance[2]);
+    let unlockTx = await unlockEtherWithApprove(investor, ticket1, neumarks1);
+    await expectUnlockEvent(unlockTx, investor, ticket1);
+    await withdrawAsset(investor, ticket1);
 
-      const investor2Balance = await chain.lockedAccount.balanceOf(investor2);
-      // 10 seconds before unlock date should produce penalty
-      await setTimeTo(investor2Balance[2] - 10);
-      unlockTx = await unlockEtherWithApprove(investor2, ticket2, neumarks2);
-      const penalty2 = await calculateUnlockPenalty(ticket2);
-      await expectPenaltyEvent(unlockTx, investor2, penalty2);
-      await expectUnlockEvent(unlockTx, investor2, ticket2.sub(penalty2));
-      await withdrawAsset(investor2, ticket2.sub(penalty2));
-    }
-  );
+    const investor2Balance = await chain.lockedAccount.balanceOf(investor2);
+    // 10 seconds before unlock date should produce penalty
+    await setTimeTo(investor2Balance[2] - 10);
+    unlockTx = await unlockEtherWithApprove(investor2, ticket2, neumarks2);
+    const penalty2 = await calculateUnlockPenalty(ticket2);
+    await expectPenaltyEvent(unlockTx, investor2, penalty2);
+    await expectUnlockEvent(unlockTx, investor2, ticket2.sub(penalty2));
+    await withdrawAsset(investor2, ticket2.sub(penalty2));
+  });
 
-  it.skip("should unlock without burning neumarks on release all", async () => {
+  it("should unlock without burning neumarks on release all", async () => {
     const ticket1 = chain.ether(9.18781092183);
     const ticket2 = chain.ether(0.06210939884);
     const neumarks1 = await lockEther(investor, ticket1);
@@ -577,7 +552,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
     const neumarks2 = await lockEther(investor2, ticket2);
     await increaseTime(moment.duration(chain.days, "s"));
     // controller says no
-    await chain.commitment.fail();
+    await controller.fail();
     // forward to investor1 unlock date
     let unlockTx = await chain.lockedAccount.unlock({ from: investor });
     await expectUnlockEvent(unlockTx, investor, ticket1);
@@ -605,15 +580,15 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
     );
   }
 
-  it.skip("should reject unlock if disbursal pool is not set");
-  it.skip("should return on unlock for investor with no balance");
+  it("should reject unlock if disbursal pool is not set");
+  it("should return on unlock for investor with no balance");
 
-  it.skip("should reject to reclaim assetToken", async () => {
+  it("should reject to reclaim assetToken", async () => {
     const ticket1 = chain.ether(9.18781092183);
     await lockEther(investor, ticket1);
     // send etherToken to locked account
     const shouldBeReclaimedDeposit = chain.ether(0.028319821);
-    await chain.etherToken.deposit(investor2, shouldBeReclaimedDeposit, {
+    await chain.etherToken.deposit({
       from: investor2,
       value: shouldBeReclaimedDeposit
     });
@@ -631,7 +606,7 @@ contract("LockedAccount", ([_, admin, investor, investor2]) => {
     ).to.revert;
   });
 
-  it.skip("should reclaim neumarks", async () => {
+  it("should reclaim neumarks", async () => {
     const ticket1 = chain.ether(9.18781092183);
     const neumarks1 = await lockEther(investor, ticket1);
     await enableUnlocks();
