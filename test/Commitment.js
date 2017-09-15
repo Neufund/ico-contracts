@@ -1,12 +1,6 @@
 import { expect } from "chai";
 import EvmError from "./helpers/EVMThrow";
-import { eventValue } from "./helpers/events";
-import {
-  mineBlock,
-  saveBlockchain,
-  increaseTime,
-  restoreBlockchain
-} from "./helpers/evmCommands";
+import { mineBlock, increaseTime } from "./helpers/evmCommands";
 import { latestTimestamp } from "./helpers/latestTime";
 import createAccessPolicy from "./helpers/createAccessPolicy";
 import roles from "./helpers/roles";
@@ -47,7 +41,7 @@ contract(
   "Commitment",
   (
     [
-      deployer,
+      deployer, // eslint-disable-line no-unused-vars
       platform,
       whitelistAdmin,
       lockedAccountAdmin,
@@ -56,7 +50,6 @@ contract(
       ...investors
     ]
   ) => {
-    let snapshot;
     let rbac;
     let forkArbiter;
     let neumark;
@@ -66,7 +59,7 @@ contract(
     let euroLock;
     let commitment;
 
-    describe.only("Contract", async () => {
+    describe("Contract", async () => {
       beforeEach(async () => {
         const now = await latestTimestamp();
         const startDate = now + BEFORE_DURATION;
@@ -141,12 +134,6 @@ contract(
         await euroToken.setAllowedTransferTo(euroLock.address, true, {
           from: eurtDepositManager
         });
-        // snapshot = await saveBlockchain();
-      });
-
-      beforeEach(async () => {
-        // await restoreBlockchain(snapshot);
-        // snapshot = await saveBlockchain();
       });
 
       it("should deploy", async () => {
@@ -442,7 +429,7 @@ contract(
         it("should enable Neumark trading on Finished", async () => {
           await increaseTime(FINISHED_START);
 
-          const tx = await commitment.handleTimedTransitions();
+          await commitment.handleTimedTransitions();
           const enabled = await neumark.transferEnabled();
 
           expect(enabled).to.be.true;
@@ -946,7 +933,7 @@ contract(
         });
       });
 
-      describe.only("Commit euro whitelisted", async () => {
+      describe("Commit euro whitelisted", async () => {
         const investor = investors[0];
         const amountEur = MIN_TICKET_EUR.mul(10);
         let expectedTotalNmk;

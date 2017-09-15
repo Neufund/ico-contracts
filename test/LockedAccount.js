@@ -17,7 +17,6 @@ import {
 
 const TestFeeDistributionPool = artifacts.require("TestFeeDistributionPool");
 const TestNullContract = artifacts.require("TestNullContract");
-const TestCommitment = artifacts.require("TestCommitment");
 
 const LockState = {
   Uncontrolled: 1,
