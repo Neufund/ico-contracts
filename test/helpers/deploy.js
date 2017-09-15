@@ -7,7 +7,6 @@ import roles from "./roles";
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
 const Neumark = artifacts.require("Neumark");
-const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 

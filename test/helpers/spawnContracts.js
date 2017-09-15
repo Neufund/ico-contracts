@@ -4,8 +4,6 @@ import roles from "./roles";
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
 const Neumark = artifacts.require("Neumark");
-const TestCommitment = artifacts.require("TestCommitment");
-const WhitelistedCommitment = artifacts.require("WhitelistedCommitment");
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 
@@ -91,69 +89,6 @@ export async function spawnLockedAccount(
     TriState.Allow
   );
   await lockedAccount.setPenaltyDisbursal(operatorWallet, {
-    from: lockAdminAccount
-  });
-}
-
-export async function spawnPublicCommitment(
-  lockAdminAccount,
-  startTimestamp,
-  duration,
-  minAbsCap,
-  maxAbsCap,
-  minTicket,
-  eurEthRate
-) {
-  commitment = await TestCommitment.new(
-    accessControl.address,
-    etherToken.address,
-    lockedAccount.address,
-    neumark.address,
-    startTimestamp,
-    startTimestamp + duration,
-    minAbsCap,
-    maxAbsCap,
-    minTicket,
-    ether(eurEthRate),
-    operatorWallet
-  );
-  // console.log(lockedAccount.setController);
-  await lockedAccount.setController(commitment.address, {
-    from: lockAdminAccount
-  });
-}
-
-export async function spawnWhitelistedCommitment(
-  lockAdminAccount,
-  whitelistAdminAccount,
-  startTimestamp,
-  duration,
-  minAbsCap,
-  maxAbsCap,
-  minTicket,
-  eurEthRate
-) {
-  commitment = await WhitelistedCommitment.new(
-    accessControl.address,
-    etherToken.address,
-    lockedAccount.address,
-    neumark.address,
-    startTimestamp,
-    startTimestamp + duration,
-    minAbsCap,
-    maxAbsCap,
-    minTicket,
-    ether(eurEthRate),
-    operatorWallet
-  );
-  // console.log(lockedAccount.setController);
-  await accessControl.setUserRole(
-    whitelistAdminAccount,
-    roles.whitelistAdmin,
-    commitment.address,
-    TriState.Allow
-  );
-  await lockedAccount.setController(commitment.address, {
     from: lockAdminAccount
   });
 }
