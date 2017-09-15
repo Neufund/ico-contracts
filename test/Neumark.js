@@ -4,6 +4,7 @@ import { eventValue } from "./helpers/events";
 import createAccessPolicy from "./helpers/createAccessPolicy";
 import roles from "./helpers/roles";
 import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
+import { basicTokenTests, standardTokenTests } from "./helpers/tokenTestCases";
 
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const Neumark = artifacts.require("./Neumark.sol");
@@ -227,5 +228,48 @@ contract("Neumark", accounts => {
     const tx = neumark.transfer(accounts[3], amount, { from });
 
     await expect(tx).to.revert;
+  });
+
+  async function initNeumarkBalance(initialBalanceNmk) {
+    // crude way to get exact Nmk balance
+    await neumark.issueForEuro(initialBalanceNmk.mul(6.5).round(), {
+      from: accounts[1]
+    });
+    const balance = await neumark.balanceOf.call(accounts[1]);
+    await neumark.burnNeumark(balance.sub(initialBalanceNmk), {
+      from: accounts[1]
+    });
+    // every ulp counts
+    const finalBalance = await neumark.balanceOf.call(accounts[1]);
+    expect(finalBalance).to.be.bignumber.eq(initialBalanceNmk);
+    await neumark.enableTransfer(true, { from: accounts[0] });
+  }
+
+  describe("IBasicToken tests", () => {
+    const initialBalanceNmk = NMK_DECIMALS.mul(1128192.2791827).round();
+    const getToken = () => neumark;
+
+    beforeEach(async () => {
+      await initNeumarkBalance(initialBalanceNmk);
+    });
+
+    basicTokenTests(getToken, accounts[1], accounts[2], initialBalanceNmk);
+  });
+
+  describe("IERC20Allowance tests", () => {
+    const initialBalanceNmk = NMK_DECIMALS.mul(91279837.398827).round();
+    const getToken = () => neumark;
+
+    beforeEach(async () => {
+      await initNeumarkBalance(initialBalanceNmk);
+    });
+
+    standardTokenTests(
+      getToken,
+      accounts[1],
+      accounts[2],
+      accounts[3],
+      initialBalanceNmk
+    );
   });
 });
