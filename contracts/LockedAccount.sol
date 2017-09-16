@@ -463,6 +463,9 @@ contract LockedAccount is
                 if (NEUMARK.allowance(investor, address(this)) < a.neumarksDue) {
                     return logError(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
                 }
+                if (NEUMARK.balanceOf(investor) < a.neumarksDue) {
+                    return logError(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
+                }
                 if (!NEUMARK.transferFrom(investor, address(this), a.neumarksDue)) {
                     return logError(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
                 }
