@@ -18,7 +18,7 @@ contract("EuroToken", ([_, depositManager, ...accounts]) => {
     rbac = await createAccessPolicy([
       { subject: depositManager, role: roles.eurtDepositManager }
     ]);
-    euroToken = await EuroToken.new(rbac);
+    euroToken = await EuroToken.new(rbac.address);
     snapshot = await saveBlockchain();
   });
 
@@ -27,30 +27,33 @@ contract("EuroToken", ([_, depositManager, ...accounts]) => {
     snapshot = await saveBlockchain();
   });
 
-  function expectDepositEvent(tx, owner, amount) {
-    const event = eventValue(tx, "LogDeposit");
-    expect(event).to.exist;
-    expect(event.args.to).to.eq(owner);
-    expect(event.args.amount).to.be.bignumber.eq(amount);
-  }
+  describe("specific tests", () => {
 
-  it("should deploy", async () => {
-    await prettyPrintGasCost("EuroToken deploy", euroToken);
-  });
+    function expectDepositEvent(tx, owner, amount) {
+      const event = eventValue(tx, "LogDeposit");
+      expect(event).to.exist;
+      expect(event.args.to).to.eq(owner);
+      expect(event.args.amount).to.be.bignumber.eq(amount);
+    }
 
-  it("should deposit", async () => {
-    const initialBalance = ether(1.19827398791827);
-    const tx = await euroToken.deposit(accounts[0], initialBalance, {
-      from: depositManager
+    it("should deploy", async() => {
+      await prettyPrintGasCost("EuroToken deploy", euroToken);
     });
-    expectDepositEvent(tx, accounts[0], initialBalance);
-    const totalSupply = await euroToken.totalSupply.call();
-    expect(totalSupply).to.be.bignumber.eq(initialBalance);
-    const balance = await euroToken.balanceOf(accounts[0]);
-    expect(balance).to.be.bignumber.eq(initialBalance);
-  });
 
-  it("deposit should allow transfer to");
+    it("should deposit", async() => {
+      const initialBalance = ether(1.19827398791827);
+      const tx = await euroToken.deposit(accounts[0], initialBalance, {
+        from: depositManager
+      });
+      expectDepositEvent(tx, accounts[0], initialBalance);
+      const totalSupply = await euroToken.totalSupply.call();
+      expect(totalSupply).to.be.bignumber.eq(initialBalance);
+      const balance = await euroToken.balanceOf(accounts[0]);
+      expect(balance).to.be.bignumber.eq(initialBalance);
+    });
+
+    it("deposit should allow transfer to");
+  });
 
   describe("IBasicToken tests", () => {
     const initialBalance = ether(1.19827398791827);
