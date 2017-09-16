@@ -178,9 +178,12 @@ contract EuroToken is
         return BasicToken.transfer(to, amount);
     }
 
+    /// @dev broker acts in the name of 'from' address so broker needs to have permission to transfer from
+    ///  this way we may give permissions to brokering smart contracts while investors do not have permissions
+    ///  to transfer. 'to' address requires standard transfer to permission
     function transferFrom(address from, address to, uint256 amount)
         public
-        onlyAllowedTransferFrom(from)
+        onlyAllowedTransferFrom(msg.sender)
         onlyAllowedTransferTo(to)
         returns (bool success)
     {
