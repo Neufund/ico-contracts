@@ -14,7 +14,7 @@ contract("EtherToken", ([deployer, ...accounts]) => {
 
   before(async () => {
     const rbac = await createAccessPolicy([]);
-    etherToken = await EtherToken.new(rbac);
+    etherToken = await EtherToken.new(rbac.address);
     snapshot = await saveBlockchain();
   });
 
@@ -23,43 +23,46 @@ contract("EtherToken", ([deployer, ...accounts]) => {
     snapshot = await saveBlockchain();
   });
 
-  function expectDepositEvent(tx, owner, amount) {
-    const event = eventValue(tx, "LogDeposit");
-    expect(event).to.exist;
-    expect(event.args.to).to.eq(owner);
-    expect(event.args.amount).to.be.bignumber.eq(amount);
-  }
+  describe("specific tests", () => {
 
-  it("should deploy", async () => {
-    await prettyPrintGasCost("EuroToken deploy", etherToken);
-  });
+    function expectDepositEvent(tx, owner, amount) {
+      const event = eventValue(tx, "LogDeposit");
+      expect(event).to.exist;
+      expect(event.args.to).to.eq(owner);
+      expect(event.args.amount).to.be.bignumber.eq(amount);
+    }
 
-  it("should deposit", async () => {
-    const initialBalance = ether(1.19827398791827);
-    const tx = await etherToken.deposit(accounts[0], initialBalance, {
-      from: deployer,
-      value: initialBalance
+    it("should deploy", async() => {
+      await prettyPrintGasCost("EuroToken deploy", etherToken);
     });
-    expectDepositEvent(tx, accounts[0], initialBalance);
-    const totalSupply = await etherToken.totalSupply.call();
-    expect(totalSupply).to.be.bignumber.eq(initialBalance);
-    const balance = await etherToken.balanceOf(accounts[0]);
-    expect(balance).to.be.bignumber.eq(initialBalance);
+
+    it("should deposit", async() => {
+      const initialBalance = ether(1.19827398791827);
+      const tx = await etherToken.deposit({
+        from: accounts[0],
+        value: initialBalance
+      });
+      expectDepositEvent(tx, accounts[0], initialBalance);
+      const totalSupply = await etherToken.totalSupply.call();
+      expect(totalSupply).to.be.bignumber.eq(initialBalance);
+      const balance = await etherToken.balanceOf(accounts[0]);
+      expect(balance).to.be.bignumber.eq(initialBalance);
+    });
+
+    it("should not be able to reclaim ether");
+
+    // test deposit
+    // test deposit max value
+    // test deposit overflow
   });
-
-  it("should not be able to reclaim ether");
-
-  // test deposit
-  // test deposit max value
-  // test deposit overflow
 
   describe("IBasicToken tests", () => {
     const initialBalance = ether(1.19827398791827);
     const getToken = () => etherToken;
 
     beforeEach(async () => {
-      await etherToken.deposit(accounts[1], initialBalance, {
-        from: deployer,
+      await etherToken.deposit({
+        from: accounts[1],
         value: initialBalance
       });
     });
@@ -72,8 +75,8 @@ contract("EtherToken", ([deployer, ...accounts]) => {
     const getToken = () => etherToken;
 
     beforeEach(async () => {
-      await etherToken.deposit(accounts[1], initialBalance, {
-        from: deployer,
+      await etherToken.deposit({
+        from: accounts[1],
         value: initialBalance
       });
     });
