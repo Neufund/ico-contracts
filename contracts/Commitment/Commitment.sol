@@ -210,7 +210,7 @@ contract Commitment is
     {
         // Take with EtherToken allowance (if any)
         uint256 commitedWei = ETHER_TOKEN.allowance(msg.sender, this);
-        ETHER_TOKEN.transferFrom(msg.sender, this, commitedWei);
+        assert(ETHER_TOKEN.transferFrom(msg.sender, this, commitedWei));
 
         // Turn msg.value into EtherToken (if any)
         commitedWei = add(commitedWei, msg.value);
@@ -227,7 +227,7 @@ contract Commitment is
     {
         // Receive Euro tokens
         uint256 euroUlp = EURO_TOKEN.allowance(msg.sender, this);
-        EURO_TOKEN.transferFrom(msg.sender, this, euroUlp);
+        assert(EURO_TOKEN.transferFrom(msg.sender, this, euroUlp));
 
         // Compute commited funds
         require(euroUlp >= MIN_TICKET_EUR);
@@ -270,8 +270,8 @@ contract Commitment is
         uint256 investorNmk = sub(totalNmk, platformNmk);
 
         // Issue Neumarks and distribute
-        NEUMARK.transfer(msg.sender, investorNmk);
-        NEUMARK.transfer(PLATFORM_WALLET, platformNmk);
+        assert(NEUMARK.transfer(msg.sender, investorNmk));
+        assert(NEUMARK.transfer(PLATFORM_WALLET, platformNmk));
 
         // Lock EuroToken
         EURO_TOKEN.approve(EURO_LOCK, euroUlp);
@@ -436,8 +436,8 @@ contract Commitment is
         uint256 investorNmk = sub(totalNmk, platformNmk);
 
         // Issue Neumarks and distribute
-        NEUMARK.transfer(msg.sender, investorNmk);
-        NEUMARK.transfer(PLATFORM_WALLET, platformNmk);
+        assert(NEUMARK.transfer(msg.sender, investorNmk));
+        assert(NEUMARK.transfer(PLATFORM_WALLET, platformNmk));
 
         // Lock EtherToken
         ETHER_TOKEN.approve(ETHER_LOCK, commitedWei);

@@ -171,11 +171,9 @@ contract BasicSnapshotToken is
         }
 
         // If the amount being transfered is more than the balance of the
-        //  account the transfer returns false
+        //  account the transfer fails
         var previousBalanceFrom = balanceOf(from);
-        if (previousBalanceFrom < amount) {
-            return false;
-        }
+        require(previousBalanceFrom >= amount);
 
         // First update the balance array with the new value for the address
         //  sending the tokens
