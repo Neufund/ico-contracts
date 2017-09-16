@@ -113,12 +113,6 @@ contract(
         from: lockedAccountAdmin
       });
 
-      await euroToken.setAllowedTransferFrom(investors[0], true, {
-        from: eurtDepositManager
-      });
-      await euroToken.setAllowedTransferFrom(other, true, {
-        from: eurtDepositManager
-      });
       await euroToken.setAllowedTransferFrom(commitment.address, true, {
         from: eurtDepositManager
       });
@@ -126,6 +120,9 @@ contract(
         from: eurtDepositManager
       });
       await euroToken.setAllowedTransferTo(euroLock.address, true, {
+        from: eurtDepositManager
+      });
+      await euroToken.setAllowedTransferFrom(euroLock.address, true, {
         from: eurtDepositManager
       });
     });
