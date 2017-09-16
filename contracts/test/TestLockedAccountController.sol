@@ -52,15 +52,16 @@ contract TestLockedAccountController {
         LOCKED_ACCOUNT.controllerFailed();
     }
 
-    // must deposit token for this contract and then call investFor
-    function investFor(address investor, uint256 amount, uint256 neumarks)
+    // must deposit token for this investor and then investor makes allowance then call this function
+    function investToken(uint256 neumarks)
         public
     {
-        // require(PAYMENT_TOKEN.deposit.value(msg.value)(address(this), amount));
+        uint256 amount = LOCKED_ACCOUNT.assetToken().allowance(msg.sender, this);
+        LOCKED_ACCOUNT.assetToken().transferFrom(msg.sender, this, amount);
 
         // make allowance for lock
         require(LOCKED_ACCOUNT.assetToken().approve(address(LOCKED_ACCOUNT), amount));
         // lock in lock
-        LOCKED_ACCOUNT.lock(investor, amount, neumarks);
+        LOCKED_ACCOUNT.lock(msg.sender, amount, neumarks);
     }
 }
