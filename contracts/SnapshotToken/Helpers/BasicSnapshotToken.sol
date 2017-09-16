@@ -169,6 +169,7 @@ contract BasicSnapshotToken is
         if (amount == 0) {
             return true;
         }
+        require(to != address(0));
 
         // If the amount being transfered is more than the balance of the
         //  account the transfer fails
@@ -200,6 +201,8 @@ contract BasicSnapshotToken is
         internal
         returns (bool)
     {
+        require(owner != address(0));
+
         uint256 curTotalSupply = totalSupply();
         uint256 newTotalSupply = curTotalSupply + amount;
         require(newTotalSupply >= curTotalSupply); // Check for overflow
