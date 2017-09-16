@@ -8,6 +8,7 @@ import {latestTimestamp} from "./helpers/latestTime";
 import EvmError from "./helpers/EVMThrow";
 import {TriState} from "./helpers/triState";
 import forceEther from "./helpers/forceEther";
+import ether from "./helpers/ether";
 import roles from "./helpers/roles";
 import {
   promisify,
@@ -15,6 +16,9 @@ import {
   restoreBlockchain
 } from "./helpers/evmCommands";
 
+const LockedAccount = artifacts.require("LockedAccount");
+const EtherToken = artifacts.require("EtherToken");
+const EuroToken = artifacts.require("EuroToken");
 const TestFeeDistributionPool = artifacts.require("TestFeeDistributionPool");
 const TestNullContract = artifacts.require("TestNullContract");
 const TestLockedAccountController = artifacts.require(
@@ -31,51 +35,38 @@ const LockState = {
   ReleaseAll: 3
 };
 
-// this low gas price is forced by code coverage
-const gasPrice = new web3.BigNumber(0x01);
+const gasPrice = new web3.BigNumber(0x01); // this low gas price is forced by code coverage
+const operatorWallet = "0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c";
 
 contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]) => {
   let snapshot;
   let controller;
   let startTimestamp;
-
-  async function deployMigrationTarget(assetToken) {
-    const target = await TestLockedAccountMigrationTarget.new(
-      chain.accessControl.address,
-      assetToken.address,
-      chain.neumark.address,
-      18 * chain.months,
-      chain.ether(1).mul(0.1).round()
-    );
-    await chain.accessControl.setUserRole(
-      admin,
-      roles.lockedAccountAdmin,
-      target.address,
-      1
-    );
-
-    return target;
-  }
+  let assetToken;
+  let lockedAccount;
+  let migrationTarget;
 
   beforeEach(async() => {
     await restoreBlockchain(snapshot);
     snapshot = await saveBlockchain();
   });
 
-  describe("EtherToken assets", () => {
-    const getToken = () => chain.etherToken;
-    const getLockedAccount = () => chain.lockedAccount;
+  describe("EtherToken", () => {
+
+    async function deployEtherToken() {
+      assetToken = await EtherToken.new(chain.accessControl.address);
+    }
 
     async function makeDepositEth(from, to, amount) {
-      await chain.etherToken.deposit({from, value: amount});
+      await assetToken.deposit({from, value: amount});
       if (from != to) {
-        await chain.etherToken.transfer(to, amount, {from});
+        await assetToken.transfer(to, amount, {from});
       }
     }
 
     async function makeWithdrawEth(investorAddress, amount) {
       const initalBalance = await promisify(web3.eth.getBalance)(investorAddress);
-      const tx = await chain.etherToken.withdraw(amount, {
+      const tx = await assetToken.withdraw(amount, {
         from: investorAddress,
         gasPrice
       });
@@ -87,40 +78,33 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
     }
 
     before(async() => {
-      await chain.spawnLockedAccount(admin, 18, 0.1);
-      controller = await TestLockedAccountController.new(
-        chain.lockedAccount.address
-      );
-      await chain.lockedAccount.setController(controller.address, {
-        from: admin
-      });
-      startTimestamp = await latestTimestamp();
+      await chain.deployNeumark();
+      await deployEtherToken();
+      await deployLockedAccount(assetToken, 18, 0.1);
     });
 
-    describe("core tests", () => {
+    describe.only("core tests", () => {
 
       before(async() => {
         snapshot = await saveBlockchain();
       });
 
-      lockedAccountTestCases(getLockedAccount, getToken, makeDepositEth, makeWithdrawEth);
+      lockedAccountTestCases(makeDepositEth, makeWithdrawEth);
     });
 
-    describe.only("migration tests", () => {
-      let migrationTarget;
-      const getMigrationTarget = () => migrationTarget;
+    describe("migration tests", () => {
 
       before(async() => {
-        migrationTarget = await deployMigrationTarget(getToken());
+        migrationTarget = await deployMigrationTarget(assetToken);
         snapshot = await saveBlockchain();
       });
 
-      locketAccountMigrationTestCases(getLockedAccount, getToken, getMigrationTarget, makeDepositEth, makeWithdrawEth);
+      locketAccountMigrationTestCases(makeDepositEth, makeWithdrawEth);
     });
 
   });
 
-  function locketAccountMigrationTestCases(lockedAccount, assetToken, migrationTarget, makeDeposit, makeWithdraw) {
+  function locketAccountMigrationTestCases(makeDeposit, makeWithdraw) {
 
     function expectMigrationEnabledEvent(tx, target) {
       const event = eventValue(tx, "LogMigrationEnabled");
@@ -151,25 +135,25 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
       await controller.investFor(investorAddress, ticket, neumarks, {
         from: investorAddress
       });
-      const investorBalanceBefore = await lockedAccount().balanceOf.call(
+      const investorBalanceBefore = await lockedAccount.balanceOf.call(
         investorAddress
       );
-      const assetBalanceSourceBefore = await assetToken().balanceOf.call(
-        lockedAccount().address
+      const assetBalanceSourceBefore = await assetToken.balanceOf.call(
+        lockedAccount.address
       );
-      await migrationTarget().setMigrationSource(lockedAccount().address, {
+      await migrationTarget.setMigrationSource(lockedAccount.address, {
         from: admin
       });
-      expect(await migrationTarget().currentMigrationSource()).to.eq(
-        lockedAccount().address
+      expect(await migrationTarget.currentMigrationSource()).to.eq(
+        lockedAccount.address
       );
-      let tx = await lockedAccount().enableMigration(
-        migrationTarget().address,
+      let tx = await lockedAccount.enableMigration(
+        migrationTarget.address,
         {from: admin}
       );
-      expectMigrationEnabledEvent(tx, migrationTarget().address);
+      expectMigrationEnabledEvent(tx, migrationTarget.address);
       // migrate investor
-      tx = await lockedAccount().migrate({from: investorAddress});
+      tx = await lockedAccount.migrate({from: investorAddress});
       expectInvestorMigratedEvent(
         tx,
         investorAddress,
@@ -179,27 +163,27 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
       );
       // check invariants
       expect(
-        await lockedAccount().totalLockedAmount()
+        await lockedAccount.totalLockedAmount()
       ).to.be.bignumber.equal(0);
-      expect(await migrationTarget().totalLockedAmount()).to.be.bignumber.equal(
+      expect(await migrationTarget.totalLockedAmount()).to.be.bignumber.equal(
         ticket
       );
-      expect(await lockedAccount().totalInvestors()).to.be.bignumber.equal(
+      expect(await lockedAccount.totalInvestors()).to.be.bignumber.equal(
         0
       );
-      expect(await migrationTarget().totalInvestors()).to.be.bignumber.equal(1);
+      expect(await migrationTarget.totalInvestors()).to.be.bignumber.equal(1);
       // check balance on old - no investor
-      const investorBalanceAfter = await lockedAccount().balanceOf.call(
+      const investorBalanceAfter = await lockedAccount.balanceOf.call(
         investorAddress
       );
       // unlockDate == 0: does not exit
       expect(investorBalanceAfter[2]).to.be.bignumber.equal(0);
       // check asset balance
-      const assetBalanceSourceAfter = await assetToken().balanceOf.call(
-        lockedAccount().address
+      const assetBalanceSourceAfter = await assetToken.balanceOf.call(
+        lockedAccount.address
       );
-      const assetBalanceTargetAfter = await assetToken().balanceOf.call(
-        migrationTarget().address
+      const assetBalanceTargetAfter = await assetToken.balanceOf.call(
+        migrationTarget.address
       );
       expect(assetBalanceSourceAfter).to.be.bignumber.eq(
         assetBalanceSourceBefore.sub(ticket)
@@ -208,22 +192,22 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
     }
 
     async function enableReleaseAll() {
-      await migrationTarget().setController(admin, {from: admin});
-      await migrationTarget().controllerFailed({from: admin});
+      await migrationTarget.setController(admin, {from: admin});
+      await migrationTarget.controllerFailed({from: admin});
     }
 
     it("call migrate not from source should throw", async() => {
       const ticket = 1; // 1 wei ticket
       // test migration accepts any address
-      await migrationTarget().setMigrationSource(otherMigrationSource, {
+      await migrationTarget.setMigrationSource(otherMigrationSource, {
         from: admin
       });
       await makeDeposit(otherMigrationSource, otherMigrationSource, ticket);
       // set allowance in asset token
-      await assetToken().approve(migrationTarget().address, 1, {
+      await assetToken.approve(migrationTarget.address, 1, {
         from: otherMigrationSource
       });
-      await migrationTarget().migrateInvestor(
+      await migrationTarget.migrateInvestor(
         investor2,
         ticket,
         1,
@@ -234,140 +218,140 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
       );
       // set allowances again
       await makeDeposit(otherMigrationSource, otherMigrationSource, ticket);
-      await assetToken().approve(migrationTarget().address, ticket, {
+      await assetToken.approve(migrationTarget.address, ticket, {
         from: otherMigrationSource
       });
       // this should not, only otherMigrationSource can call migrate on target
       await expect(
-        migrationTarget().migrateInvestor(investor, ticket, 1, startTimestamp, {
+        migrationTarget.migrateInvestor(investor, ticket, 1, startTimestamp, {
           from: admin
         })
       ).to.be.rejectedWith(EvmError);
     });
 
     it("target that returns false on migration should throw", async() => {
-      const ticket = chain.ether(1);
+      const ticket = ether(1);
       const neumarks = ticket.mul(6.5);
       // lock investor
       await makeDeposit(investor, controller.address, ticket);
       await controller.investFor(investor, ticket, neumarks, {
         from: investor
       });
-      await migrationTarget().setMigrationSource(lockedAccount().address, {
+      await migrationTarget.setMigrationSource(lockedAccount.address, {
         from: admin
       });
-      await lockedAccount().enableMigration(migrationTarget().address, {
+      await lockedAccount.enableMigration(migrationTarget.address, {
         from: admin
       });
 
-      await migrationTarget().setShouldMigrationFail(true, {from: admin});
+      await migrationTarget.setShouldMigrationFail(true, {from: admin});
       await expect(
-        lockedAccount().migrate({from: investor})
+        lockedAccount.migrate({from: investor})
       ).to.be.rejectedWith(EvmError);
     });
 
     it("rejects target with source address not matching contract enabling migration", async() => {
       // we set invalid source here
-      await migrationTarget().setMigrationSource(otherMigrationSource, {
+      await migrationTarget.setMigrationSource(otherMigrationSource, {
         from: admin
       });
       // accepts only lockedAccount as source
       await expect(
-        lockedAccount().enableMigration(migrationTarget().address)
+        lockedAccount.enableMigration(migrationTarget.address)
       ).to.be.rejectedWith(EvmError);
     });
 
     it("should migrate investor", async() => {
-      await migrateOne(chain.ether(1), investor);
+      await migrateOne(ether(1), investor);
     });
 
     it("should migrate investor then unlock and withdraw", async() => {
-      const ticket = chain.ether(1);
+      const ticket = ether(1);
       await migrateOne(ticket, investor);
       await enableReleaseAll();
       // no need to burn neumarks
-      await migrationTarget().unlock({from: investor});
+      await migrationTarget.unlock({from: investor});
       await makeWithdraw(investor, ticket);
     });
 
     it("migrate same investor twice should do nothing", async() => {
-      await migrateOne(chain.ether(1), investor);
-      const tx = await lockedAccount().migrate({from: investor});
+      await migrateOne(ether(1), investor);
+      const tx = await lockedAccount.migrate({from: investor});
       expect(hasEvent(tx, "LogInvestorMigrated")).to.be.false;
     });
 
     it("migrate non existing investor should do nothing", async() => {
-      await migrateOne(chain.ether(1), investor);
-      const tx = await lockedAccount().migrate({from: investor2});
+      await migrateOne(ether(1), investor);
+      const tx = await lockedAccount.migrate({from: investor2});
       expect(hasEvent(tx, "LogInvestorMigrated")).to.be.false;
     });
 
     it("should reject investor migration before it is enabled", async() => {
-      const ticket = chain.ether(3.18919182);
-      const neumarks = chain.ether(1.189729111);
+      const ticket = ether(3.18919182);
+      const neumarks = ether(1.189729111);
       await makeDeposit(investor, controller.address, ticket);
       await controller.investFor(investor, ticket, neumarks, {
         from: investor
       });
-      await migrationTarget().setMigrationSource(lockedAccount().address, {
+      await migrationTarget.setMigrationSource(lockedAccount.address, {
         from: admin
       });
       // uncomment below for this test to fail
-      /* await lockedAccount().enableMigration(
-       migrationTarget().address,
+      /* await lockedAccount.enableMigration(
+       migrationTarget.address,
        {from: admin}
        ); */
       await expect(
-        lockedAccount().migrate({from: investor})
+        lockedAccount.migrate({from: investor})
       ).to.be.rejectedWith(EvmError);
     });
 
     it("should migrate investor in AcceptUnlocks", async() => {
-      const ticket = chain.ether(3.18919182);
-      const neumarks = chain.ether(1.189729111);
+      const ticket = ether(3.18919182);
+      const neumarks = ether(1.189729111);
       await makeDeposit(investor, controller.address, ticket);
       await controller.investFor(investor, ticket, neumarks, {
         from: investor
       });
-      await migrationTarget().setMigrationSource(lockedAccount().address, {
+      await migrationTarget.setMigrationSource(lockedAccount.address, {
         from: admin
       });
       await controller.succ();
-      expect(await lockedAccount().lockState.call()).to.be.bignumber.eq(LockState.AcceptingUnlocks);
-      await lockedAccount().enableMigration(migrationTarget().address, {
+      expect(await lockedAccount.lockState.call()).to.be.bignumber.eq(LockState.AcceptingUnlocks);
+      await lockedAccount.enableMigration(migrationTarget.address, {
         from: admin
       });
-      const tx = await lockedAccount().migrate({from: investor});
+      const tx = await lockedAccount.migrate({from: investor});
       expectInvestorMigratedEvent(tx, investor, ticket, neumarks);
     });
 
     it("should reject enabling migration from invalid account", async() => {
-      const ticket = chain.ether(3.18919182);
-      const neumarks = chain.ether(1.189729111);
+      const ticket = ether(3.18919182);
+      const neumarks = ether(1.189729111);
       await makeDeposit(investor, controller.address, ticket);
       await controller.investFor(investor, ticket, neumarks, {
         from: investor
       });
-      await migrationTarget().setMigrationSource(lockedAccount().address, {
+      await migrationTarget.setMigrationSource(lockedAccount.address, {
         from: admin
       });
       await expect(
-        lockedAccount().enableMigration(migrationTarget().address, {
+        lockedAccount.enableMigration(migrationTarget.address, {
           from: otherMigrationSource
         })
       ).to.be.rejectedWith(EvmError);
     });
 
     it("should reject enabling migration for a second time", async() => {
-      await migrationTarget().setMigrationSource(lockedAccount().address, {
+      await migrationTarget.setMigrationSource(lockedAccount.address, {
         from: admin
       });
-      await lockedAccount().enableMigration(migrationTarget().address, {
+      await lockedAccount.enableMigration(migrationTarget.address, {
         from: admin
       });
       // must throw
       await expect(
-        lockedAccount().enableMigration(migrationTarget().address, {
+        lockedAccount.enableMigration(migrationTarget.address, {
           from: admin
         })
       ).to.be.rejectedWith(EvmError);
@@ -375,7 +359,7 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
 
   }
 
-  function lockedAccountTestCases(lockedAccount, assetToken, makeDeposit, makeWithdraw) {
+  function lockedAccountTestCases(makeDeposit, makeWithdraw) {
 
     function expectLockEvent(tx, investorAddress, ticket, neumarks) {
       const event = eventValue(tx, "LogFundsLocked");
@@ -401,7 +385,7 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
     }
 
     async function expectPenaltyEvent(tx, investorAddress, penalty) {
-      const disbursalPool = await lockedAccount().penaltyDisbursalAddress();
+      const disbursalPool = await lockedAccount.penaltyDisbursalAddress();
       const event = eventValue(tx, "LogPenaltyDisbursed");
       expect(event).to.exist;
       expect(event.args.investor).to.equal(investorAddress);
@@ -411,13 +395,13 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
 
     async function lock(investorAddress, ticket) {
       // initial state of the lock
-      const initialLockedAmount = await lockedAccount().totalLockedAmount();
-      const initialAssetSupply = await assetToken().totalSupply();
-      const initialNumberOfInvestors = await lockedAccount().totalInvestors();
+      const initialLockedAmount = await lockedAccount.totalLockedAmount();
+      const initialAssetSupply = await assetToken.totalSupply();
+      const initialNumberOfInvestors = await lockedAccount.totalInvestors();
       const initialNeumarksBalance = await chain.neumark.balanceOf(
         investorAddress
       );
-      const initialLockedBalance = await lockedAccount().balanceOf(
+      const initialLockedBalance = await lockedAccount.balanceOf(
         investorAddress
       );
       // issue real neumarks and check against
@@ -437,7 +421,7 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
       // timestamp of block _investFor was mined
       const txBlock = await promisify(web3.eth.getBlock)(tx.receipt.blockNumber);
       const timebase = txBlock.timestamp;
-      const investorBalance = await lockedAccount().balanceOf(
+      const investorBalance = await lockedAccount.balanceOf(
         investorAddress
       );
       expect(investorBalance[0]).to.be.bignumber.equal(ticket.add(initialLockedBalance[0]));
@@ -452,14 +436,14 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
         unlockDate
       );
       expect(
-        await lockedAccount().totalLockedAmount()
+        await lockedAccount.totalLockedAmount()
       ).to.be.bignumber.equal(initialLockedAmount.add(ticket));
       expect(
-        await assetToken().totalSupply()
+        await assetToken.totalSupply()
       ).to.be.bignumber.equal(initialAssetSupply.add(ticket));
       const hasNewInvestor = initialLockedBalance[2] > 0 ? 0 : 1;
       expect(
-        await lockedAccount().totalInvestors()
+        await lockedAccount.totalInvestors()
       ).to.be.bignumber.equal(initialNumberOfInvestors.add(hasNewInvestor));
 
       return neumarks;
@@ -470,7 +454,7 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
       // investor approves transfer to lock contract to burn neumarks
       // console.log(`investor has ${parseInt(await chain.neumark.balanceOf(investor))}`);
       let tx = await chain.neumark.approve(
-        lockedAccount().address,
+        lockedAccount.address,
         neumarkToBurn,
         {
           from: investorAddress
@@ -480,7 +464,7 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
         neumarkToBurn
       );
       // only investor can unlock and must burn tokens
-      return lockedAccount().unlock({from: investorAddress});
+      return lockedAccount.unlock({from: investorAddress});
     }
 
     async function unlockWithCallback(investorAddress,
@@ -490,7 +474,7 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
       // console.log(`${chain.lockedAccount.address} should spend`);
       // await chain.lockedAccount.receiveApproval(investor, neumarkToBurn, chain.neumark.address, "");
       const tx = await chain.neumark.approveAndCall(
-        lockedAccount().address,
+        lockedAccount.address,
         neumarkToBurn,
         "",
         {
@@ -508,8 +492,8 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
                                                   neumarkToBurn) {
       // asset token is not allowed to call unlock on LockedAccount
       await expect(
-        assetToken().approveAndCall(
-          lockedAccount().address,
+        assetToken.approveAndCall(
+          lockedAccount.address,
           neumarkToBurn,
           "",
           {
@@ -521,29 +505,29 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
 
     async function calculateUnlockPenalty(ticket) {
       return ticket
-        .mul(await lockedAccount().penaltyFraction())
-        .div(chain.ether(1));
+        .mul(await lockedAccount.penaltyFraction())
+        .div(ether(1));
     }
 
     async function assertCorrectUnlock(tx, investorAddress, ticket, penalty) {
-      const disbursalPool = await lockedAccount().penaltyDisbursalAddress();
+      const disbursalPool = await lockedAccount.penaltyDisbursalAddress();
       expect(error(tx)).to.eq(Status.SUCCESS);
       expect(
-        await lockedAccount().totalLockedAmount()
+        await lockedAccount.totalLockedAmount()
       ).to.be.bignumber.equal(0);
       expect(
-        await assetToken().totalSupply()
+        await assetToken.totalSupply()
       ).to.be.bignumber.equal(ticket);
       // returns tuple as array
-      const investorBalance = await lockedAccount().balanceOf(investorAddress);
+      const investorBalance = await lockedAccount.balanceOf(investorAddress);
       expect(investorBalance[2]).to.be.bignumber.eq(0); // checked by timestamp == 0
-      expect(await lockedAccount().totalInvestors()).to.be.bignumber.eq(0);
-      const balanceOfInvestorAndPool = (await assetToken().balanceOf(investorAddress)).add(
-        await assetToken().balanceOf(disbursalPool));
+      expect(await lockedAccount.totalInvestors()).to.be.bignumber.eq(0);
+      const balanceOfInvestorAndPool = (await assetToken.balanceOf(investorAddress)).add(
+        await assetToken.balanceOf(disbursalPool));
       expect(balanceOfInvestorAndPool).to.be.bignumber.equal(ticket);
       // check penalty value
       expect(
-        await assetToken().balanceOf(disbursalPool)
+        await assetToken.balanceOf(disbursalPool)
       ).to.be.bignumber.equal(penalty);
       // 0 neumarks at the end
       expect(
@@ -564,38 +548,38 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
       await chain.accessControl.setUserRole(
         account,
         roles.reclaimer,
-        lockedAccount().address,
+        lockedAccount.address,
         TriState.Allow
       );
     }
 
     it("should be able to read lock parameters", async() => {
-      expect(await lockedAccount().totalLockedAmount.call()).to.be.bignumber.eq(0);
-      expect(await lockedAccount().totalInvestors.call()).to.be.bignumber.eq(0);
-      expect(await lockedAccount().assetToken.call()).to.eq(assetToken().address);
+      expect(await lockedAccount.totalLockedAmount.call()).to.be.bignumber.eq(0);
+      expect(await lockedAccount.totalInvestors.call()).to.be.bignumber.eq(0);
+      expect(await lockedAccount.assetToken.call()).to.eq(assetToken.address);
     });
 
     it("should lock", async() => {
-      await lock(investor, chain.ether(1));
+      await lock(investor, ether(1));
     });
 
     it("should lock two different investors", async() => {
-      await lock(investor, chain.ether(1));
-      await lock(investor2, chain.ether(0.5));
+      await lock(investor, ether(1));
+      await lock(investor2, ether(0.5));
     });
 
     it("should lock same investor", async() => {
-      await lock(investor, chain.ether(1));
-      await lock(investor, chain.ether(0.5));
+      await lock(investor, ether(1));
+      await lock(investor, ether(0.5));
     });
 
     it("should unlock with approval on contract disbursal", async() => {
-      const ticket = chain.ether(1);
+      const ticket = ether(1);
       const neumarks = await lock(investor, ticket);
       await enableUnlocks();
       const testDisbursal = await TestFeeDistributionPool.new();
       // change disbursal pool
-      await lockedAccount().setPenaltyDisbursal(testDisbursal.address, {
+      await lockedAccount.setPenaltyDisbursal(testDisbursal.address, {
         from: admin
       });
       const unlockTx = await unlockWithApprove(investor, neumarks);
@@ -608,8 +592,8 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
     });
 
     it("should unlock two investors both with penalty", async() => {
-      const ticket1 = chain.ether(1);
-      const ticket2 = chain.ether(0.6210939884);
+      const ticket1 = ether(1);
+      const ticket2 = ether(0.6210939884);
       const neumarks1 = await lock(investor, ticket1);
       const neumarks2 = await lock(investor2, ticket2);
       await enableUnlocks();
@@ -622,9 +606,9 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
       );
       expect(await chain.neumark.totalSupply()).to.be.bignumber.eq(neumarks2);
       expect(
-        await assetToken().balanceOf(lockedAccount().address)
+        await assetToken.balanceOf(lockedAccount.address)
       ).to.be.bignumber.eq(ticket2);
-      expect(await assetToken().totalSupply()).to.be.bignumber.eq(
+      expect(await assetToken.totalSupply()).to.be.bignumber.eq(
         ticket1.add(ticket2)
       );
 
@@ -635,16 +619,16 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
     });
 
     it("should reject unlock with approval on contract disbursal that has receiveApproval not implemented", async() => {
-      const ticket = chain.ether(1);
+      const ticket = ether(1);
       const neumarks = await lock(investor, ticket);
       await enableUnlocks();
       // change disbursal pool to contract without receiveApproval
       const noCallbackContract = await TestNullContract.new();
-      await lockedAccount().setPenaltyDisbursal(noCallbackContract.address, {
+      await lockedAccount.setPenaltyDisbursal(noCallbackContract.address, {
         from: admin
       });
       const tx = await chain.neumark.approve(
-        lockedAccount().address,
+        lockedAccount.address,
         neumarks,
         {
           from: investor
@@ -654,12 +638,12 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
         neumarks
       );
       await expect(
-        lockedAccount().unlock({from: investor})
+        lockedAccount.unlock({from: investor})
       ).to.be.rejectedWith(EvmError);
     });
 
     it("should unlock with approval on simple address disbursal", async() => {
-      const ticket = chain.ether(1);
+      const ticket = ether(1);
       const neumarks = await lock(investor, ticket);
       await enableUnlocks();
       const unlockTx = await unlockWithApprove(investor, neumarks);
@@ -671,7 +655,7 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
     });
 
     it("should unlock with approveAndCall on simple address disbursal", async() => {
-      const ticket = chain.ether(1);
+      const ticket = ether(1);
       const neumarks = await lock(investor, ticket);
       await enableUnlocks();
       const unlockTx = await unlockWithCallback(investor, neumarks);
@@ -682,7 +666,7 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
       // look for correct amount of burned neumarks
       expectNeumarksBurnedEvent(
         unlockTx,
-        lockedAccount().address,
+        lockedAccount.address,
         ticket,
         neumarks
       );
@@ -690,14 +674,14 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
     });
 
     it("should throw on approveAndCall with unknown token", async() => {
-      const ticket = chain.ether(1);
+      const ticket = ether(1);
       const neumarks = await lock(investor, ticket);
       await enableUnlocks();
       await unlockWithCallbackUnknownToken(investor, neumarks);
     });
 
     it("should allow unlock when neumark allowance and balance is too high", async() => {
-      const ticket = chain.ether(1);
+      const ticket = ether(1);
       const neumarks = await lock(investor, ticket);
       const neumarks2 = await lock(investor2, ticket);
       await enableUnlocks();
@@ -705,7 +689,7 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
       const tradedAmount = neumarks2.mul(0.71389012).round(0);
       await chain.neumark.transfer(investor, tradedAmount, {from: investor2});
       chain.neumark.approveAndCall(
-        lockedAccount().address,
+        lockedAccount.address,
         neumarks.add(tradedAmount),
         "",
         {from: investor}
@@ -717,7 +701,7 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
     });
 
     it("should reject approveAndCall unlock when neumark allowance too low", async() => {
-      const ticket = chain.ether(1);
+      const ticket = ether(1);
       const neumarks = await lock(investor, ticket);
       await enableUnlocks();
       // simulate trade
@@ -725,7 +709,7 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
       await chain.neumark.transfer(investor2, tradedAmount, {from: investor});
       await expect(
         chain.neumark.approveAndCall(
-          lockedAccount().address,
+          lockedAccount.address,
           neumarks.sub(tradedAmount),
           "",
           {from: investor}
@@ -734,7 +718,7 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
     });
 
     it("should reject unlock when neumark balance too low but allowance OK", async() => {
-      const ticket = chain.ether(1);
+      const ticket = ether(1);
       const neumarks = await lock(investor, ticket);
       await enableUnlocks();
       // simulate trade
@@ -742,7 +726,7 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
       await chain.neumark.transfer(investor2, tradedAmount, {from: investor});
       // allow full amount
       let tx = await chain.neumark.approve(
-        lockedAccount().address,
+        lockedAccount.address,
         neumarks,
         {from: investor}
       );
@@ -750,15 +734,15 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
         neumarks
       );
       // then try to unlock
-      tx = await lockedAccount().unlock({from: investor});
+      tx = await lockedAccount.unlock({from: investor});
       expect(error(tx)).to.eq(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
     });
 
     it("should unlock after unlock date without penalty", async() => {
-      const ticket = chain.ether(1);
+      const ticket = ether(1);
       const neumarks = await lock(investor, ticket);
       await enableUnlocks();
-      const investorBalance = await lockedAccount().balanceOf(investor);
+      const investorBalance = await lockedAccount.balanceOf(investor);
       // forward time to unlock date
       await setTimeTo(investorBalance[2]);
       const unlockTx = await unlockWithApprove(investor, neumarks);
@@ -768,21 +752,21 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
     });
 
     it("should unlock two investors both without penalty", async() => {
-      const ticket1 = chain.ether(4.18781092183);
-      const ticket2 = chain.ether(0.46210939884);
+      const ticket1 = ether(4.18781092183);
+      const ticket2 = ether(0.46210939884);
       const neumarks1 = await lock(investor, ticket1);
       // day later
       await increaseTime(moment.duration(chain.days, "s"));
       const neumarks2 = await lock(investor2, ticket2);
       await enableUnlocks();
       // forward to investor1 unlock date
-      const investorBalance = await lockedAccount().balanceOf(investor);
+      const investorBalance = await lockedAccount.balanceOf(investor);
       await setTimeTo(investorBalance[2]);
       let unlockTx = await unlockWithApprove(investor, neumarks1);
       expectUnlockEvent(unlockTx, investor, ticket1);
       await makeWithdraw(investor, ticket1);
 
-      const investor2Balance = await lockedAccount().balanceOf(investor2);
+      const investor2Balance = await lockedAccount.balanceOf(investor2);
       await setTimeTo(investor2Balance[2]);
       unlockTx = await unlockWithApprove(investor2, neumarks2);
       expectUnlockEvent(unlockTx, investor2, ticket2);
@@ -790,21 +774,21 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
     });
 
     it("should unlock two investors one with penalty, second without penalty", async() => {
-      const ticket1 = chain.ether(9.18781092183);
-      const ticket2 = chain.ether(0.06210939884);
+      const ticket1 = ether(9.18781092183);
+      const ticket2 = ether(0.06210939884);
       const neumarks1 = await lock(investor, ticket1);
       // day later
       await increaseTime(moment.duration(chain.days, "s"));
       const neumarks2 = await lock(investor2, ticket2);
       await enableUnlocks();
       // forward to investor1 unlock date
-      const investorBalance = await lockedAccount().balanceOf(investor);
+      const investorBalance = await lockedAccount.balanceOf(investor);
       await setTimeTo(investorBalance[2]);
       let unlockTx = await unlockWithApprove(investor, neumarks1);
       expectUnlockEvent(unlockTx, investor, ticket1);
       await makeWithdraw(investor, ticket1);
 
-      const investor2Balance = await lockedAccount().balanceOf(investor2);
+      const investor2Balance = await lockedAccount.balanceOf(investor2);
       // 10 seconds before unlock date should produce penalty
       await setTimeTo(investor2Balance[2] - 10);
       unlockTx = await unlockWithApprove(investor2, neumarks2);
@@ -815,8 +799,8 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
     });
 
     it("should unlock without burning neumarks on release all", async() => {
-      const ticket1 = chain.ether(9.18781092183);
-      const ticket2 = chain.ether(0.06210939884);
+      const ticket1 = ether(9.18781092183);
+      const ticket2 = ether(0.06210939884);
       const neumarks1 = await lock(investor, ticket1);
       // day later
       await increaseTime(moment.duration(chain.days, "s"));
@@ -825,7 +809,7 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
       // controller says no
       await controller.fail();
       // forward to investor1 unlock date
-      let unlockTx = await lockedAccount().unlock({from: investor});
+      let unlockTx = await lockedAccount.unlock({from: investor});
       expectUnlockEvent(unlockTx, investor, ticket1);
       // keeps neumarks
       expect(await chain.neumark.balanceOf(investor)).to.be.bignumber.eq(
@@ -833,7 +817,7 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
       );
       await makeWithdraw(investor, ticket1);
 
-      unlockTx = await lockedAccount().unlock({from: investor2});
+      unlockTx = await lockedAccount.unlock({from: investor2});
       expectUnlockEvent(unlockTx, investor2, ticket2);
       // keeps neumarks
       expect(await chain.neumark.balanceOf(investor2)).to.be.bignumber.eq(
@@ -846,39 +830,39 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
     it("should return on unlock for investor with no balance");
 
     it("should reject to reclaim assetToken", async() => {
-      const ticket1 = chain.ether(9.18781092183);
+      const ticket1 = ether(9.18781092183);
       await lock(investor, ticket1);
       // send assetToken to locked account
-      const shouldBeReclaimedDeposit = chain.ether(0.028319821);
-      makeDeposit(investor2, lockedAccount().address, shouldBeReclaimedDeposit);
+      const shouldBeReclaimedDeposit = ether(0.028319821);
+      makeDeposit(investor2, lockedAccount.address, shouldBeReclaimedDeposit);
       // should reclaim
       await allowToReclaim(admin);
       await expect(
-        lockedAccount().reclaim(assetToken().address, {
+        lockedAccount.reclaim(assetToken.address, {
           from: admin
         })
       ).to.be.rejectedWith(EvmError);
     });
 
     it("should reclaim neumarks", async() => {
-      const ticket1 = chain.ether(9.18781092183);
+      const ticket1 = ether(9.18781092183);
       const neumarks1 = await lock(investor, ticket1);
       await enableUnlocks();
-      await chain.neumark.transfer(lockedAccount().address, neumarks1, {
+      await chain.neumark.transfer(lockedAccount.address, neumarks1, {
         from: investor
       });
       await allowToReclaim(admin);
-      await lockedAccount().reclaim(chain.neumark.address, {from: admin});
+      await lockedAccount.reclaim(chain.neumark.address, {from: admin});
       expect(await chain.neumark.balanceOf(admin)).to.be.bignumber.eq(neumarks1);
     });
 
     it("should reclaim ether", async() => {
       const RECLAIM_ETHER = "0x0";
-      const amount = chain.ether(1);
-      await forceEther(lockedAccount().address, amount, investor);
+      const amount = ether(1);
+      await forceEther(lockedAccount.address, amount, investor);
       await allowToReclaim(admin);
       const adminEthBalance = await promisify(web3.eth.getBalance)(admin);
-      const tx = await lockedAccount().reclaim(RECLAIM_ETHER, {
+      const tx = await lockedAccount.reclaim(RECLAIM_ETHER, {
         from: admin,
         gasPrice
       });
@@ -950,5 +934,50 @@ contract("LockedAccount", ([_, admin, investor, investor2, otherMigrationSource]
         it(`${name}`);
       });
     });
+  }
+
+  async function deployLockedAccount(token, unlockDateMonths, unlockPenalty) {
+    lockedAccount = await LockedAccount.new(
+      chain.accessControl.address,
+      token.address,
+      chain.neumark.address,
+      unlockDateMonths * chain.months,
+      ether(1).mul(unlockPenalty).round()
+    );
+    await chain.accessControl.setUserRole(
+      admin,
+      roles.lockedAccountAdmin,
+      lockedAccount.address,
+      TriState.Allow
+    );
+
+    await lockedAccount.setPenaltyDisbursal(operatorWallet, {
+      from: admin
+    });
+    controller = await TestLockedAccountController.new(
+      lockedAccount.address
+    );
+    await lockedAccount.setController(controller.address, {
+      from: admin
+    });
+    startTimestamp = await latestTimestamp();
+  }
+
+  async function deployMigrationTarget(token) {
+    const target = await TestLockedAccountMigrationTarget.new(
+      chain.accessControl.address,
+      token.address,
+      chain.neumark.address,
+      18 * chain.months,
+      ether(1).mul(0.1).round()
+    );
+    await chain.accessControl.setUserRole(
+      admin,
+      roles.lockedAccountAdmin,
+      target.address,
+      1
+    );
+
+    return target;
   }
 });
