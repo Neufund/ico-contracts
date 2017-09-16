@@ -5,26 +5,17 @@ const Neumark = artifacts.require("Neumark");
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 
-const BigNumber = web3.BigNumber;
+export const dayInSeconds = 24 * 60 * 60;
+export const monthInSeconds = 30 * dayInSeconds;
 
-/* eslint-disable */
-export let neumark;
-export let accessControl;
-export let forkArbiter;
-
-/* eslint-enable */
-
-export const days = 24 * 60 * 60;
-export const months = 30 * 24 * 60 * 60;
-
-export async function deployAccessControl() {
-  accessControl = await RoleBasedAccessControl.new();
-  forkArbiter = await EthereumForkArbiter.new(accessControl.address);
+export async function deployControlContracts() {
+  const accessControl = await RoleBasedAccessControl.new();
+  const forkArbiter = await EthereumForkArbiter.new(accessControl.address);
+  return [accessControl, forkArbiter];
 }
 
-export async function deployNeumark() {
-  await deployAccessControl();
-  neumark = await Neumark.new(accessControl.address, forkArbiter.address);
+export async function deployNeumark(accessControl, forkArbiter) {
+  const neumark = await Neumark.new(accessControl.address, forkArbiter.address);
   await accessControl.setUserRole(
     EVERYONE,
     roles.snapshotCreator,
@@ -58,4 +49,6 @@ export async function deployNeumark() {
   await neumark.amendAgreement(
     "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT"
   );
+
+  return neumark;
 }

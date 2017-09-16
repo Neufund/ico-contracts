@@ -2,13 +2,18 @@ import { expect } from "chai";
 import moment from "moment";
 import error, { Status } from "./helpers/error";
 import { hasEvent, eventValue } from "./helpers/events";
-import * as chain from "./helpers/spawnContracts";
+import {
+  deployControlContracts,
+  deployNeumark,
+  dayInSeconds,
+  monthInSeconds
+} from "./helpers/deployContracts";
 import increaseTime, { setTimeTo } from "./helpers/increaseTime";
 import { latestTimestamp } from "./helpers/latestTime";
 import EvmError from "./helpers/EVMThrow";
 import { TriState } from "./helpers/triState";
 import forceEther from "./helpers/forceEther";
-import ether from "./helpers/ether";
+import { etherToWei } from "./helpers/unitConverter";
 import roles from "./helpers/roles";
 import {
   promisify,
@@ -49,6 +54,14 @@ contract(
     let migrationTarget;
     let testDisbursal;
     let noCallbackContract;
+    let neumark;
+    let accessControl;
+    let forkArbiter;
+
+    before(async () => {
+      [accessControl, forkArbiter] = await deployControlContracts();
+      neumark = await deployNeumark(accessControl, forkArbiter);
+    });
 
     beforeEach(async () => {
       await restoreBlockchain(snapshot);
@@ -57,7 +70,7 @@ contract(
 
     describe("EtherToken", () => {
       async function deployEtherToken() {
-        assetToken = await EtherToken.new(chain.accessControl.address);
+        assetToken = await EtherToken.new(accessControl.address);
       }
 
       async function makeDepositEth(from, to, amount) {
@@ -85,7 +98,6 @@ contract(
       }
 
       before(async () => {
-        await chain.deployNeumark();
         await deployEtherToken();
         await deployLockedAccount(assetToken, 18, 0.1);
       });
@@ -127,8 +139,8 @@ contract(
       }
 
       async function deployEuroToken() {
-        assetToken = await EuroToken.new(chain.accessControl.address);
-        await chain.accessControl.setUserRole(
+        assetToken = await EuroToken.new(accessControl.address);
+        await accessControl.setUserRole(
           admin,
           roles.eurtDepositManager,
           assetToken.address,
@@ -153,7 +165,6 @@ contract(
       }
 
       before(async () => {
-        await chain.deployNeumark();
         await deployEuroToken();
         await deployLockedAccount(assetToken, 18, 0.1);
         await applyTransferPermissions([
@@ -313,7 +324,7 @@ contract(
       });
 
       it("target that returns false on migration should throw", async () => {
-        const ticket = ether(1);
+        const ticket = etherToWei(1);
         const neumarks = ticket.mul(6.5);
         // lock investor
         await makeDeposit(investor, controller.address, ticket);
@@ -345,11 +356,11 @@ contract(
       });
 
       it("should migrate investor", async () => {
-        await migrateOne(ether(1), investor);
+        await migrateOne(etherToWei(1), investor);
       });
 
       it("should migrate investor then unlock and withdraw", async () => {
-        const ticket = ether(1);
+        const ticket = etherToWei(1);
         await migrateOne(ticket, investor);
         await enableReleaseAll();
         // no need to burn neumarks
@@ -358,20 +369,20 @@ contract(
       });
 
       it("migrate same investor twice should do nothing", async () => {
-        await migrateOne(ether(1), investor);
+        await migrateOne(etherToWei(1), investor);
         const tx = await lockedAccount.migrate({ from: investor });
         expect(hasEvent(tx, "LogInvestorMigrated")).to.be.false;
       });
 
       it("migrate non existing investor should do nothing", async () => {
-        await migrateOne(ether(1), investor);
+        await migrateOne(etherToWei(1), investor);
         const tx = await lockedAccount.migrate({ from: investor2 });
         expect(hasEvent(tx, "LogInvestorMigrated")).to.be.false;
       });
 
       it("should reject investor migration before it is enabled", async () => {
-        const ticket = ether(3.18919182);
-        const neumarks = ether(1.189729111);
+        const ticket = etherToWei(3.18919182);
+        const neumarks = etherToWei(1.189729111);
         await makeDeposit(investor, controller.address, ticket);
         await controller.investToken(neumarks, { from: investor });
         await migrationTarget.setMigrationSource(lockedAccount.address, {
@@ -385,8 +396,8 @@ contract(
       });
 
       it("should migrate investor in AcceptUnlocks", async () => {
-        const ticket = ether(3.18919182);
-        const neumarks = ether(1.189729111);
+        const ticket = etherToWei(3.18919182);
+        const neumarks = etherToWei(1.189729111);
         await makeDeposit(investor, controller.address, ticket);
         await controller.investToken(neumarks, { from: investor });
         await migrationTarget.setMigrationSource(lockedAccount.address, {
@@ -404,8 +415,8 @@ contract(
       });
 
       it("should reject enabling migration from invalid account", async () => {
-        const ticket = ether(3.18919182);
-        const neumarks = ether(1.189729111);
+        const ticket = etherToWei(3.18919182);
+        const neumarks = etherToWei(1.189729111);
         await makeDeposit(investor, controller.address, ticket);
         await controller.investToken(neumarks, { from: investor });
         await migrationTarget.setMigrationSource(lockedAccount.address, {
@@ -478,20 +489,18 @@ contract(
         const initialLockedAmount = await lockedAccount.totalLockedAmount();
         const initialAssetSupply = await assetToken.totalSupply();
         const initialNumberOfInvestors = await lockedAccount.totalInvestors();
-        const initialNeumarksBalance = await chain.neumark.balanceOf(
-          investorAddress
-        );
+        const initialNeumarksBalance = await neumark.balanceOf(investorAddress);
         const initialLockedBalance = await lockedAccount.balanceOf(
           investorAddress
         );
         // issue real neumarks and check against
-        let tx = await chain.neumark.issueForEuro(ticket, {
+        let tx = await neumark.issueForEuro(ticket, {
           from: investorAddress
         });
         const neumarks = eventValue(tx, "LogNeumarksIssued", "neumarkUlp");
-        expect(
-          await chain.neumark.balanceOf(investorAddress)
-        ).to.be.bignumber.equal(neumarks.add(initialNeumarksBalance));
+        expect(await neumark.balanceOf(investorAddress)).to.be.bignumber.equal(
+          neumarks.add(initialNeumarksBalance)
+        );
         // only controller can lock
         await makeDeposit(investorAddress, controller.address, ticket);
         tx = await controller.investToken(neumarks, { from: investorAddress });
@@ -509,7 +518,7 @@ contract(
           neumarks.add(initialLockedBalance[1])
         );
         // verify longstop date independently
-        let unlockDate = new web3.BigNumber(timebase + 18 * 30 * chain.days);
+        let unlockDate = new web3.BigNumber(timebase + 18 * 30 * dayInSeconds);
         if (initialLockedBalance[2] > 0) {
           // earliest date is preserved for repeated investor address
           unlockDate = initialLockedBalance[2];
@@ -533,14 +542,10 @@ contract(
 
       async function unlockWithApprove(investorAddress, neumarkToBurn) {
         // investor approves transfer to lock contract to burn neumarks
-        // console.log(`investor has ${parseInt(await chain.neumark.balanceOf(investor))}`);
-        const tx = await chain.neumark.approve(
-          lockedAccount.address,
-          neumarkToBurn,
-          {
-            from: investorAddress
-          }
-        );
+        // console.log(`investor has ${parseInt(await neumark.balanceOf(investor))}`);
+        const tx = await neumark.approve(lockedAccount.address, neumarkToBurn, {
+          from: investorAddress
+        });
         expect(eventValue(tx, "Approval", "amount")).to.be.bignumber.equal(
           neumarkToBurn
         );
@@ -550,10 +555,10 @@ contract(
 
       async function unlockWithCallback(investorAddress, neumarkToBurn) {
         // investor approves transfer to lock contract to burn neumarks
-        // console.log(`investor has ${await chain.neumark.balanceOf(investor)} against ${neumarkToBurn}`);
-        // console.log(`${chain.lockedAccount.address} should spend`);
-        // await chain.lockedAccount.receiveApproval(investor, neumarkToBurn, chain.neumark.address, "");
-        const tx = await chain.neumark.approveAndCall(
+        // console.log(`investor has ${await neumark.balanceOf(investor)} against ${neumarkToBurn}`);
+        // console.log(`${lockedAccount.address} should spend`);
+        // await lockedAccount.receiveApproval(investor, neumarkToBurn, neumark.address, "");
+        const tx = await neumark.approveAndCall(
           lockedAccount.address,
           neumarkToBurn,
           "",
@@ -581,7 +586,9 @@ contract(
       }
 
       async function calculateUnlockPenalty(ticket) {
-        return ticket.mul(await lockedAccount.penaltyFraction()).div(ether(1));
+        return ticket
+          .mul(await lockedAccount.penaltyFraction())
+          .div(etherToWei(1));
       }
 
       async function assertCorrectUnlock(tx, investorAddress, ticket, penalty) {
@@ -602,22 +609,22 @@ contract(
         // check penalty value
         await expectPenaltyBalance(penalty);
         // 0 neumarks at the end
-        expect(
-          await chain.neumark.balanceOf(investorAddress)
-        ).to.be.bignumber.equal(0);
+        expect(await neumark.balanceOf(investorAddress)).to.be.bignumber.equal(
+          0
+        );
       }
 
       async function enableUnlocks() {
         // move time forward within longstop date
-        await increaseTime(moment.duration(chain.days, "s"));
+        await increaseTime(moment.duration(dayInSeconds, "s"));
         // controller says yes
         await controller.succ();
         // must enable token transfers
-        await chain.neumark.enableTransfer(true);
+        await neumark.enableTransfer(true);
       }
 
       async function allowToReclaim(account) {
-        await chain.accessControl.setUserRole(
+        await accessControl.setUserRole(
           account,
           roles.reclaimer,
           lockedAccount.address,
@@ -634,21 +641,21 @@ contract(
       });
 
       it("should lock", async () => {
-        await lock(investor, ether(1));
+        await lock(investor, etherToWei(1));
       });
 
       it("should lock two different investors", async () => {
-        await lock(investor, ether(1));
-        await lock(investor2, ether(0.5));
+        await lock(investor, etherToWei(1));
+        await lock(investor2, etherToWei(0.5));
       });
 
       it("should lock same investor", async () => {
-        await lock(investor, ether(1));
-        await lock(investor, ether(0.5));
+        await lock(investor, etherToWei(1));
+        await lock(investor, etherToWei(0.5));
       });
 
       it("should unlock with approval on contract disbursal", async () => {
-        const ticket = ether(1);
+        const ticket = etherToWei(1);
         const neumarks = await lock(investor, ticket);
         await enableUnlocks();
         // change disbursal pool
@@ -665,8 +672,8 @@ contract(
       });
 
       it("should unlock two investors both with penalty", async () => {
-        const ticket1 = ether(1);
-        const ticket2 = ether(0.6210939884);
+        const ticket1 = etherToWei(1);
+        const ticket2 = etherToWei(0.6210939884);
         const neumarks1 = await lock(investor, ticket1);
         const neumarks2 = await lock(investor2, ticket2);
         await enableUnlocks();
@@ -675,10 +682,10 @@ contract(
         await expectPenaltyEvent(unlockTx, investor, penalty1);
         await expectPenaltyBalance(penalty1);
         expectUnlockEvent(unlockTx, investor, ticket1.sub(penalty1));
-        expect(await chain.neumark.balanceOf(investor2)).to.be.bignumber.eq(
+        expect(await neumark.balanceOf(investor2)).to.be.bignumber.eq(
           neumarks2
         );
-        expect(await chain.neumark.totalSupply()).to.be.bignumber.eq(neumarks2);
+        expect(await neumark.totalSupply()).to.be.bignumber.eq(neumarks2);
         expect(
           await assetToken.balanceOf(lockedAccount.address)
         ).to.be.bignumber.eq(ticket2);
@@ -694,20 +701,16 @@ contract(
       });
 
       it("should reject unlock with approval on contract disbursal that has receiveApproval not implemented", async () => {
-        const ticket = ether(1);
+        const ticket = etherToWei(1);
         const neumarks = await lock(investor, ticket);
         await enableUnlocks();
         // change disbursal pool to contract without receiveApproval, comment line below for test to fail
         await lockedAccount.setPenaltyDisbursal(noCallbackContract.address, {
           from: admin
         });
-        const tx = await chain.neumark.approve(
-          lockedAccount.address,
-          neumarks,
-          {
-            from: investor
-          }
-        );
+        const tx = await neumark.approve(lockedAccount.address, neumarks, {
+          from: investor
+        });
         expect(eventValue(tx, "Approval", "amount")).to.be.bignumber.equal(
           neumarks
         );
@@ -717,7 +720,7 @@ contract(
       });
 
       it("should unlock with approval on simple address disbursal", async () => {
-        const ticket = ether(1);
+        const ticket = etherToWei(1);
         const neumarks = await lock(investor, ticket);
         await enableUnlocks();
         const unlockTx = await unlockWithApprove(investor, neumarks);
@@ -729,7 +732,7 @@ contract(
       });
 
       it("should unlock with approveAndCall on simple address disbursal", async () => {
-        const ticket = ether(1);
+        const ticket = etherToWei(1);
         const neumarks = await lock(investor, ticket);
         await enableUnlocks();
         const unlockTx = await unlockWithCallback(investor, neumarks);
@@ -748,45 +751,45 @@ contract(
       });
 
       it("should reject unlock with approveAndCall with unknown token", async () => {
-        const ticket = ether(1);
+        const ticket = etherToWei(1);
         const neumarks = await lock(investor, ticket);
         await enableUnlocks();
         await unlockWithCallbackUnknownToken(investor, neumarks);
       });
 
       it("should allow unlock when neumark allowance and balance is too high", async () => {
-        const ticket = ether(1);
+        const ticket = etherToWei(1);
         const neumarks = await lock(investor, ticket);
         const neumarks2 = await lock(investor2, ticket);
         await enableUnlocks();
         // simulate trade
         const tradedAmount = neumarks2.mul(0.71389012).round(0);
-        await chain.neumark.transfer(investor, tradedAmount, {
+        await neumark.transfer(investor, tradedAmount, {
           from: investor2
         });
-        chain.neumark.approveAndCall(
+        neumark.approveAndCall(
           lockedAccount.address,
           neumarks.add(tradedAmount),
           "",
           { from: investor }
         );
         // should keep traded amount
-        expect(await chain.neumark.balanceOf(investor)).to.be.bignumber.eq(
+        expect(await neumark.balanceOf(investor)).to.be.bignumber.eq(
           tradedAmount
         );
       });
 
       it("should reject approveAndCall unlock when neumark allowance too low", async () => {
-        const ticket = ether(1);
+        const ticket = etherToWei(1);
         const neumarks = await lock(investor, ticket);
         await enableUnlocks();
         // change to mul(0) for test to fail
         const tradedAmount = neumarks.mul(0.71389012).round(0);
-        await chain.neumark.transfer(investor2, tradedAmount, {
+        await neumark.transfer(investor2, tradedAmount, {
           from: investor
         });
         await expect(
-          chain.neumark.approveAndCall(
+          neumark.approveAndCall(
             lockedAccount.address,
             neumarks.sub(tradedAmount),
             "",
@@ -796,16 +799,16 @@ contract(
       });
 
       it("should reject unlock when neumark balance too low but allowance OK", async () => {
-        const ticket = ether(1);
+        const ticket = etherToWei(1);
         const neumarks = await lock(investor, ticket);
         await enableUnlocks();
         // simulate trade
         const tradedAmount = neumarks.mul(0.71389012).round(0);
-        await chain.neumark.transfer(investor2, tradedAmount, {
+        await neumark.transfer(investor2, tradedAmount, {
           from: investor
         });
         // allow full amount
-        let tx = await chain.neumark.approve(lockedAccount.address, neumarks, {
+        let tx = await neumark.approve(lockedAccount.address, neumarks, {
           from: investor
         });
         expect(eventValue(tx, "Approval", "amount")).to.be.bignumber.equal(
@@ -817,7 +820,7 @@ contract(
       });
 
       it("should unlock after unlock date without penalty", async () => {
-        const ticket = ether(1);
+        const ticket = etherToWei(1);
         const neumarks = await lock(investor, ticket);
         await enableUnlocks();
         const investorBalance = await lockedAccount.balanceOf(investor);
@@ -831,11 +834,11 @@ contract(
       });
 
       it("should unlock two investors both without penalty", async () => {
-        const ticket1 = ether(4.18781092183);
-        const ticket2 = ether(0.46210939884);
+        const ticket1 = etherToWei(4.18781092183);
+        const ticket2 = etherToWei(0.46210939884);
         const neumarks1 = await lock(investor, ticket1);
         // day later
-        await increaseTime(moment.duration(chain.days, "s"));
+        await increaseTime(moment.duration(dayInSeconds, "s"));
         const neumarks2 = await lock(investor2, ticket2);
         await enableUnlocks();
         // forward to investor1 unlock date
@@ -854,11 +857,11 @@ contract(
       });
 
       it("should unlock two investors one with penalty, second without penalty", async () => {
-        const ticket1 = ether(9.18781092183);
-        const ticket2 = ether(0.06210939884);
+        const ticket1 = etherToWei(9.18781092183);
+        const ticket2 = etherToWei(0.06210939884);
         const neumarks1 = await lock(investor, ticket1);
         // day later
-        await increaseTime(moment.duration(chain.days, "s"));
+        await increaseTime(moment.duration(dayInSeconds, "s"));
         const neumarks2 = await lock(investor2, ticket2);
         await enableUnlocks();
         // forward to investor1 unlock date
@@ -880,28 +883,26 @@ contract(
       });
 
       it("should unlock without burning neumarks on release all", async () => {
-        const ticket1 = ether(9.18781092183);
-        const ticket2 = ether(0.06210939884);
+        const ticket1 = etherToWei(9.18781092183);
+        const ticket2 = etherToWei(0.06210939884);
         const neumarks1 = await lock(investor, ticket1);
         // day later
-        await increaseTime(moment.duration(chain.days, "s"));
+        await increaseTime(moment.duration(dayInSeconds, "s"));
         const neumarks2 = await lock(investor2, ticket2);
-        await increaseTime(moment.duration(chain.days, "s"));
+        await increaseTime(moment.duration(dayInSeconds, "s"));
         // controller says no
         await controller.fail();
         // forward to investor1 unlock date
         let unlockTx = await lockedAccount.unlock({ from: investor });
         expectUnlockEvent(unlockTx, investor, ticket1);
         // keeps neumarks
-        expect(await chain.neumark.balanceOf(investor)).to.be.bignumber.eq(
-          neumarks1
-        );
+        expect(await neumark.balanceOf(investor)).to.be.bignumber.eq(neumarks1);
         await makeWithdraw(investor, ticket1);
 
         unlockTx = await lockedAccount.unlock({ from: investor2 });
         expectUnlockEvent(unlockTx, investor2, ticket2);
         // keeps neumarks
-        expect(await chain.neumark.balanceOf(investor2)).to.be.bignumber.eq(
+        expect(await neumark.balanceOf(investor2)).to.be.bignumber.eq(
           neumarks2
         );
         await makeWithdraw(investor2, ticket2);
@@ -911,10 +912,10 @@ contract(
       it("should return on unlock for investor with no balance");
 
       it("should reject to reclaim assetToken", async () => {
-        const ticket1 = ether(9.18781092183);
+        const ticket1 = etherToWei(9.18781092183);
         await lock(investor, ticket1);
         // send assetToken to locked account
-        const shouldBeReclaimedDeposit = ether(0.028319821);
+        const shouldBeReclaimedDeposit = etherToWei(0.028319821);
         makeDeposit(investor2, lockedAccount.address, shouldBeReclaimedDeposit);
         // should reclaim
         await allowToReclaim(admin);
@@ -926,22 +927,20 @@ contract(
       });
 
       it("should reclaim neumarks", async () => {
-        const ticket1 = ether(9.18781092183);
+        const ticket1 = etherToWei(9.18781092183);
         const neumarks1 = await lock(investor, ticket1);
         await enableUnlocks();
-        await chain.neumark.transfer(lockedAccount.address, neumarks1, {
+        await neumark.transfer(lockedAccount.address, neumarks1, {
           from: investor
         });
         await allowToReclaim(admin);
-        await lockedAccount.reclaim(chain.neumark.address, { from: admin });
-        expect(await chain.neumark.balanceOf(admin)).to.be.bignumber.eq(
-          neumarks1
-        );
+        await lockedAccount.reclaim(neumark.address, { from: admin });
+        expect(await neumark.balanceOf(admin)).to.be.bignumber.eq(neumarks1);
       });
 
       it("should reclaim ether", async () => {
         const RECLAIM_ETHER = "0x0";
-        const amount = ether(1);
+        const amount = etherToWei(1);
         await forceEther(lockedAccount.address, amount, investor);
         await allowToReclaim(admin);
         const adminEthBalance = await promisify(web3.eth.getBalance)(admin);
@@ -1023,13 +1022,13 @@ contract(
 
     async function deployLockedAccount(token, unlockDateMonths, unlockPenalty) {
       lockedAccount = await LockedAccount.new(
-        chain.accessControl.address,
+        accessControl.address,
         token.address,
-        chain.neumark.address,
-        unlockDateMonths * chain.months,
-        ether(1).mul(unlockPenalty).round()
+        neumark.address,
+        unlockDateMonths * monthInSeconds,
+        etherToWei(1).mul(unlockPenalty).round()
       );
-      await chain.accessControl.setUserRole(
+      await accessControl.setUserRole(
         admin,
         roles.lockedAccountAdmin,
         lockedAccount.address,
@@ -1049,13 +1048,13 @@ contract(
 
     async function deployMigrationTarget(token) {
       const target = await TestLockedAccountMigrationTarget.new(
-        chain.accessControl.address,
+        accessControl.address,
         token.address,
-        chain.neumark.address,
-        18 * chain.months,
-        ether(1).mul(0.1).round()
+        neumark.address,
+        18 * monthInSeconds,
+        etherToWei(1).mul(0.1).round()
       );
-      await chain.accessControl.setUserRole(
+      await accessControl.setUserRole(
         admin,
         roles.lockedAccountAdmin,
         target.address,
