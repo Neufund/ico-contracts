@@ -6,10 +6,11 @@ import { basicTokenTests, standardTokenTests } from "./helpers/tokenTestCases";
 import { eventValue } from "./helpers/events";
 import ether from "./helpers/ether";
 import roles from "./helpers/roles";
+import EvmError from "./helpers/EVMThrow";
 
 const EuroToken = artifacts.require("./EuroToken.sol");
 
-contract("EuroToken", ([_, depositManager, ...accounts]) => {
+contract("EuroToken", ([_, depositManager, other, broker, ...investors]) => {
   let snapshot;
   let rbac;
   let euroToken;
@@ -36,23 +37,102 @@ contract("EuroToken", ([_, depositManager, ...accounts]) => {
       expect(event.args.amount).to.be.bignumber.eq(amount);
     }
 
+    function expectAllowedToEvent(tx, to, allowed) {
+      const event = eventValue(tx, "LogAllowedToAddress");
+      expect(event).to.exist;
+      expect(event.args.to).to.eq(to);
+      expect(event.args.allowed).to.eq(allowed);
+    }
+
+    function expectAllowedFromEvent(tx, from, allowed) {
+      const event = eventValue(tx, "LogAllowedFromAddress");
+      expect(event).to.exist;
+      expect(event.args.from).to.eq(from);
+      expect(event.args.allowed).to.eq(allowed);
+    }
+
     it("should deploy", async() => {
       await prettyPrintGasCost("EuroToken deploy", euroToken);
     });
 
     it("should deposit", async() => {
       const initialBalance = ether(1.19827398791827);
-      const tx = await euroToken.deposit(accounts[0], initialBalance, {
+      const tx = await euroToken.deposit(investors[0], initialBalance, {
         from: depositManager
       });
-      expectDepositEvent(tx, accounts[0], initialBalance);
+      expectDepositEvent(tx, investors[0], initialBalance);
       const totalSupply = await euroToken.totalSupply.call();
       expect(totalSupply).to.be.bignumber.eq(initialBalance);
-      const balance = await euroToken.balanceOf(accounts[0]);
+      const balance = await euroToken.balanceOf(investors[0]);
       expect(balance).to.be.bignumber.eq(initialBalance);
     });
 
-    it("deposit should allow transfer to");
+    it("should overflow totalSupply on deposit", async() => {
+      const initialBalance = new web3.BigNumber(2).pow(256).sub(1);
+      await euroToken.deposit(investors[0], initialBalance, {
+        from: depositManager
+      });
+      await expect(
+        euroToken.deposit(investors[1], initialBalance, {from: depositManager})
+      ).to.be.rejectedWith(EvmError);
+    });
+
+    it("should allow transfer to investor after deposit", async() => {
+      const initialBalance = ether(83781221);
+      const tx = await euroToken.deposit(investors[0], initialBalance, {
+        from: depositManager
+      });
+      expectAllowedToEvent(tx, investors[0], true);
+      const isAllowed = await euroToken.allowedTransferTo.call(investors[0]);
+      expect(isAllowed).to.be.true;
+    });
+
+    it("deposit only from manager", async() => {
+      const initialBalance = ether(820938);
+      await expect(
+        euroToken.deposit(investors[0], initialBalance, {from: other})
+      ).to.be.rejectedWith(EvmError);
+    });
+
+    it("should transfer between investors via broker", async() => {
+      const initialBalance = ether(83781221);
+      await euroToken.deposit(investors[0], initialBalance, {
+        from: depositManager
+      });
+      await euroToken.deposit(investors[1], initialBalance, {
+        from: depositManager
+      });
+      await euroToken.approve(broker, initialBalance, {from: investors[0]});
+      // no special permissions for investors needed, just the broker
+      await euroToken.setAllowedTransferFrom(broker, true, { from: depositManager});
+      await euroToken.setAllowedTransferTo(broker, true, { from: depositManager});
+
+      await euroToken.transferFrom(investors[0], investors[1], initialBalance, {from: broker});
+      const afterBalance = await euroToken.balanceOf.call(investors[1]);
+      expect(afterBalance).to.be.bignumber.eq(initialBalance.mul(2));
+    });
+
+    it("should transfer between allowed investors", async() => {
+      const initialBalance = ether(183781221);
+      await euroToken.deposit(investors[0], initialBalance, {
+        from: depositManager
+      });
+      const tx1 = await euroToken.setAllowedTransferTo(investors[1], true, { from: depositManager});
+      expectAllowedToEvent(tx1, investors[1], true);
+      const tx2 = await euroToken.setAllowedTransferFrom(investors[0], true, { from: depositManager});
+      expectAllowedFromEvent(tx2, investors[0], true);
+      const tx3 = await euroToken.setAllowedTransferTo(investors[0], false, { from: depositManager});
+      expectAllowedToEvent(tx3, investors[0], false);
+      await euroToken.transfer(investors[1], initialBalance, {from: investors[0]});
+      const afterBalance = await euroToken.balanceOf.call(investors[1]);
+      expect(afterBalance).to.be.bignumber.eq(initialBalance);
+    });
+
+    it("should not transfer from not allowed", async() => {
+      await expect(
+        euroToken.transfer(investors[1], 0, {from: investors[0]})
+      ).to.be.rejectedWith(EvmError);
+    });
   });
 
   describe("IBasicToken tests", () => {
@@ -60,19 +140,19 @@ contract("EuroToken", ([_, depositManager, ...accounts]) => {
     const getToken = () => euroToken;
 
     beforeEach(async () => {
-      await euroToken.deposit(accounts[1], initialBalance, {
+      await euroToken.deposit(investors[1], initialBalance, {
         from: depositManager
       });
-      await euroToken.setAllowedTransferFrom(accounts[1], true, {
+      await euroToken.setAllowedTransferFrom(investors[1], true, {
         from: depositManager
       });
-      await euroToken.setAllowedTransferTo(accounts[2], true, {
+      await euroToken.setAllowedTransferTo(investors[2], true, {
         from: depositManager
       });
       await euroToken.setAllowedTransferTo(0x0, true, { from: depositManager });
     });
 
-    basicTokenTests(getToken, accounts[1], accounts[2], initialBalance);
+    basicTokenTests(getToken, investors[1], investors[2], initialBalance);
   });
 
   describe("IERC20Allowance tests", () => {
@@ -80,16 +160,16 @@ contract("EuroToken", ([_, depositManager, ...accounts]) => {
     const getToken = () => euroToken;
 
     beforeEach(async () => {
-      await euroToken.deposit(accounts[1], initialBalance, {
+      await euroToken.deposit(investors[1], initialBalance, {
         from: depositManager
       });
-      await euroToken.setAllowedTransferFrom(accounts[1], true, {
+      await euroToken.setAllowedTransferFrom(investors[1], true, {
         from: depositManager
       });
-      await euroToken.setAllowedTransferTo(accounts[2], true, {
+      await euroToken.setAllowedTransferTo(investors[2], true, {
         from: depositManager
       });
-      await euroToken.setAllowedTransferTo(accounts[3], true, {
+      await euroToken.setAllowedTransferTo(investors[3], true, {
         from: depositManager
       });
       await euroToken.setAllowedTransferTo(0x0, true, { from: depositManager });
@@ -97,9 +177,9 @@ contract("EuroToken", ([_, depositManager, ...accounts]) => {
 
     standardTokenTests(
       getToken,
-      accounts[1],
-      accounts[2],
-      accounts[3],
+      investors[1],
+      investors[2],
+      investors[3],
       initialBalance
     );
   });
