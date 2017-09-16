@@ -798,6 +798,22 @@ contract(
         ).to.be.rejectedWith(EvmError);
       });
 
+      it("should reject unlock when neumark allowance too low", async () => {
+        const ticket = etherToWei(1);
+        const neumarks = await lock(investor, ticket);
+        await enableUnlocks();
+        // allow 1/3 amount
+        let tx = await neumark.approve(
+          lockedAccount.address,
+          neumarks.mul(0.3),
+          {
+            from: investor
+          }
+        );
+        tx = await lockedAccount.unlock({ from: investor });
+        expect(error(tx)).to.eq(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
+      });
+
       it("should reject unlock when neumark balance too low but allowance OK", async () => {
         const ticket = etherToWei(1);
         const neumarks = await lock(investor, ticket);
@@ -811,10 +827,6 @@ contract(
         let tx = await neumark.approve(lockedAccount.address, neumarks, {
           from: investor
         });
-        expect(eventValue(tx, "Approval", "amount")).to.be.bignumber.equal(
-          neumarks
-        );
-        // then try to unlock
         tx = await lockedAccount.unlock({ from: investor });
         expect(error(tx)).to.eq(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
       });
