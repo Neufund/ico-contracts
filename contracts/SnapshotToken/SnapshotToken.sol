@@ -139,22 +139,23 @@ contract SnapshotToken is
     ///  interact with contracts in one function call instead of two
     /// @param spender The address of the contract able to transfer the tokens
     /// @param amount The amount of tokens to be approved for transfer
-    /// @return True if the function call was successful
+    /// @return True if the function call was successful, reverts in any other case
     /// Reimplements the public function in Allowance (TODO: is this necessary?)
     function approveAndCall(address spender, uint256 amount, bytes extraData)
         public
-        returns (bool success)
+        returns (bool)
     {
         require(approve(spender, amount));
 
-        success = IERC677Callback(spender).receiveApproval(
+        bool success = IERC677Callback(spender).receiveApproval(
             msg.sender,
             amount,
             this,
             extraData
         );
+        require(success);
 
-        return success;
+        return true;
     }
 
     ////////////////////////
