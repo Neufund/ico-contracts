@@ -99,21 +99,21 @@ contract SnapshotToken is
         // NOTE: We do not call the ERC223 callback
         // here for compatibility reasons. Please use
         // tranfser(to, amount, bytes()) instead.
-        transfer(msg.sender, to, amount);
+        transferInternal(msg.sender, to, amount);
         return true;
     }
 
     function transfer(address to, uint256 amount, bytes data)
         public
-        returns (bool success)
+        returns (bool)
     {
-        transfer(msg.sender, to, amount);
+        transferInternal(msg.sender, to, amount);
 
         // Notify the receiving contract.
         if (isContract(to)) {
             IERC223Callback(to).tokenFallback(msg.sender, amount, data);
         }
-        return success;
+        return true;
     }
 
     /// @notice `msg.sender` approves `spender` to spend `amount` tokens on
@@ -168,7 +168,7 @@ contract SnapshotToken is
     /// @param to The address of the recipient
     /// @param amount The amount of tokens to be transferred
     /// Implements the abstract function from AllowanceBase
-    function transfer(address from, address to, uint256 amount)
+    function transferInternal(address from, address to, uint256 amount)
         internal
     {
         // Alerts the token controller of the transfer
@@ -190,7 +190,7 @@ contract SnapshotToken is
     function mAllowanceTransfer(address from, address to, uint256 amount)
         internal
     {
-        transfer(from, to, amount);
+        transferInternal(from, to, amount);
     }
 
 }
