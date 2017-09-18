@@ -81,19 +81,24 @@ contract EtherToken is
     // Implements IERC677Token
     //
 
-    function approveAndCall(address spender, uint256 amount, bytes extraData)
-        returns (bool success)
+    function approveAndCall(
+        address spender,
+        uint256 amount,
+        bytes extraData
+    )
+        returns (bool)
     {
         require(approve(spender, amount));
 
-        success = IERC677Callback(spender).receiveApproval(
+        bool success = IERC677Callback(spender).receiveApproval(
             msg.sender,
             amount,
             this,
             extraData
         );
+        require(success);
 
-        return success;
+        return true;
     }
 
     //
