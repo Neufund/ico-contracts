@@ -1,20 +1,26 @@
 pragma solidity 0.4.15;
 
+import './MigrationTarget.sol';
 
-/// implemented in the contract that is the target of LockedAccount migration
-/// migration process is removing investors balance from source LockedAccount fully
-/// target should re-create investor with the same balance, totalLockedAmount and totalInvestors are invariant during migration
-contract LockedAccountMigration {
 
+/// @notice implemented in the contract that is the target of LockedAccount migration
+///  migration process is removing investors balance from source LockedAccount fully
+///  target should re-create investor with the same balance, totalLockedAmount and totalInvestors are invariant during migration
+contract LockedAccountMigration is
+    MigrationTarget
+{
     ////////////////////////
-    // Modifiers
+    // Events
     ////////////////////////
 
-    // migration target is force to apply this modifier to migrate function implementation
-    modifier onlyMigrationFrom() {
-        require(msg.sender == getMigrationFrom());
-        _;
-    }
+    /// @notice intended to be logged on successful migration
+    event InvestorMigrated(
+        address indexed investor,
+        uint256 balance,
+        uint256 neumarksDue,
+        uint256 unlockDate,
+        address assetToken
+    );
 
     ////////////////////////
     // Public functions
@@ -28,12 +34,6 @@ contract LockedAccountMigration {
         uint256 unlockDate
     )
         public
-        onlyMigrationFrom
+        onlyMigrationSource()
         returns(bool);
-
-    // should return migration source address
-    function getMigrationFrom()
-        public
-        constant
-        returns (address);
 }

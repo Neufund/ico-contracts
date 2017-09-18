@@ -56,7 +56,7 @@ contract EtherToken is
     // Public functions
     ////////////////////////
 
-    /// deposit 'amount' of Ether to account 'to'
+    /// deposit msg.value of Ether to msg.sender balance
     function deposit()
         payable
         public

@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { eventValue, hasEvent } from "./helpers/events";
-import * as chain from "./helpers/spawnContracts";
+import { deployControlContracts } from "./helpers/deployContracts";
 import EvmError from "./helpers/EVMThrow";
 import { TriState } from "./helpers/triState";
 import roles from "./helpers/roles";
@@ -17,14 +17,17 @@ contract(
   ([_, platformOperatorRepresentative, signer1, signer2]) => {
     let snapshot;
     let agreement;
+    let accessControl;
+    let forkArbiter;
 
     before(async () => {
-      await chain.spawnAccessControl();
+      [accessControl, forkArbiter] = await deployControlContracts();
+
       agreement = await TestAgreement.new(
-        chain.accessControl.address,
-        chain.forkArbiter.address
+        accessControl.address,
+        forkArbiter.address
       );
-      await chain.accessControl.setUserRole(
+      await accessControl.setUserRole(
         platformOperatorRepresentative,
         roles.platformOperatorRepresentative,
         agreement.address,
