@@ -4,7 +4,12 @@ import { eventValue } from "./helpers/events";
 import createAccessPolicy from "./helpers/createAccessPolicy";
 import roles from "./helpers/roles";
 import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
-import { basicTokenTests, standardTokenTests } from "./helpers/tokenTestCases";
+import {
+  basicTokenTests,
+  standardTokenTests,
+  erc677TokenTests,
+  deployTestErc677Callback
+} from "./helpers/tokenTestCases";
 
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const Neumark = artifacts.require("./Neumark.sol");
@@ -271,5 +276,19 @@ contract("Neumark", accounts => {
       accounts[3],
       initialBalanceNmk
     );
+  });
+
+  describe("IERC677Token tests", () => {
+    const initialBalanceNmk = NMK_DECIMALS.mul(91279837.398827).round();
+    const getToken = () => neumark;
+    let erc667cb;
+    const getTestErc667cb = () => erc667cb;
+
+    beforeEach(async () => {
+      await initNeumarkBalance(initialBalanceNmk);
+      erc667cb = await deployTestErc677Callback();
+    });
+
+    erc677TokenTests(getToken, getTestErc667cb, accounts[1], initialBalanceNmk);
   });
 });

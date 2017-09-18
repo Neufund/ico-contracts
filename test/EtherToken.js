@@ -2,13 +2,18 @@ import { expect } from "chai";
 import { prettyPrintGasCost } from "./helpers/gasUtils";
 import createAccessPolicy from "./helpers/createAccessPolicy";
 import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
-import { basicTokenTests, standardTokenTests } from "./helpers/tokenTestCases";
+import {
+  basicTokenTests,
+  standardTokenTests,
+  erc677TokenTests,
+  deployTestErc677Callback
+} from "./helpers/tokenTestCases";
 import { eventValue } from "./helpers/events";
 import ether from "./helpers/ether";
 
 const EtherToken = artifacts.require("EtherToken");
 
-contract("EtherToken", ([deployer, ...accounts]) => {
+contract("EtherToken", ([...accounts]) => {
   let snapshot;
   let etherToken;
 
@@ -24,7 +29,6 @@ contract("EtherToken", ([deployer, ...accounts]) => {
   });
 
   describe("specific tests", () => {
-
     function expectDepositEvent(tx, owner, amount) {
       const event = eventValue(tx, "LogDeposit");
       expect(event).to.exist;
@@ -32,11 +36,11 @@ contract("EtherToken", ([deployer, ...accounts]) => {
       expect(event.args.amount).to.be.bignumber.eq(amount);
     }
 
-    it("should deploy", async() => {
+    it("should deploy", async () => {
       await prettyPrintGasCost("EuroToken deploy", etherToken);
     });
 
-    it("should deposit", async() => {
+    it("should deposit", async () => {
       const initialBalance = ether(1.19827398791827);
       const tx = await etherToken.deposit({
         from: accounts[0],
@@ -49,11 +53,7 @@ contract("EtherToken", ([deployer, ...accounts]) => {
       expect(balance).to.be.bignumber.eq(initialBalance);
     });
 
-    it("should not be able to reclaim ether");
-
-    // test deposit
-    // test deposit max value
-    // test deposit overflow
+    it("should reject to reclaim ether");
   });
 
   describe("IBasicToken tests", () => {
@@ -88,5 +88,22 @@ contract("EtherToken", ([deployer, ...accounts]) => {
       accounts[3],
       initialBalance
     );
+  });
+
+  describe("IERC677Token tests", () => {
+    const initialBalance = ether(8.91192);
+    const getToken = () => etherToken;
+    let erc667cb;
+    const getTestErc667cb = () => erc667cb;
+
+    beforeEach(async () => {
+      await etherToken.deposit({
+        from: accounts[1],
+        value: initialBalance
+      });
+      erc667cb = await deployTestErc677Callback();
+    });
+
+    erc677TokenTests(getToken, getTestErc667cb, accounts[1], initialBalance);
   });
 });

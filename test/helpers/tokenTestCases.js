@@ -2,6 +2,8 @@ import { expect } from "chai";
 import { eventValue } from "./events";
 import EvmError from "./EVMThrow";
 
+const TestERC677Callback = artifacts.require("TestERC677Callback");
+
 function expectTransferEvent(tx, from, to, amount) {
   const event = eventValue(tx, "Transfer");
   expect(event).to.exist;
@@ -18,13 +20,17 @@ function expectApproveEvent(tx, owner, spender, amount) {
   expect(event.args.amount).to.be.bignumber.eq(amount);
 }
 
+export async function deployTestErc677Callback() {
+  return TestERC677Callback.new();
+}
+
 export function basicTokenTests(token, fromAddr, toAddr, initialBalance) {
   it("should return the correct totalSupply", async () => {
     const totalSupply = await token().totalSupply.call();
     expect(totalSupply).to.be.bignumber.eq(initialBalance);
   });
 
-  it("should return correct balances after transfer", async () => {
+  it("should return correct balances after transfer of whole balance", async () => {
     // before transfer
     const fromAddrBalanceInitial = await token().balanceOf.call(fromAddr);
     expect(fromAddrBalanceInitial).to.be.bignumber.eq(initialBalance);
@@ -43,7 +49,7 @@ export function basicTokenTests(token, fromAddr, toAddr, initialBalance) {
     expect(totalSupply).to.be.bignumber.eq(initialBalance);
   });
 
-  it("should throw an error when trying to transfer more than balance", async () => {
+  it("should throw an error when trying to transfer 1 'wei' more than balance", async () => {
     const balance = await token().balanceOf.call(fromAddr);
     expect(balance).to.be.bignumber.eq(initialBalance);
     await expect(
@@ -62,7 +68,7 @@ export function standardTokenTests(
   token,
   fromAddr,
   toAddr,
-  thirdParty,
+  broker,
   initialBalance
 ) {
   it("should check totalSupply and initalBalance", async () => {
@@ -116,111 +122,150 @@ export function standardTokenTests(
     expect(allowance).to.be.bignumber.eq(0);
   });
 
-  it("should return correct balances after transferFrom", async () => {
-    await token().approve(toAddr, initialBalance, { from: fromAddr });
+  it("should return correct balances after transferFrom of whole balance", async () => {
+    await token().approve(broker, initialBalance, { from: fromAddr });
     // transfer
-    const tx = await token().transferFrom(
-      fromAddr,
-      thirdParty,
-      initialBalance,
-      { from: toAddr }
-    );
-    expectTransferEvent(tx, fromAddr, thirdParty, initialBalance);
+    const tx = await token().transferFrom(fromAddr, toAddr, initialBalance, {
+      from: broker
+    });
+    expectTransferEvent(tx, fromAddr, toAddr, initialBalance);
     // check balances
     const balanceFrom = await token().balanceOf.call(fromAddr);
     expect(balanceFrom).to.be.bignumber.eq(0);
-    const balanceThird = await token().balanceOf.call(thirdParty);
+    const balanceThird = await token().balanceOf.call(toAddr);
     expect(balanceThird).to.be.bignumber.eq(initialBalance);
-    const balanceTo = await token().balanceOf.call(toAddr);
+    const balanceTo = await token().balanceOf.call(broker);
     expect(balanceTo).to.be.bignumber.eq(0);
     // total supply should not change
     const totalSupply = await token().totalSupply.call();
     expect(totalSupply).to.be.bignumber.eq(initialBalance);
     // allowance should be 0
-    const finalAllowance = await token().allowance.call(fromAddr, toAddr);
+    const finalAllowance = await token().allowance.call(fromAddr, broker);
     expect(finalAllowance).to.be.bignumber.eq(0);
   });
 
   it("should return correct balances after transferring part of approval", async () => {
-    await token().approve(toAddr, initialBalance, { from: fromAddr });
+    await token().approve(broker, initialBalance, { from: fromAddr });
     const amount = initialBalance.mul(0.87162378).round();
     // transfer amount
-    const tx = await token().transferFrom(fromAddr, thirdParty, amount, {
-      from: toAddr
+    const tx = await token().transferFrom(fromAddr, toAddr, amount, {
+      from: broker
     });
-    expectTransferEvent(tx, fromAddr, thirdParty, amount);
+    expectTransferEvent(tx, fromAddr, toAddr, amount);
     // check balances
     const balanceFrom = await token().balanceOf.call(fromAddr);
     expect(balanceFrom).to.be.bignumber.eq(initialBalance.sub(amount));
-    const balanceThird = await token().balanceOf.call(thirdParty);
+    const balanceThird = await token().balanceOf.call(toAddr);
     expect(balanceThird).to.be.bignumber.eq(amount);
-    const balanceTo = await token().balanceOf.call(toAddr);
+    const balanceTo = await token().balanceOf.call(broker);
     expect(balanceTo).to.be.bignumber.eq(0);
     // total supply should not change
     const totalSupply = await token().totalSupply.call();
     expect(totalSupply).to.be.bignumber.eq(initialBalance);
     // allowance should be remaining amount
-    const finalAllowance = await token().allowance.call(fromAddr, toAddr);
+    const finalAllowance = await token().allowance.call(fromAddr, broker);
     expect(finalAllowance).to.be.bignumber.eq(initialBalance.sub(amount));
   });
 
   it("should return correct balances after transferring approval in tranches", async () => {
-    await token().approve(toAddr, initialBalance, { from: fromAddr });
+    await token().approve(broker, initialBalance, { from: fromAddr });
     const tranche1 = initialBalance.mul(0.7182).round();
     const tranche2 = initialBalance.sub(tranche1).mul(0.1189273).round();
     const tranche3 = initialBalance.sub(tranche1.add(tranche2));
     // transfer in tranches
-    const tx1 = await token().transferFrom(fromAddr, thirdParty, tranche1, {
-      from: toAddr
+    const tx1 = await token().transferFrom(fromAddr, toAddr, tranche1, {
+      from: broker
     });
-    expectTransferEvent(tx1, fromAddr, thirdParty, tranche1);
-    const tx2 = await token().transferFrom(fromAddr, thirdParty, tranche2, {
-      from: toAddr
+    expectTransferEvent(tx1, fromAddr, toAddr, tranche1);
+    const tx2 = await token().transferFrom(fromAddr, toAddr, tranche2, {
+      from: broker
     });
-    expectTransferEvent(tx2, fromAddr, thirdParty, tranche2);
-    const tx3 = await token().transferFrom(fromAddr, thirdParty, tranche3, {
-      from: toAddr
+    expectTransferEvent(tx2, fromAddr, toAddr, tranche2);
+    const tx3 = await token().transferFrom(fromAddr, toAddr, tranche3, {
+      from: broker
     });
-    expectTransferEvent(tx3, fromAddr, thirdParty, tranche3);
+    expectTransferEvent(tx3, fromAddr, toAddr, tranche3);
     // we transfered whole amount so:
     const balanceFrom = await token().balanceOf.call(fromAddr);
     expect(balanceFrom).to.be.bignumber.eq(0);
-    const balanceThird = await token().balanceOf.call(thirdParty);
+    const balanceThird = await token().balanceOf.call(toAddr);
     expect(balanceThird).to.be.bignumber.eq(initialBalance);
-    const balanceTo = await token().balanceOf.call(toAddr);
+    const balanceTo = await token().balanceOf.call(broker);
     expect(balanceTo).to.be.bignumber.eq(0);
     // total supply should not change
     const totalSupply = await token().totalSupply.call();
     expect(totalSupply).to.be.bignumber.eq(initialBalance);
     // allowance should be 0
-    const finalAllowance = await token().allowance.call(fromAddr, toAddr);
+    const finalAllowance = await token().allowance.call(fromAddr, broker);
     expect(finalAllowance).to.be.bignumber.eq(0);
   });
 
-  it("should reject transferFrom if above approval", async () => {
+  it("should reject transferFrom if 1 'wei' above approval", async () => {
     const amount = initialBalance.mul(0.281972).round();
-    await token().approve(toAddr, amount, { from: fromAddr });
+    await token().approve(broker, amount, { from: fromAddr });
     // transfer more than amount but within balance
     await expect(
-      token().transferFrom(fromAddr, thirdParty, initialBalance, {
-        from: toAddr
+      token().transferFrom(fromAddr, toAddr, amount.add(1), {
+        from: broker
       })
     ).to.be.rejectedWith(EvmError);
   });
 
-  it("should reject transferFrom if above balance", async () => {
-    const amount = initialBalance.mul(1.281972).round();
-    await token().approve(toAddr, amount, { from: fromAddr });
+  it("should reject transferFrom if 1 'wei' above balance", async () => {
+    const amount = initialBalance.add(1);
+    await token().approve(broker, amount, { from: fromAddr });
     // transfer amount that is over balance
     await expect(
-      token().transferFrom(fromAddr, thirdParty, amount, { from: toAddr })
+      token().transferFrom(fromAddr, toAddr, amount, { from: broker })
     ).to.be.rejectedWith(EvmError);
   });
 
   it("should throw an error when trying to transferFrom to 0x0", async () => {
-    await token().approve(toAddr, initialBalance, { from: fromAddr });
+    await token().approve(broker, initialBalance, { from: fromAddr });
     await expect(
-      token().transferFrom(fromAddr, 0x0, initialBalance, { from: toAddr })
+      token().transferFrom(fromAddr, 0x0, initialBalance, { from: broker })
+    ).to.be.rejectedWith(EvmError);
+  });
+}
+
+export function erc677TokenTests(token, erc677cb, fromAddr, initialBalance) {
+  it("should approve and call whole balance", async () => {
+    await erc677cb().setCallbackReturnValue(true);
+    const tx = await token().approveAndCall(
+      erc677cb().address,
+      initialBalance,
+      "",
+      { from: fromAddr }
+    );
+    expectApproveEvent(tx, fromAddr, erc677cb().address, initialBalance);
+    expectTransferEvent(tx, fromAddr, erc677cb().address, initialBalance);
+    const finalBalance = await token().balanceOf.call(erc677cb().address);
+    expect(finalBalance).to.be.bignumber.eq(initialBalance);
+  });
+
+  it("should approve and call whole balance with extraData", async () => {
+    await erc677cb().setCallbackReturnValue(true);
+    const data = "0x79bc68b14fe3225ab8fe3278b412b93956d49c2d";
+    // test token requires this data in callback
+    await erc677cb().setAcceptedExtraData(data);
+    const tx = await token().approveAndCall(
+      erc677cb().address,
+      initialBalance,
+      data,
+      { from: fromAddr }
+    );
+    expectApproveEvent(tx, fromAddr, erc677cb().address, initialBalance);
+    expectTransferEvent(tx, fromAddr, erc677cb().address, initialBalance);
+    const finalBalance = await token().balanceOf.call(erc677cb().address);
+    expect(finalBalance).to.be.bignumber.eq(initialBalance);
+  });
+
+  it("should reject approve and call when test token returns false", async () => {
+    await erc677cb().setCallbackReturnValue(false);
+    await expect(
+      token().approveAndCall(erc677cb().address, initialBalance, "", {
+        from: fromAddr
+      })
     ).to.be.rejectedWith(EvmError);
   });
 }
