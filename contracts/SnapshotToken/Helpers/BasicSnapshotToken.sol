@@ -83,12 +83,13 @@ contract BasicSnapshotToken is
     /// @notice Send `amount` tokens to `to` from `msg.sender`
     /// @param to The address of the recipient
     /// @param amount The amount of tokens to be transferred
-    /// @return Whether the transfer was successful or not
+    /// @return True if the transfer was successful, reverts in any other case
     function transfer(address to, uint256 amount)
         public
         returns (bool success)
     {
-        return mTransfer(msg.sender, to, amount);
+        mTransfer(msg.sender, to, amount);
+        return true;
     }
 
     //
@@ -157,22 +158,21 @@ contract BasicSnapshotToken is
     /// @param from The address holding the tokens being transferred
     /// @param to The address of the recipient
     /// @param amount The amount of tokens to be transferred
-    /// @return True if the transfer was successful
+    /// @return True if the transfer was successful, reverts in any other case
     function mTransfer(
         address from,
         address to,
         uint256 amount
     )
         internal
-        returns(bool)
     {
         if (amount == 0) {
-            return true;
+            return;
         }
         require(to != address(0));
 
         // If the amount being transfered is more than the balance of the
-        //  account the transfer fails
+        //  account the transfer reverts
         var previousBalanceFrom = balanceOf(from);
         require(previousBalanceFrom >= amount);
 
@@ -190,7 +190,6 @@ contract BasicSnapshotToken is
 
         // An event to make the transfer easy to find on the blockchain
         Transfer(from, to, amount);
-        return true;
     }
 
     /// @notice Generates `amount` tokens that are assigned to `owner`
@@ -199,7 +198,6 @@ contract BasicSnapshotToken is
     /// @return True if the tokens are generated correctly
     function mGenerateTokens(address owner, uint256 amount)
         internal
-        returns (bool)
     {
         require(owner != address(0));
 
@@ -215,7 +213,6 @@ contract BasicSnapshotToken is
         setValue(_balances[owner], newBalanceTo);
 
         Transfer(0, owner, amount);
-        return true;
     }
 
     /// @notice Burns `amount` tokens from `owner`
@@ -224,7 +221,6 @@ contract BasicSnapshotToken is
     /// @return True if the tokens are burned correctly
     function mDestroyTokens(address owner, uint256 amount)
         internal
-        returns (bool)
     {
         uint256 curTotalSupply = totalSupply();
         require(curTotalSupply >= amount);
@@ -238,6 +234,5 @@ contract BasicSnapshotToken is
         setValue(_balances[owner], newBalanceFrom);
 
         Transfer(owner, 0, amount);
-        return true;
     }
 }

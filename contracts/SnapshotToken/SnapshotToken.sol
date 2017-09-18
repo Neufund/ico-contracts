@@ -90,7 +90,7 @@ contract SnapshotToken is
     /// @notice Send `amount` tokens to `to` from `msg.sender`
     /// @param to The address of the recipient
     /// @param amount The amount of tokens to be transferred
-    /// @return Whether the transfer was successful or not
+    /// @return True if the transfer was successful, reverts in any other case
     /// Overrides the public function in SnapshotTokenBase
     function transfer(address to, uint256 amount)
         public
@@ -99,17 +99,15 @@ contract SnapshotToken is
         // NOTE: We do not call the ERC223 callback
         // here for compatibility reasons. Please use
         // tranfser(to, amount, bytes()) instead.
-        return transfer(msg.sender, to, amount);
+        transfer(msg.sender, to, amount);
+        return true;
     }
 
     function transfer(address to, uint256 amount, bytes data)
         public
         returns (bool success)
     {
-        success = transfer(msg.sender, to, amount);
-        if (!success) {
-            return success;
-        }
+        transfer(msg.sender, to, amount);
 
         // Notify the receiving contract.
         if (isContract(to)) {
@@ -168,16 +166,14 @@ contract SnapshotToken is
     /// @param from The address holding the tokens being transferred
     /// @param to The address of the recipient
     /// @param amount The amount of tokens to be transferred
-    /// @return True if the transfer was successful
     /// Implements the abstract function from AllowanceBase
     function transfer(address from, address to, uint256 amount)
         internal
-        returns(bool)
     {
         // Alerts the token controller of the transfer
         require(mOnTransfer(from, to, amount));
 
-        return mTransfer(from, to, amount);
+        mTransfer(from, to, amount);
     }
 
     //
@@ -189,13 +185,11 @@ contract SnapshotToken is
     /// @param from The address holding the tokens being transferred
     /// @param to The address of the recipient
     /// @param amount The amount of tokens to be transferred
-    /// @return True if the transfer was successful
     /// Implements the abstract function from AllowanceBase
     function mAllowanceTransfer(address from, address to, uint256 amount)
         internal
-        returns(bool)
     {
-        return transfer(from, to, amount);
+        transfer(from, to, amount);
     }
 
 }
