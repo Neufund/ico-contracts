@@ -166,9 +166,6 @@ contract BasicSnapshotToken is
     )
         internal
     {
-        if (amount == 0) {
-            return;
-        }
         require(to != address(0));
 
         // If the amount being transfered is more than the balance of the
