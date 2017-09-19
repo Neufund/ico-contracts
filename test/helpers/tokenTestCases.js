@@ -4,8 +4,9 @@ import EvmError from "./EVMThrow";
 
 const TestERC677Callback = artifacts.require("TestERC677Callback");
 const TestERC223Callback = artifacts.require("TestERC223Callback");
+export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-function expectTransferEvent(tx, from, to, amount) {
+export function expectTransferEvent(tx, from, to, amount) {
   const event = eventValue(tx, "Transfer");
   expect(event).to.exist;
   expect(event.args.from).to.eq(from);
@@ -18,6 +19,13 @@ function expectApproveEvent(tx, owner, spender, amount) {
   expect(event).to.exist;
   expect(event.args.owner).to.eq(owner);
   expect(event.args.spender).to.eq(spender);
+  expect(event.args.amount).to.be.bignumber.eq(amount);
+}
+
+function expectWithdrawEvent(tx, owner, amount) {
+  const event = eventValue(tx, "LogWithdrawal");
+  expect(event).to.exist;
+  expect(event.args.from).to.eq(owner);
   expect(event.args.amount).to.be.bignumber.eq(amount);
 }
 
@@ -52,6 +60,19 @@ export function basicTokenTests(token, fromAddr, toAddr, initialBalance) {
     // total supply should not change
     const totalSupply = await token().totalSupply.call();
     expect(totalSupply).to.be.bignumber.eq(initialBalance);
+  });
+
+  it("should return correct balances after transfer of amount of 0", async () => {
+    // transfer all
+    const tx = await token().transfer(toAddr, 0, {
+      from: fromAddr
+    });
+    expectTransferEvent(tx, fromAddr, toAddr, 0);
+    // check balances
+    const fromAddrBalance = await token().balanceOf.call(fromAddr);
+    expect(fromAddrBalance).to.be.bignumber.eq(initialBalance);
+    const toAddrBalance = await token().balanceOf.call(toAddr);
+    expect(toAddrBalance).to.be.bignumber.eq(0);
   });
 
   it("should throw an error when trying to transfer 1 'wei' more than balance", async () => {
@@ -147,6 +168,40 @@ export function standardTokenTests(
     // allowance should be 0
     const finalAllowance = await token().allowance.call(fromAddr, broker);
     expect(finalAllowance).to.be.bignumber.eq(0);
+  });
+
+  it("should return correct balances after approve and transferFrom of 0 amount", async () => {
+    await token().approve(broker, 0, { from: fromAddr });
+    // transfer
+    const tx = await token().transferFrom(fromAddr, toAddr, 0, {
+      from: broker
+    });
+    expectTransferEvent(tx, fromAddr, toAddr, 0);
+    // check balances
+    const balanceFrom = await token().balanceOf.call(fromAddr);
+    expect(balanceFrom).to.be.bignumber.eq(initialBalance);
+    const balanceThird = await token().balanceOf.call(toAddr);
+    expect(balanceThird).to.be.bignumber.eq(0);
+    // allowance should be 0
+    const finalAllowance = await token().allowance.call(fromAddr, broker);
+    expect(finalAllowance).to.be.bignumber.eq(0);
+  });
+
+  it("should return correct balances after approve of whole balance and transferFrom of 0 amount", async () => {
+    await token().approve(broker, initialBalance, { from: fromAddr });
+    // transfer
+    const tx = await token().transferFrom(fromAddr, toAddr, 0, {
+      from: broker
+    });
+    expectTransferEvent(tx, fromAddr, toAddr, 0);
+    // check balances
+    const balanceFrom = await token().balanceOf.call(fromAddr);
+    expect(balanceFrom).to.be.bignumber.eq(initialBalance);
+    const balanceThird = await token().balanceOf.call(toAddr);
+    expect(balanceThird).to.be.bignumber.eq(0);
+    // allowance should be 0
+    const finalAllowance = await token().allowance.call(fromAddr, broker);
+    expect(finalAllowance).to.be.bignumber.eq(initialBalance);
   });
 
   it("should return correct balances after transferring part of approval", async () => {
@@ -323,4 +378,42 @@ export function erc223TokenTests(token, fromAddr, toAddr, initialBalance) {
     const finalBalance = await token().balanceOf.call(toAddr);
     expect(finalBalance).to.be.bignumber.eq(initialBalance);
   }); */
+}
+
+export function testWithdrawal(token, investor, initialBalance) {
+  it("should withdraw whole balance after deposit", async () => {
+    const tx = await token().withdraw(initialBalance, { from: investor });
+    expectWithdrawEvent(tx, investor, initialBalance);
+    expectTransferEvent(tx, investor, ZERO_ADDRESS, initialBalance);
+    const finalBalance = await token().balanceOf.call(investor);
+    expect(finalBalance).to.be.bignumber.eq(0);
+    const finalSupply = await token().totalSupply.call();
+    expect(finalSupply).to.be.bignumber.eq(0);
+  });
+
+  it("should withdraw whole balance in tranches", async () => {
+    const tranche1 = initialBalance.mul(0.7182).round();
+    const tranche2 = initialBalance.sub(tranche1).sub(1);
+    const tranche3 = new web3.BigNumber(1);
+    const tx1 = await token().withdraw(tranche1, { from: investor });
+    expectWithdrawEvent(tx1, investor, tranche1);
+    expectTransferEvent(tx1, investor, ZERO_ADDRESS, tranche1);
+    const tx2 = await token().withdraw(tranche2, { from: investor });
+    expectWithdrawEvent(tx2, investor, tranche2);
+    expectTransferEvent(tx2, investor, ZERO_ADDRESS, tranche2);
+    const tx3 = await token().withdraw(tranche3, { from: investor });
+    expectWithdrawEvent(tx3, investor, tranche3);
+    expectTransferEvent(tx3, investor, ZERO_ADDRESS, tranche3);
+
+    const finalBalance = await token().balanceOf.call(investor);
+    expect(finalBalance).to.be.bignumber.eq(0);
+    const finalSupply = await token().totalSupply.call();
+    expect(finalSupply).to.be.bignumber.eq(0);
+  });
+
+  it("should reject to withdraw balance + 1 'wei'", async () => {
+    await expect(
+      token().withdraw(initialBalance.add(1), { from: investor })
+    ).to.be.rejectedWith(EvmError);
+  });
 }
