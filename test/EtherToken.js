@@ -7,14 +7,17 @@ import {
   standardTokenTests,
   erc677TokenTests,
   deployTestErc677Callback,
-  erc223TokenTests
+  erc223TokenTests,
+  expectTransferEvent,
+  ZERO_ADDRESS,
+  testWithdrawal
 } from "./helpers/tokenTestCases";
 import { eventValue } from "./helpers/events";
 import { etherToWei } from "./helpers/unitConverter";
 
 const EtherToken = artifacts.require("EtherToken");
 
-contract("EtherToken", ([...accounts]) => {
+contract("EtherToken", ([broker, ...investors]) => {
   let snapshot;
   let etherToken;
 
@@ -38,19 +41,20 @@ contract("EtherToken", ([...accounts]) => {
     }
 
     it("should deploy", async () => {
-      await prettyPrintGasCost("EuroToken deploy", etherToken);
+      await prettyPrintGasCost("EtherToken deploy", etherToken);
     });
 
     it("should deposit", async () => {
       const initialBalance = etherToWei(1.19827398791827);
       const tx = await etherToken.deposit({
-        from: accounts[0],
+        from: investors[0],
         value: initialBalance
       });
-      expectDepositEvent(tx, accounts[0], initialBalance);
+      expectDepositEvent(tx, investors[0], initialBalance);
+      expectTransferEvent(tx, ZERO_ADDRESS, investors[0], initialBalance);
       const totalSupply = await etherToken.totalSupply.call();
       expect(totalSupply).to.be.bignumber.eq(initialBalance);
-      const balance = await etherToken.balanceOf(accounts[0]);
+      const balance = await etherToken.balanceOf(investors[0]);
       expect(balance).to.be.bignumber.eq(initialBalance);
     });
 
@@ -63,12 +67,12 @@ contract("EtherToken", ([...accounts]) => {
 
     beforeEach(async () => {
       await etherToken.deposit({
-        from: accounts[1],
+        from: investors[1],
         value: initialBalance
       });
     });
 
-    basicTokenTests(getToken, accounts[1], accounts[2], initialBalance);
+    basicTokenTests(getToken, investors[1], investors[2], initialBalance);
   });
 
   describe("IERC20Allowance tests", () => {
@@ -77,16 +81,16 @@ contract("EtherToken", ([...accounts]) => {
 
     beforeEach(async () => {
       await etherToken.deposit({
-        from: accounts[1],
+        from: investors[1],
         value: initialBalance
       });
     });
 
     standardTokenTests(
       getToken,
-      accounts[1],
-      accounts[2],
-      accounts[3],
+      investors[1],
+      investors[2],
+      broker,
       initialBalance
     );
   });
@@ -99,13 +103,13 @@ contract("EtherToken", ([...accounts]) => {
 
     beforeEach(async () => {
       await etherToken.deposit({
-        from: accounts[1],
+        from: investors[1],
         value: initialBalance
       });
       erc667cb = await deployTestErc677Callback();
     });
 
-    erc677TokenTests(getToken, getTestErc667cb, accounts[1], initialBalance);
+    erc677TokenTests(getToken, getTestErc667cb, investors[1], initialBalance);
   });
 
   describe("IERC223Token tests", () => {
@@ -114,11 +118,25 @@ contract("EtherToken", ([...accounts]) => {
 
     beforeEach(async () => {
       await etherToken.deposit({
-        from: accounts[1],
+        from: investors[1],
         value: initialBalance
       });
     });
 
-    erc223TokenTests(getToken, accounts[1], accounts[2], initialBalance);
+    erc223TokenTests(getToken, investors[1], investors[2], initialBalance);
+  });
+
+  describe("withdrawal tests", () => {
+    const initialBalance = etherToWei(7.189192);
+    const getToken = () => etherToken;
+
+    beforeEach(async () => {
+      await etherToken.deposit({
+        from: investors[1],
+        value: initialBalance
+      });
+    });
+
+    testWithdrawal(getToken, investors[1], initialBalance);
   });
 });
