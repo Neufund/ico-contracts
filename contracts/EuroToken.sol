@@ -112,6 +112,7 @@ contract EuroToken is
         only(ROLE_EURT_DEPOSIT_MANAGER)
         returns (bool)
     {
+        require(to != address(0));
         _balances[to] = add(_balances[to], amount);
         _totalSupply = add(_totalSupply, amount);
         setAllowedTransferTo(to, true);
