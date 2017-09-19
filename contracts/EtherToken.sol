@@ -41,7 +41,7 @@ contract EtherToken is
     );
 
     event LogWithdrawal(
-        address indexed to,
+        address indexed from,
         uint256 amount
     );
 

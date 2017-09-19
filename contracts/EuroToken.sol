@@ -52,7 +52,7 @@ contract EuroToken is
     );
 
     event LogWithdrawal(
-        address indexed to,
+        address indexed from,
         uint256 amount
     );
 
@@ -116,6 +116,7 @@ contract EuroToken is
         _totalSupply = add(_totalSupply, amount);
         setAllowedTransferTo(to, true);
         LogDeposit(to, amount);
+        Transfer(address(0), to, amount);
         return true;
     }
 
@@ -129,6 +130,7 @@ contract EuroToken is
         _balances[msg.sender] = sub(_balances[msg.sender], amount);
         _totalSupply = sub(_totalSupply, amount);
         LogWithdrawal(msg.sender, amount);
+        Transfer(msg.sender, address(0), amount);
     }
 
     /// @notice enables or disables address to be receipient of EUR-T
