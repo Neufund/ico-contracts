@@ -477,8 +477,8 @@ contract Commitment is
         investorNmk = sub(totalNmk, platformNmk);
 
         // Issue Neumarks and distribute
-        assert(NEUMARK.transfer(msg.sender, investorNmk));
-        assert(NEUMARK.transfer(PLATFORM_WALLET, platformNmk));
+        NEUMARK.distributeNeumark(msg.sender, investorNmk);
+        NEUMARK.distributeNeumark(PLATFORM_WALLET, platformNmk);
 
         return (investorNmk, ticketNmk);
     }
