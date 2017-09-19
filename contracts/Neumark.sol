@@ -81,7 +81,6 @@ contract Neumark is
     function issueForEuro(uint256 euroUlps)
         public
         only(ROLE_NEUMARK_ISSUER)
-        acceptAgreement(msg.sender)
         returns (uint256)
     {
         require(_totalEuroUlps + euroUlps >= _totalEuroUlps);
@@ -90,6 +89,15 @@ contract Neumark is
         mGenerateTokens(msg.sender, neumarkUlps);
         LogNeumarksIssued(msg.sender, euroUlps, neumarkUlps);
         return neumarkUlps;
+    }
+
+    function distributeNeumark(address to, uint256 neumarkUlps)
+        public
+        only(ROLE_NEUMARK_ISSUER)
+        acceptAgreement(to)
+    {
+        bool success = mTransfer(msg.sender, to, neumarkUlps);
+        require(success);
     }
 
     function burnNeumark(uint256 neumarkUlps)
@@ -169,18 +177,7 @@ contract Neumark is
         acceptAgreement(from)
         returns (bool allow)
     {
-        // When enabled, anyone can
-        if (_transferEnabled) {
-            return true;
-        }
-
-        // When disabled, require ROLE_TRANSFERER
-        return accessPolicy().allowed(
-            msg.sender,
-            ROLE_TRANSFERER,
-            this,
-            msg.sig
-        );
+        return _transferEnabled;
     }
 
     function mOnApprove(
