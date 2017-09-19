@@ -8,7 +8,8 @@ import {
   basicTokenTests,
   standardTokenTests,
   erc677TokenTests,
-  deployTestErc677Callback
+  deployTestErc677Callback,
+  erc223TokenTests
 } from "./helpers/tokenTestCases";
 
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
@@ -290,5 +291,16 @@ contract("Neumark", accounts => {
     });
 
     erc677TokenTests(getToken, getTestErc667cb, accounts[1], initialBalanceNmk);
+  });
+
+  describe("IERC223Token tests", () => {
+    const initialBalanceNmk = NMK_DECIMALS.mul(91279837.398827).round();
+    const getToken = () => neumark;
+
+    beforeEach(async () => {
+      await initNeumarkBalance(initialBalanceNmk);
+    });
+
+    erc223TokenTests(getToken, accounts[1], accounts[2], initialBalanceNmk);
   });
 });

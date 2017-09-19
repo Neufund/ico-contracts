@@ -6,7 +6,8 @@ import {
   basicTokenTests,
   standardTokenTests,
   erc677TokenTests,
-  deployTestErc677Callback
+  deployTestErc677Callback,
+  erc223TokenTests
 } from "./helpers/tokenTestCases";
 import { eventValue } from "./helpers/events";
 import ether from "./helpers/ether";
@@ -105,5 +106,19 @@ contract("EtherToken", ([...accounts]) => {
     });
 
     erc677TokenTests(getToken, getTestErc667cb, accounts[1], initialBalance);
+  });
+
+  describe("IERC223Token tests", () => {
+    const initialBalance = ether(3.98172);
+    const getToken = () => etherToken;
+
+    beforeEach(async () => {
+      await etherToken.deposit({
+        from: accounts[1],
+        value: initialBalance
+      });
+    });
+
+    erc223TokenTests(getToken, accounts[1], accounts[2], initialBalance);
   });
 });
