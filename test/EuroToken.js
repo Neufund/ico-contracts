@@ -6,7 +6,10 @@ import {
   basicTokenTests,
   standardTokenTests,
   erc677TokenTests,
-  deployTestErc677Callback
+  deployTestErc677Callback,
+  ZERO_ADDRESS,
+  expectTransferEvent,
+  testWithdrawal
 } from "./helpers/tokenTestCases";
 import { eventValue } from "./helpers/events";
 import { etherToWei } from "./helpers/unitConverter";
@@ -65,6 +68,7 @@ contract("EuroToken", ([_, depositManager, other, broker, ...investors]) => {
         from: depositManager
       });
       expectDepositEvent(tx, investors[0], initialBalance);
+      expectTransferEvent(tx, ZERO_ADDRESS, investors[0], initialBalance);
       const totalSupply = await euroToken.totalSupply.call();
       expect(totalSupply).to.be.bignumber.eq(initialBalance);
       const balance = await euroToken.balanceOf(investors[0]);
@@ -93,14 +97,23 @@ contract("EuroToken", ([_, depositManager, other, broker, ...investors]) => {
       expect(isAllowed).to.be.true;
     });
 
-    it("deposit only from manager", async () => {
+    it("should reject deposit not from deposit manager", async () => {
       const initialBalance = etherToWei(820938);
       await expect(
         euroToken.deposit(investors[0], initialBalance, { from: other })
       ).to.be.rejectedWith(EvmError);
     });
 
-    it("should transfer between investors via broker", async () => {
+    it("should reject deposit to address 0", async () => {
+      const initialBalance = etherToWei(19821);
+      await expect(
+        euroToken.deposit(ZERO_ADDRESS, initialBalance, {
+          from: depositManager
+        })
+      ).to.be.rejectedWith(EvmError);
+    });
+
+    it("should transfer between investors via broker with minimum permissions", async () => {
       const initialBalance = etherToWei(83781221);
       await euroToken.deposit(investors[0], initialBalance, {
         from: depositManager
@@ -191,7 +204,7 @@ contract("EuroToken", ([_, depositManager, other, broker, ...investors]) => {
         from: depositManager
       });
       // broker permission to send
-      await euroToken.setAllowedTransferFrom(investors[3], true, {
+      await euroToken.setAllowedTransferFrom(broker, true, {
         from: depositManager
       });
       await euroToken.setAllowedTransferTo(0x0, true, { from: depositManager });
@@ -201,7 +214,7 @@ contract("EuroToken", ([_, depositManager, other, broker, ...investors]) => {
       getToken,
       investors[1],
       investors[2],
-      investors[3],
+      broker,
       initialBalance
     );
   });
@@ -228,5 +241,18 @@ contract("EuroToken", ([_, depositManager, other, broker, ...investors]) => {
     });
 
     erc677TokenTests(getToken, getTestErc667cb, investors[1], initialBalance);
+  });
+
+  describe("withdrawal tests", () => {
+    const initialBalance = etherToWei(1.19827398791827);
+    const getToken = () => euroToken;
+
+    beforeEach(async () => {
+      await euroToken.deposit(investors[0], initialBalance, {
+        from: depositManager
+      });
+    });
+
+    testWithdrawal(getToken, investors[0], initialBalance);
   });
 });
