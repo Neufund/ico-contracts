@@ -9,7 +9,7 @@ import {
   deployTestErc677Callback
 } from "./helpers/tokenTestCases";
 import { eventValue } from "./helpers/events";
-import ether from "./helpers/ether";
+import { etherToWei } from "./helpers/unitConverter";
 import roles from "./helpers/roles";
 import EvmError from "./helpers/EVMThrow";
 
@@ -60,7 +60,7 @@ contract("EuroToken", ([_, depositManager, other, broker, ...investors]) => {
     });
 
     it("should deposit", async () => {
-      const initialBalance = ether(1.19827398791827);
+      const initialBalance = etherToWei(1.19827398791827);
       const tx = await euroToken.deposit(investors[0], initialBalance, {
         from: depositManager
       });
@@ -84,7 +84,7 @@ contract("EuroToken", ([_, depositManager, other, broker, ...investors]) => {
     });
 
     it("should allow transfer to investor after deposit", async () => {
-      const initialBalance = ether(83781221);
+      const initialBalance = etherToWei(83781221);
       const tx = await euroToken.deposit(investors[0], initialBalance, {
         from: depositManager
       });
@@ -94,14 +94,14 @@ contract("EuroToken", ([_, depositManager, other, broker, ...investors]) => {
     });
 
     it("deposit only from manager", async () => {
-      const initialBalance = ether(820938);
+      const initialBalance = etherToWei(820938);
       await expect(
         euroToken.deposit(investors[0], initialBalance, { from: other })
       ).to.be.rejectedWith(EvmError);
     });
 
     it("should transfer between investors via broker", async () => {
-      const initialBalance = ether(83781221);
+      const initialBalance = etherToWei(83781221);
       await euroToken.deposit(investors[0], initialBalance, {
         from: depositManager
       });
@@ -125,7 +125,7 @@ contract("EuroToken", ([_, depositManager, other, broker, ...investors]) => {
     });
 
     it("should transfer between allowed investors", async () => {
-      const initialBalance = ether(183781221);
+      const initialBalance = etherToWei(183781221);
       await euroToken.deposit(investors[0], initialBalance, {
         from: depositManager
       });
@@ -159,7 +159,7 @@ contract("EuroToken", ([_, depositManager, other, broker, ...investors]) => {
   });
 
   describe("IBasicToken tests", () => {
-    const initialBalance = ether(1.19827398791827);
+    const initialBalance = etherToWei(1.19827398791827);
     const getToken = () => euroToken;
 
     beforeEach(async () => {
@@ -179,7 +179,7 @@ contract("EuroToken", ([_, depositManager, other, broker, ...investors]) => {
   });
 
   describe("IERC20Allowance tests", () => {
-    const initialBalance = ether(1.19827398791827);
+    const initialBalance = etherToWei(1.19827398791827);
     const getToken = () => euroToken;
 
     beforeEach(async () => {
@@ -207,7 +207,7 @@ contract("EuroToken", ([_, depositManager, other, broker, ...investors]) => {
   });
 
   describe("IERC677Token tests", () => {
-    const initialBalance = ether(1.19827398791827);
+    const initialBalance = etherToWei(1.19827398791827);
     const getToken = () => euroToken;
     let erc667cb;
     const getTestErc667cb = () => erc667cb;

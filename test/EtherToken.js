@@ -10,7 +10,7 @@ import {
   erc223TokenTests
 } from "./helpers/tokenTestCases";
 import { eventValue } from "./helpers/events";
-import ether from "./helpers/ether";
+import { etherToWei } from "./helpers/unitConverter";
 
 const EtherToken = artifacts.require("EtherToken");
 
@@ -42,7 +42,7 @@ contract("EtherToken", ([...accounts]) => {
     });
 
     it("should deposit", async () => {
-      const initialBalance = ether(1.19827398791827);
+      const initialBalance = etherToWei(1.19827398791827);
       const tx = await etherToken.deposit({
         from: accounts[0],
         value: initialBalance
@@ -58,7 +58,7 @@ contract("EtherToken", ([...accounts]) => {
   });
 
   describe("IBasicToken tests", () => {
-    const initialBalance = ether(1.19827398791827);
+    const initialBalance = etherToWei(1.19827398791827);
     const getToken = () => etherToken;
 
     beforeEach(async () => {
@@ -72,7 +72,7 @@ contract("EtherToken", ([...accounts]) => {
   });
 
   describe("IERC20Allowance tests", () => {
-    const initialBalance = ether(1.0192);
+    const initialBalance = etherToWei(1.0192);
     const getToken = () => etherToken;
 
     beforeEach(async () => {
@@ -92,7 +92,7 @@ contract("EtherToken", ([...accounts]) => {
   });
 
   describe("IERC677Token tests", () => {
-    const initialBalance = ether(8.91192);
+    const initialBalance = etherToWei(8.91192);
     const getToken = () => etherToken;
     let erc667cb;
     const getTestErc667cb = () => erc667cb;
@@ -109,7 +109,7 @@ contract("EtherToken", ([...accounts]) => {
   });
 
   describe("IERC223Token tests", () => {
-    const initialBalance = ether(3.98172);
+    const initialBalance = etherToWei(3.98172);
     const getToken = () => etherToken;
 
     beforeEach(async () => {
