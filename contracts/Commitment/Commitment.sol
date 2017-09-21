@@ -278,13 +278,88 @@ contract Commitment is
 
     /// converts `amount` in wei into EUR with 18 decimals required by Curve
     /// Neufund public commitment uses fixed EUR rate during commitment to level playing field and
-    /// prevent strategic behavior around ETH/EUR volatility. equity PTOs will use oracles as they need spot prices
+    /// prevent strategic behavior around ETH/EUR volatility. equity TOs will use oracles as they need spot prices
     function convertToEur(uint256 amount)
         public
         constant
         returns (uint256)
     {
         return fraction(amount, ETH_EUR_FRACTION);
+    }
+
+    function platformWalletAddress()
+        public
+        constant
+        returns (address)
+    {
+        return PLATFORM_WALLET;
+    }
+
+    function neumark()
+        public
+        constant
+        returns (Neumark)
+    {
+        return NEUMARK;
+    }
+
+    function etherLock()
+        public
+        constant
+        returns (LockedAccount)
+    {
+        return ETHER_LOCK;
+    }
+
+    function euroLock()
+        public
+        constant
+        returns (LockedAccount)
+    {
+        return EURO_LOCK;
+    }
+
+    function maxCapEur()
+        public
+        constant
+        returns (uint256)
+    {
+        return CAP_EUR;
+    }
+
+    function minTicketEur()
+        public
+        constant
+        returns (uint256)
+    {
+        return MIN_TICKET_EUR;
+    }
+
+    function platformOperatorNeumarkRewardShare()
+        public
+        constant
+        returns (uint256)
+    {
+        return PLATFORM_SHARE;
+    }
+
+    function whitelistTicket(address investor)
+        public
+        constant
+        returns (Token token, uint256 ticketEur, uint256 neumarkReward)
+    {
+        WhitelistTicket storage ticket = _whitelist[investor];
+        uint256 platformNmk = divRound(ticket.rewardNmk, PLATFORM_SHARE);
+        uint256 investorNmk = sub(ticket.rewardNmk, platformNmk);
+        return (ticket.token, ticket.amountEur, investorNmk);
+    }
+
+    function whitelistInvestor(uint256 atWhitelistPosition)
+        public
+        constant
+        returns (address)
+    {
+        return _whitelistInvestors[atWhitelistPosition];
     }
 
     ////////////////////////
