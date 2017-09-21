@@ -86,6 +86,7 @@ contract(
       );
       commitment = await Commitment.new(
         rbac.address,
+        forkArbiter.address,
         startDate,
         platform,
         neumark.address,
@@ -104,10 +105,10 @@ contract(
         { subject: eurtDepositManager, role: roles.eurtDepositManager },
         { subject: commitment.address, role: roles.neumarkIssuer },
         { subject: commitment.address, role: roles.neumarkBurner },
-        { subject: commitment.address, role: roles.transferAdmin },
-        { subject: commitment.address, role: roles.transferer }
+        { subject: commitment.address, role: roles.transferAdmin }
       ]);
       await neumark.amendAgreement(AGREEMENT, { from: representative });
+      await commitment.amendAgreement(AGREEMENT, { from: representative });
       await etherLock.setController(commitment.address, {
         from: lockedAccountAdmin
       });
