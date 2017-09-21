@@ -16,7 +16,7 @@ const Q18 = web3.toBigNumber("10").pow(18);
 
 const now = Date.now() / 1000;
 const LOCK_DURATION = 18 * 30 * 24 * 60 * 60;
-const START_DATE = now + 5 * 24 * 60 * 60;
+const START_DATE = now + 60;
 const PENALTY_FRACTION = web3.toBigNumber("0.1").mul(Q18);
 const CAP_EUR = web3.toBigNumber("200000000").mul(Q18);
 const MIN_TICKET_EUR = web3.toBigNumber("300").mul(Q18);
