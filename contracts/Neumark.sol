@@ -87,7 +87,7 @@ contract Neumark is
         require(_totalEuroUlps + euroUlps >= _totalEuroUlps);
         uint256 neumarkUlps = incremental(euroUlps);
         _totalEuroUlps += euroUlps;
-        assert(mGenerateTokens(msg.sender, neumarkUlps));
+        mGenerateTokens(msg.sender, neumarkUlps);
         LogNeumarksIssued(msg.sender, euroUlps, neumarkUlps);
         return neumarkUlps;
     }
@@ -99,7 +99,7 @@ contract Neumark is
     {
         uint256 euroUlps = incrementalInverse(neumarkUlps);
         _totalEuroUlps -= euroUlps;
-        assert(mDestroyTokens(msg.sender, neumarkUlps));
+        mDestroyTokens(msg.sender, neumarkUlps);
         LogNeumarksBurned(msg.sender, euroUlps, neumarkUlps);
         return euroUlps;
     }

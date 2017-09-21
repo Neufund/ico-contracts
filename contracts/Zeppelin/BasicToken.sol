@@ -32,6 +32,8 @@ contract BasicToken is IBasicToken, Math {
         public
         returns (bool)
     {
+        require(to != address(0));
+
         _balances[msg.sender] = sub(_balances[msg.sender], value);
         _balances[to] = add(_balances[to], value);
         Transfer(msg.sender, to, value);

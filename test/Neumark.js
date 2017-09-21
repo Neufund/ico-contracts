@@ -4,6 +4,15 @@ import { eventValue } from "./helpers/events";
 import createAccessPolicy from "./helpers/createAccessPolicy";
 import roles from "./helpers/roles";
 import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
+import {
+  basicTokenTests,
+  standardTokenTests,
+  erc677TokenTests,
+  deployTestErc677Callback,
+  erc223TokenTests,
+  expectTransferEvent,
+  ZERO_ADDRESS
+} from "./helpers/tokenTestCases";
 
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const Neumark = artifacts.require("./Neumark.sol");
@@ -67,45 +76,37 @@ contract("Neumark", accounts => {
     assert.equal((await neumark.totalEuroUlps.call()).valueOf(), 0);
     assert.equal((await neumark.totalSupply.call()).valueOf(), 0);
 
-    const r1 = await neumark.issueForEuro(EUR_DECIMALS.mul(100), {
+    const expectedr1EUR = EUR_DECIMALS.mul(100);
+    const r1 = await neumark.issueForEuro(expectedr1EUR, {
       from: accounts[1]
-    }); // TODO check result
+    });
     await prettyPrintGasCost("Issue", r1);
-    assert.equal(
-      (await neumark.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(),
-      100
+    const expectedr1NMK = new web3.BigNumber("649999859166687009257");
+    const r1NMK = eventValue(r1, "LogNeumarksIssued", "neumarkUlp");
+    expect(r1NMK.sub(expectedr1NMK).abs()).to.be.bignumber.lessThan(2);
+    expectTransferEvent(r1, ZERO_ADDRESS, accounts[1], r1NMK);
+    expect(await neumark.totalEuroUlps.call()).to.be.bignumber.eq(
+      expectedr1EUR
     );
-    assert.equal(
-      (await neumark.totalSupply.call()).div(NMK_DECIMALS).floor().valueOf(),
-      649
-    );
-    assert.equal(
-      (await neumark.balanceOf.call(accounts[1]))
-        .div(NMK_DECIMALS)
-        .floor()
-        .valueOf(),
-      649
-    );
+    expect(await neumark.totalSupply.call()).to.be.bignumber.eq(r1NMK);
+    expect(await neumark.balanceOf.call(accounts[1])).to.be.bignumber.eq(r1NMK);
 
-    const r2 = await neumark.issueForEuro(EUR_DECIMALS.mul(900), {
+    const expectedr2EUR = EUR_DECIMALS.mul(900);
+    const r2 = await neumark.issueForEuro(expectedr2EUR, {
       from: accounts[2]
     });
-    await prettyPrintGasCost("Issue", r2);
-    assert.equal(
-      (await neumark.totalEuroUlps.call()).div(NMK_DECIMALS).floor().valueOf(),
-      1000
+    const expectedr2NMK = new web3.BigNumber("5849986057520322227964");
+    const expectedTotalNMK = new web3.BigNumber("6499985916687009237221");
+    const r2NMK = eventValue(r2, "LogNeumarksIssued", "neumarkUlp");
+    expect(r2NMK.sub(expectedr2NMK).abs()).to.be.bignumber.lessThan(2);
+    expectTransferEvent(r2, ZERO_ADDRESS, accounts[2], r2NMK);
+    expect(await neumark.totalEuroUlps.call()).to.be.bignumber.eq(
+      expectedr2EUR.add(expectedr1EUR)
     );
-    assert.equal(
-      (await neumark.totalSupply.call()).div(NMK_DECIMALS).floor().valueOf(),
-      6499
+    expect(await neumark.totalSupply.call()).to.be.bignumber.eq(
+      expectedTotalNMK
     );
-    assert.equal(
-      (await neumark.balanceOf.call(accounts[2]))
-        .div(NMK_DECIMALS)
-        .floor()
-        .valueOf(),
-      5849
-    );
+    expect(await neumark.balanceOf.call(accounts[2])).to.be.bignumber.eq(r2NMK);
   });
 
   it("should issue and then burn Neumarks", async () => {
@@ -114,20 +115,18 @@ contract("Neumark", accounts => {
     const r = await neumark.issueForEuro(euroUlps, { from: accounts[1] });
     await prettyPrintGasCost("Issue", r);
     const neumarkUlps = await neumark.balanceOf.call(accounts[1]);
-    const neumarks = neumarkUlps.div(NMK_DECIMALS).floor().valueOf();
+    const neumarks = neumarkUlps.div(NMK_DECIMALS).floor();
 
     // Burn a third the Neumarks
-    const toBurn = Math.floor(neumarks / 3);
+    const toBurn = neumarks.div(3).round();
     const toBurnUlps = NMK_DECIMALS.mul(toBurn);
     const burned = await neumark.burnNeumark(toBurnUlps, { from: accounts[1] });
     await prettyPrintGasCost("Burn", burned);
-    assert.equal(
-      (await neumark.balanceOf.call(accounts[1]))
-        .div(NMK_DECIMALS)
-        .floor()
-        .valueOf(),
-      neumarks - toBurn
-    );
+    expect(
+      (await neumark.balanceOf.call(accounts[1])).div(NMK_DECIMALS).floor()
+    ).to.be.bignumber.eq(neumarks.sub(toBurn));
+    const burnedNMK = eventValue(burned, "LogNeumarksBurned", "neumarkUlp");
+    expectTransferEvent(burned, accounts[1], ZERO_ADDRESS, burnedNMK);
   });
 
   it("should issue same amount in multiple issuances", async () => {
@@ -227,5 +226,73 @@ contract("Neumark", accounts => {
     const tx = neumark.transfer(accounts[3], amount, { from });
 
     await expect(tx).to.revert;
+  });
+
+  async function initNeumarkBalance(initialBalanceNmk) {
+    // crude way to get exact Nmk balance
+    await neumark.issueForEuro(initialBalanceNmk.mul(6.5).round(), {
+      from: accounts[1]
+    });
+    const balance = await neumark.balanceOf.call(accounts[1]);
+    await neumark.burnNeumark(balance.sub(initialBalanceNmk), {
+      from: accounts[1]
+    });
+    // every ulp counts
+    const finalBalance = await neumark.balanceOf.call(accounts[1]);
+    expect(finalBalance).to.be.bignumber.eq(initialBalanceNmk);
+    await neumark.enableTransfer(true, { from: accounts[0] });
+  }
+
+  describe("IBasicToken tests", () => {
+    const initialBalanceNmk = NMK_DECIMALS.mul(1128192.2791827).round();
+    const getToken = () => neumark;
+
+    beforeEach(async () => {
+      await initNeumarkBalance(initialBalanceNmk);
+    });
+
+    basicTokenTests(getToken, accounts[1], accounts[2], initialBalanceNmk);
+  });
+
+  describe("IERC20Allowance tests", () => {
+    const initialBalanceNmk = NMK_DECIMALS.mul(91279837.398827).round();
+    const getToken = () => neumark;
+
+    beforeEach(async () => {
+      await initNeumarkBalance(initialBalanceNmk);
+    });
+
+    standardTokenTests(
+      getToken,
+      accounts[1],
+      accounts[2],
+      accounts[3],
+      initialBalanceNmk
+    );
+  });
+
+  describe("IERC677Token tests", () => {
+    const initialBalanceNmk = NMK_DECIMALS.mul(91279837.398827).round();
+    const getToken = () => neumark;
+    let erc667cb;
+    const getTestErc667cb = () => erc667cb;
+
+    beforeEach(async () => {
+      await initNeumarkBalance(initialBalanceNmk);
+      erc667cb = await deployTestErc677Callback();
+    });
+
+    erc677TokenTests(getToken, getTestErc667cb, accounts[1], initialBalanceNmk);
+  });
+
+  describe("IERC223Token tests", () => {
+    const initialBalanceNmk = NMK_DECIMALS.mul(91279837.398827).round();
+    const getToken = () => neumark;
+
+    beforeEach(async () => {
+      await initNeumarkBalance(initialBalanceNmk);
+    });
+
+    erc223TokenTests(getToken, accounts[1], accounts[2], initialBalanceNmk);
   });
 });

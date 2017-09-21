@@ -90,7 +90,7 @@ contract SnapshotToken is
     /// @notice Send `amount` tokens to `to` from `msg.sender`
     /// @param to The address of the recipient
     /// @param amount The amount of tokens to be transferred
-    /// @return Whether the transfer was successful or not
+    /// @return True if the transfer was successful, reverts in any other case
     /// Overrides the public function in SnapshotTokenBase
     function transfer(address to, uint256 amount)
         public
@@ -99,23 +99,21 @@ contract SnapshotToken is
         // NOTE: We do not call the ERC223 callback
         // here for compatibility reasons. Please use
         // tranfser(to, amount, bytes()) instead.
-        return transfer(msg.sender, to, amount);
+        transferInternal(msg.sender, to, amount);
+        return true;
     }
 
     function transfer(address to, uint256 amount, bytes data)
         public
-        returns (bool success)
+        returns (bool)
     {
-        success = transfer(msg.sender, to, amount);
-        if (!success) {
-            return success;
-        }
+        transferInternal(msg.sender, to, amount);
 
         // Notify the receiving contract.
         if (isContract(to)) {
             IERC223Callback(to).tokenFallback(msg.sender, amount, data);
         }
-        return success;
+        return true;
     }
 
     /// @notice `msg.sender` approves `spender` to spend `amount` tokens on
@@ -141,22 +139,23 @@ contract SnapshotToken is
     ///  interact with contracts in one function call instead of two
     /// @param spender The address of the contract able to transfer the tokens
     /// @param amount The amount of tokens to be approved for transfer
-    /// @return True if the function call was successful
+    /// @return True if the function call was successful, reverts in any other case
     /// Reimplements the public function in Allowance (TODO: is this necessary?)
     function approveAndCall(address spender, uint256 amount, bytes extraData)
         public
-        returns (bool success)
+        returns (bool)
     {
         require(approve(spender, amount));
 
-        success = IERC677Callback(spender).receiveApproval(
+        bool success = IERC677Callback(spender).receiveApproval(
             msg.sender,
             amount,
             this,
             extraData
         );
+        require(success);
 
-        return success;
+        return true;
     }
 
     ////////////////////////
@@ -168,16 +167,14 @@ contract SnapshotToken is
     /// @param from The address holding the tokens being transferred
     /// @param to The address of the recipient
     /// @param amount The amount of tokens to be transferred
-    /// @return True if the transfer was successful
     /// Implements the abstract function from AllowanceBase
-    function transfer(address from, address to, uint256 amount)
+    function transferInternal(address from, address to, uint256 amount)
         internal
-        returns(bool)
     {
         // Alerts the token controller of the transfer
         require(mOnTransfer(from, to, amount));
 
-        return mTransfer(from, to, amount);
+        mTransfer(from, to, amount);
     }
 
     //
@@ -189,13 +186,11 @@ contract SnapshotToken is
     /// @param from The address holding the tokens being transferred
     /// @param to The address of the recipient
     /// @param amount The amount of tokens to be transferred
-    /// @return True if the transfer was successful
     /// Implements the abstract function from AllowanceBase
     function mAllowanceTransfer(address from, address to, uint256 amount)
         internal
-        returns(bool)
     {
-        return transfer(from, to, amount);
+        transferInternal(from, to, amount);
     }
 
 }
