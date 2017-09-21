@@ -31,14 +31,11 @@ contract Commitment is
     // Pre-allocated tickets with a pre-allocated neumark reward.
     struct WhitelistTicket {
 
-        // The currency the investor wants to commited.
+        // The currency the investor wants and is allowed to commited.
         Token token;
 
         // The amount the investor commited. The investor can invest more or
         // less than this amount. In units of least precision of the token.
-        uint256 amount;
-
-        // The comitted amount converted to Eur
         uint256 amountEur;
 
         // The amount of Neumark reward for this commitment (computed by
@@ -96,16 +93,16 @@ contract Commitment is
     // Events
     ////////////////////////
 
-    /// on every investment transaction
-    /// `investor` invested `amount` in `paymentToken` currency which was
-    /// converted to `eurEquivalent` that purchases `purchasedAmount` of
+    /// on every commitment transaction
+    /// `investor` commited `amount` in `paymentToken` currency which was
+    /// converted to `eurEquivalent` that generates `grantedAmount` of
     /// `ofToken`.
-    event LogFundsInvested(
+    event LogFundsCommited(
         address indexed investor,
         uint256 amount,
-        address paymentToken,
+        address indexed paymentToken,
         uint256 eurEquivalent,
-        uint256 purchasedAmount,
+        uint256 grantedAmount,
         address ofToken
     );
 
@@ -216,8 +213,24 @@ contract Commitment is
         commitedWei = add(commitedWei, msg.value);
         ETHER_TOKEN.deposit.value(msg.value)();
 
-        // Move to private function to keep stack low
-        commitEtherPrivate(commitedWei);
+        // Get Neumark reward
+        uint256 commitedEur = convertToEur(commitedWei);
+        var (investorNmk, ticketNmk) = commitToken(commitedEur, Token.Ether);
+        _whitelistEtherNmk = sub(_whitelistEtherNmk, ticketNmk);
+
+        // Lock EtherToken
+        ETHER_TOKEN.approve(ETHER_LOCK, commitedWei);
+        ETHER_LOCK.lock(msg.sender, commitedWei, investorNmk);
+
+        // Log successful commitment
+        LogFundsCommited(
+            msg.sender,
+            commitedWei,
+            ETHER_TOKEN,
+            commitedEur,
+            investorNmk,
+            NEUMARK
+        );
     }
 
     function commitEuro()
@@ -229,56 +242,16 @@ contract Commitment is
         uint256 euroUlp = EURO_TOKEN.allowance(msg.sender, this);
         assert(EURO_TOKEN.transferFrom(msg.sender, this, euroUlp));
 
-        // Compute commited funds
-        require(euroUlp >= MIN_TICKET_EUR);
-        uint256 remainingEur = euroUlp;
-        uint256 totalNmk = 0;
-
-        // Whitelist part
-        WhitelistTicket storage ticket = _whitelist[msg.sender];
-        bool whitelisted = ticket.token == Token.Euro;
-        if (whitelisted) {
-            uint256 ticketEur = min(remainingEur, ticket.amount);
-            uint256 ticketNmk = proportion(
-                ticket.rewardNmk,
-                ticketEur,
-                ticket.amount
-            );
-            ticket.amount = sub(ticket.amount, ticketEur);
-            ticket.amountEur = sub(ticket.amountEur, ticketEur);
-            ticket.rewardNmk = sub(ticket.rewardNmk, ticketNmk);
-            _whitelistEuroNmk = sub(_whitelistEuroNmk, ticketNmk);
-            remainingEur = sub(remainingEur, ticketEur);
-            totalNmk = add(totalNmk, ticketNmk);
-        }
-
-        // Curve
-        if (whitelisted || state() == State.Public) {
-            totalNmk = add(totalNmk, NEUMARK.issueForEuro(remainingEur));
-            remainingEur = 0;
-        }
-
-        // We don't do partial tickets
-        require(remainingEur == 0);
-
-        // We don't go over the cap
-        require(NEUMARK.totalEuroUlps() <= CAP_EUR);
-
-        // Split the Neumarks
-        uint256 platformNmk = divRound(totalNmk, PLATFORM_SHARE);
-        assert(platformNmk <= totalNmk);
-        uint256 investorNmk = sub(totalNmk, platformNmk);
-
-        // Issue Neumarks and distribute
-        assert(NEUMARK.transfer(msg.sender, investorNmk));
-        assert(NEUMARK.transfer(PLATFORM_WALLET, platformNmk));
+        // Get Neumark reward
+        var (investorNmk, ticketNmk) = commitToken(euroUlp, Token.Euro);
+        _whitelistEuroNmk = sub(_whitelistEuroNmk, ticketNmk);
 
         // Lock EuroToken
         EURO_TOKEN.approve(EURO_LOCK, euroUlp);
         EURO_LOCK.lock(msg.sender, euroUlp, investorNmk);
 
         // Log successful commitment
-        LogFundsInvested(
+        LogFundsCommited(
             msg.sender,
             euroUlp,
             EURO_TOKEN,
@@ -372,7 +345,6 @@ contract Commitment is
         // Add to pre-allocated tickets
         _whitelist[investor] = WhitelistTicket({
             token: token,
-            amount: amount,
             amountEur: amountEur,
             rewardNmk: rewardNmk
         });
@@ -386,46 +358,40 @@ contract Commitment is
         }
     }
 
-    function commitEtherPrivate(uint256 commitedWei)
+    function commitToken(uint256 euroUlp, Token tokenType)
         private
+        returns (uint256 investorNmk, uint256 ticketNmk)
     {
-        uint256 commitedEur = convertToEur(commitedWei);
-        require(commitedEur >= MIN_TICKET_EUR);
-        uint256 remaining = commitedWei;
+        // Compute commited funds
+        require(euroUlp >= MIN_TICKET_EUR);
+        uint256 remainingEur = euroUlp;
         uint256 totalNmk = 0;
 
         // Whitelist part
         WhitelistTicket storage ticket = _whitelist[msg.sender];
-        bool whitelisted = ticket.token == Token.Ether;
-        if (whitelisted && state() == State.Whitelist) {
-            uint256 ticketEth = min(remaining, ticket.amount);
-            uint256 ticketNmk = proportion(
+        bool whitelisted = ticket.token == tokenType;
+        bool whitelistActiveForToken = tokenType == Token.Euro || state() == State.Whitelist;
+        if (whitelisted && whitelistActiveForToken) {
+            uint256 ticketEur = min(remainingEur, ticket.amountEur);
+            ticketNmk = proportion(
                 ticket.rewardNmk,
-                ticketEth,
-                ticket.amount
+                ticketEur,
+                ticket.amountEur
             );
-            uint256 ticketEur = proportion(
-                ticket.amountEur,
-                ticketEth,
-                ticket.amount
-            );
-            ticket.amount = sub(ticket.amount, ticketEth);
             ticket.amountEur = sub(ticket.amountEur, ticketEur);
             ticket.rewardNmk = sub(ticket.rewardNmk, ticketNmk);
-            _whitelistEtherNmk = sub(_whitelistEtherNmk, ticketNmk);
-            remaining = sub(remaining, ticketEth);
+            remainingEur = sub(remainingEur, ticketEur);
             totalNmk = add(totalNmk, ticketNmk);
         }
 
-        // Curve part
+        // Curve
         if (whitelisted || state() == State.Public) {
-            uint256 remainingEur = convertToEur(remaining);
             totalNmk = add(totalNmk, NEUMARK.issueForEuro(remainingEur));
-            remaining = 0;
+            remainingEur = 0;
         }
 
         // We don't do partial tickets
-        require(remaining == 0);
+        require(remainingEur == 0);
 
         // We don't go over the cap
         require(NEUMARK.totalEuroUlps() <= CAP_EUR);
@@ -433,24 +399,12 @@ contract Commitment is
         // Split the Neumarks
         uint256 platformNmk = divRound(totalNmk, PLATFORM_SHARE);
         assert(platformNmk <= totalNmk);
-        uint256 investorNmk = sub(totalNmk, platformNmk);
+        investorNmk = sub(totalNmk, platformNmk);
 
         // Issue Neumarks and distribute
         assert(NEUMARK.transfer(msg.sender, investorNmk));
         assert(NEUMARK.transfer(PLATFORM_WALLET, platformNmk));
 
-        // Lock EtherToken
-        ETHER_TOKEN.approve(ETHER_LOCK, commitedWei);
-        ETHER_LOCK.lock(msg.sender, commitedWei, investorNmk);
-
-        // Log successful commitment
-        LogFundsInvested(
-            msg.sender,
-            commitedWei,
-            ETHER_TOKEN,
-            commitedEur,
-            investorNmk,
-            NEUMARK
-        );
+        return (investorNmk, ticketNmk);
     }
 }
