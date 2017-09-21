@@ -12,6 +12,7 @@ import increaseTime, { setTimeTo } from "./helpers/increaseTime";
 import { latestTimestamp } from "./helpers/latestTime";
 import EvmError from "./helpers/EVMThrow";
 import { TriState } from "./helpers/triState";
+import { LockState } from "./helpers/lockState";
 import forceEther from "./helpers/forceEther";
 import { etherToWei } from "./helpers/unitConverter";
 import roles from "./helpers/roles";
@@ -32,13 +33,6 @@ const TestLockedAccountController = artifacts.require(
 const TestLockedAccountMigrationTarget = artifacts.require(
   "TestLockedAccountMigrationTarget"
 );
-
-const LockState = {
-  Uncontrolled: 0,
-  AcceptingLocks: 1,
-  AcceptingUnlocks: 2,
-  ReleaseAll: 3
-};
 
 const gasPrice = new web3.BigNumber(0x01); // this low gas price is forced by code coverage
 // const operatorWallet = "0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c";
