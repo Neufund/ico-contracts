@@ -34,7 +34,7 @@ const CAP_EUR = web3.toBigNumber("200000000").mul(Q18);
 const MIN_TICKET_EUR = web3.toBigNumber("300").mul(Q18);
 const ETH_EUR_FRACTION = web3.toBigNumber("300").mul(Q18);
 const ethToEur = eth => eth.mul(ETH_EUR_FRACTION).div(Q18);
-const eurToEth = eur => eur.mul(Q18).divToInt(ETH_EUR_FRACTION);
+const eurToEth = eur => divRound(eur.mul(Q18), ETH_EUR_FRACTION);
 const platformShare = nmk => divRound(nmk, PLATFORM_SHARE);
 const investorShare = nmk => nmk.sub(platformShare(nmk));
 const MIN_TICKET_ETH = eurToEth(MIN_TICKET_EUR);
@@ -152,6 +152,18 @@ contract(
     });
 
     describe("Whitelist", async () => {
+      function fillWhitelist(N) {
+        const whitelisted = Array(N).fill(0).map((_, i) => `0xFF${i}`);
+        const tokens = Array(N)
+          .fill(0)
+          .map((_, i) => (i % 2 ? Token.Ether : Token.Euro));
+        const amounts = Array(N)
+          .fill(0)
+          .map((_, i) => web3.toBigNumber(i * i).mul(Q18).plus(MIN_TICKET_EUR));
+
+        return { whitelisted, tokens, amounts };
+      }
+
       it("should accept whitelist with zero investors", async () => {
         const tx = await commitment.addWhitelisted([], [], [], {
           from: whitelistAdmin
@@ -162,13 +174,8 @@ contract(
 
       it("should accept whitelist with one investor", async () => {
         const N = 1;
-        const whitelisted = Array(N).fill(0).map((_, i) => `0xFF${i}`);
-        const tokens = Array(N)
-          .fill(0)
-          .map((_, i) => (i % 2 ? Token.Ether : Token.Euro));
-        const amounts = Array(N)
-          .fill(0)
-          .map((_, i) => web3.toBigNumber(i * i).mul(Q18).plus(MIN_TICKET_EUR));
+        const { whitelisted, tokens, amounts } = fillWhitelist(N);
+
         const tx = await commitment.addWhitelisted(
           whitelisted,
           tokens,
@@ -181,13 +188,7 @@ contract(
 
       it("should append whitelist twice", async () => {
         const N = 2;
-        const whitelisted = Array(N).fill(0).map((_, i) => `0xFF${i}`);
-        const tokens = Array(N)
-          .fill(0)
-          .map((_, i) => (i % 2 ? Token.Ether : Token.Euro));
-        const amounts = Array(N)
-          .fill(0)
-          .map((_, i) => web3.toBigNumber(i * i).mul(Q18).plus(MIN_TICKET_EUR));
+        const { whitelisted, tokens, amounts } = fillWhitelist(N);
 
         await commitment.addWhitelisted(
           [whitelisted[0]],
@@ -203,15 +204,37 @@ contract(
         );
       });
 
+      it("should get whitelist tickets", async () => {
+        const N = 2;
+        const { whitelisted, tokens, amounts } = fillWhitelist(N);
+        for (let ii = 0; ii < N; ii += 1) {
+          const amountEur =
+            tokens[ii] === Token.Euro ? amounts[ii] : ethToEur(amounts[ii]);
+          const totalNmk = await neumark.incremental(amountEur);
+
+          await commitment.addWhitelisted(
+            [whitelisted[ii]],
+            [tokens[ii]],
+            [amounts[ii]],
+            { from: whitelistAdmin }
+          );
+
+          const investor = await commitment.whitelistInvestor(ii);
+          expect(new web3.BigNumber(investor)).to.be.bignumber.eq(
+            new web3.BigNumber(whitelisted[ii])
+          );
+
+          const ticket = await commitment.whitelistTicket(investor);
+          expect(ticket[0]).to.be.bignumber.eq(tokens[ii]);
+          expect(ticket[0]).to.be.bignumber.eq(tokens[ii]);
+          expect(ticket[1]).to.be.bignumber.eq(amountEur);
+          expect(ticket[2]).to.be.bignumber.eq(investorShare(totalNmk));
+        }
+      });
+
       it("should accept whitelist with 100 investors", async () => {
         const N = 100;
-        const whitelisted = Array(N).fill(0).map((_, i) => `0xFF${i}`);
-        const tokens = Array(N)
-          .fill(0)
-          .map((_, i) => (i % 2 ? Token.Ether : Token.Euro));
-        const amounts = Array(N)
-          .fill(0)
-          .map((_, i) => web3.toBigNumber(i * i).mul(Q18).plus(MIN_TICKET_EUR));
+        const { whitelisted, tokens, amounts } = fillWhitelist(N);
 
         for (let i = 0; i < N; i += 25) {
           await commitment.addWhitelisted(
