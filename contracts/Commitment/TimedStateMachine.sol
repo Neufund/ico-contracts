@@ -13,7 +13,7 @@ contract TimedStateMachine is StateMachine {
     // Constants
     ////////////////////////
 
-    int256 internal constant MIN_BEFORE_DURATION = 1 days;
+    int256 internal constant MIN_BEFORE_DURATION = 1;
 
     int256 internal constant WHITELIST_DURATION = 5 days;
 

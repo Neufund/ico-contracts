@@ -118,6 +118,12 @@ module.exports = function deployContracts(deployer, network, accounts) {
       TriState.Allow
     );
     await accessControl.setUserRole(
+      commitment.address,
+      web3.sha3("Transferer"),
+      neumark.address,
+      TriState.Allow
+    );
+    await accessControl.setUserRole(
       lockedAccountAdmin,
       web3.sha3("LockedAccountAdmin"),
       GLOBAL,
