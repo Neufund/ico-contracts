@@ -613,8 +613,6 @@ contract(
         await increaseTime(moment.duration(dayInSeconds, "s"));
         // controller says yes
         await controller.succ();
-        // must enable token transfers
-        await neumark.enableTransfer(true);
       }
 
       async function allowToReclaim(account) {
