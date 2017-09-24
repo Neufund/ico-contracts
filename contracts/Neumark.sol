@@ -70,7 +70,7 @@ contract Neumark is
         NeumarkIssuanceCurve()
         Reclaimable()
     {
-        _transferEnabled = false;
+        _transferEnabled = true;
         _totalEuroUlps = 0;
     }
 
@@ -81,6 +81,7 @@ contract Neumark is
     function issueForEuro(uint256 euroUlps)
         public
         only(ROLE_NEUMARK_ISSUER)
+        acceptAgreement(msg.sender)
         returns (uint256)
     {
         require(_totalEuroUlps + euroUlps >= _totalEuroUlps);
@@ -96,7 +97,7 @@ contract Neumark is
         only(ROLE_NEUMARK_ISSUER)
         acceptAgreement(to)
     {
-        bool success = mTransfer(msg.sender, to, neumarkUlps);
+        bool success = transfer(to, neumarkUlps);
         require(success);
     }
 
