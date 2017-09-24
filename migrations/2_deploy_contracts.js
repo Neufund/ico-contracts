@@ -28,6 +28,7 @@ module.exports = function deployContracts(deployer, network, accounts) {
     const whitelistAdmin = accounts[2];
     const platformOperatorWallet = accounts[3];
     const platformOperatorRepresentative = accounts[4];
+    const eurtDepositManager = accounts[5];
 
     console.log("AccessControl deployment...");
     await deployer.deploy(RoleBasedAccessControl);
@@ -79,6 +80,7 @@ module.exports = function deployContracts(deployer, network, accounts) {
     await deployer.deploy(
       Commitment,
       accessControl.address,
+      ethereumForkArbiter.address,
       START_DATE,
       platformOperatorWallet,
       neumark.address,
@@ -112,23 +114,11 @@ module.exports = function deployContracts(deployer, network, accounts) {
       TriState.Allow
     );
     await accessControl.setUserRole(
-      commitment.address,
-      web3.sha3("TransfersAdmin"),
-      neumark.address,
-      TriState.Allow
-    );
-    await accessControl.setUserRole(
       lockedAccountAdmin,
       web3.sha3("LockedAccountAdmin"),
       GLOBAL,
       TriState.Allow
     );
-    await etherLock.setController(commitment.address, {
-      from: lockedAccountAdmin
-    });
-    await euroLock.setController(commitment.address, {
-      from: lockedAccountAdmin
-    });
     await accessControl.setUserRole(
       whitelistAdmin,
       web3.sha3("WhitelistAdmin"),
@@ -138,7 +128,13 @@ module.exports = function deployContracts(deployer, network, accounts) {
     await accessControl.setUserRole(
       platformOperatorRepresentative,
       web3.sha3("PlatformOperatorRepresentative"),
-      neumark.address,
+      GLOBAL,
+      TriState.Allow
+    );
+    await accessControl.setUserRole(
+      eurtDepositManager,
+      web3.sha3("EurtDepositManager"),
+      euroToken.address,
       TriState.Allow
     );
     console.log("Amending agreements");
@@ -148,6 +144,32 @@ module.exports = function deployContracts(deployer, network, accounts) {
         from: platformOperatorRepresentative
       }
     );
+    await commitment.amendAgreement(
+      "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT",
+      {
+        from: platformOperatorRepresentative
+      }
+    );
+    console.log("Attaching Commitment to LockedAccounts");
+    await etherLock.setController(commitment.address, {
+      from: lockedAccountAdmin
+    });
+    await euroLock.setController(commitment.address, {
+      from: lockedAccountAdmin
+    });
+    console.log("EuroToken deposit permissions");
+    await euroToken.setAllowedTransferFrom(commitment.address, true, {
+      from: eurtDepositManager
+    });
+    await euroToken.setAllowedTransferTo(commitment.address, true, {
+      from: eurtDepositManager
+    });
+    await euroToken.setAllowedTransferTo(euroLock.address, true, {
+      from: eurtDepositManager
+    });
+    await euroToken.setAllowedTransferFrom(euroLock.address, true, {
+      from: eurtDepositManager
+    });
     console.log("Contracts deployed!");
 
     console.log("----------------------------------");

@@ -7,12 +7,14 @@ import '../Math.sol';
 import '../Neumark.sol';
 import './TimedStateMachine.sol';
 import "../AccessControl/AccessControlled.sol";
+import "../Agreement.sol";
 import "../Reclaimable.sol";
 
 
 // Consumes MCommitment
 contract Commitment is
     AccessControlled,
+    Agreement,
     TimedStateMachine,
     Reclaimable,
     Math
@@ -85,8 +87,10 @@ contract Commitment is
     // NOTE: The order of of the investors matters when computing the reward.
     address[] private _whitelistInvestors;
 
+    // amount of Neumarks reserved for Ether whitelist investors
     uint256 private _whitelistEtherNmk;
 
+    // amount of Neumarks reserved for Euro whitelist investors
     uint256 private _whitelistEuroNmk;
 
     ////////////////////////
@@ -116,6 +120,7 @@ contract Commitment is
     /// _lockedAccount and _nemark
     function Commitment(
         IAccessPolicy accessPolicy,
+        IEthereumForkArbiter forkArbiter,
         int256 startDate,
         address platformWallet,
         Neumark neumark,
@@ -128,6 +133,7 @@ contract Commitment is
         uint256 ethEurFraction
     )
         AccessControlled(accessPolicy)
+        Agreement(accessPolicy, forkArbiter)
         TimedStateMachine(startDate)
     {
         require(platformWallet != 0x0);
@@ -204,6 +210,7 @@ contract Commitment is
         payable
         withTimedTransitions()
         onlyStates(State.Whitelist, State.Public)
+        acceptAgreement(msg.sender)
     {
         // Take with EtherToken allowance (if any)
         uint256 commitedWei = ETHER_TOKEN.allowance(msg.sender, this);
@@ -237,6 +244,7 @@ contract Commitment is
         external
         withTimedTransitions()
         onlyStates(State.Whitelist, State.Public)
+        acceptAgreement(msg.sender)
     {
         // Receive Euro tokens
         uint256 euroUlp = EURO_TOKEN.allowance(msg.sender, this);
@@ -477,8 +485,8 @@ contract Commitment is
         investorNmk = sub(totalNmk, platformNmk);
 
         // Issue Neumarks and distribute
-        assert(NEUMARK.transfer(msg.sender, investorNmk));
-        assert(NEUMARK.transfer(PLATFORM_WALLET, platformNmk));
+        NEUMARK.distributeNeumark(msg.sender, investorNmk);
+        NEUMARK.distributeNeumark(PLATFORM_WALLET, platformNmk);
 
         return (investorNmk, ticketNmk);
     }
