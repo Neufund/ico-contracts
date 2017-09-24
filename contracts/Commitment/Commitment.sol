@@ -87,8 +87,10 @@ contract Commitment is
     // NOTE: The order of of the investors matters when computing the reward.
     address[] private _whitelistInvestors;
 
+    // amount of Neumarks reserved for Ether whitelist investors
     uint256 private _whitelistEtherNmk;
 
+    // amount of Neumarks reserved for Euro whitelist investors
     uint256 private _whitelistEuroNmk;
 
     ////////////////////////
