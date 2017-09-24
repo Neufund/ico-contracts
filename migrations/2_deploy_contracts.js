@@ -9,7 +9,7 @@ const EuroToken = artifacts.require("EuroToken");
 const Commitment = artifacts.require("Commitment");
 
 // Needs to match contracts/AccessControl/RoleBasedAccessControl.sol:TriState
-const TriState = {Unset: 0, Allow: 1, Deny: 2};
+const TriState = { Unset: 0, Allow: 1, Deny: 2 };
 const EVERYONE = "0x0";
 const GLOBAL = "0x0";
 const Q18 = web3.toBigNumber("10").pow(18);
@@ -23,7 +23,7 @@ const MIN_TICKET_EUR = web3.toBigNumber("300").mul(Q18);
 const ETH_EUR_FRACTION = web3.toBigNumber("300").mul(Q18);
 
 module.exports = function deployContracts(deployer, network, accounts) {
-  deployer.then(async() => {
+  deployer.then(async () => {
     const lockedAccountAdmin = accounts[1];
     const whitelistAdmin = accounts[2];
     const platformOperatorWallet = accounts[3];
