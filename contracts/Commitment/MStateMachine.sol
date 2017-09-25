@@ -2,6 +2,12 @@ pragma solidity 0.4.15;
 
 // AUDIT[CHF-04]: Missing documenting comment what this interface is about,
 //                including information what the "M" name prefix stands for.
+// AUDIT[CHF-05]: Because of CHF-02, CHF-03, CHF-04 and the MStateMachine
+//                interface being implemented only by the StateMachine contract,
+//                it is recommended to merge the MStateMachine with StateMachine
+//                (effectively by moving the enum State to the StateMachine).
+//                Also: Change visibility of mBeforeTransition() and
+//                mAfterTransition() to private.
 contract MStateMachine {
 
     ////////////////////////
