@@ -1,6 +1,7 @@
 pragma solidity 0.4.15;
 
-
+// AUDIT[CHF-04]: Missing documenting comment what this interface is about,
+//                including information what the "M" name prefix stands for.
 contract MStateMachine {
 
     ////////////////////////
