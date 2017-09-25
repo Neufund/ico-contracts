@@ -23,6 +23,10 @@ contract MStateMachine {
     //      `state() == oldState`.
     // AUDIT[CHF-01]: Should have been "get's called before" instead of
     //                "get's called after". Already fixed.
+    // AUDIT[CHF-02]: The comment above MStateMachine.mBeforeTransition()
+    //                references a method state() from the contract StateMachine
+    //                implementing this interface. The same in
+    //                MStateMachine.mAfterTransition().
     function mBeforeTransition(State oldState, State newState)
         internal;
 
