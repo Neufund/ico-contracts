@@ -27,6 +27,10 @@ contract MStateMachine {
     //                references a method state() from the contract StateMachine
     //                implementing this interface. The same in
     //                MStateMachine.mAfterTransition().
+    // AUDIT[CHF-03]: The comment "It's guaranteed" may be understand as
+    //                the method requirement, but probably describes the
+    //                guarantees given by the StateMachine contract. The same in
+    //                MStateMachine.mAfterTransition().
     function mBeforeTransition(State oldState, State newState)
         internal;
 
