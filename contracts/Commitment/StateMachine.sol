@@ -3,6 +3,8 @@ pragma solidity 0.4.15;
 import './MStateMachine.sol';
 
 
+// AUDIT[CHF-06]: Missing documenting comment, but the contract name
+//                tells a lot what this is about.
 //
 // Before --> Whitelist --> Public --> Finished
 //
