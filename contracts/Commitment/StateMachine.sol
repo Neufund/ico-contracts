@@ -14,7 +14,10 @@ contract StateMachine is MStateMachine {
     // Mutable state
     ////////////////////////
 
-    State internal _state;
+    // AUDIT[CHF-07]: Change visibility from "internal" to "private".
+    //                Derived contracts does not need access to this variable.
+    //                Already fixed.
+    State private _state;
 
     ////////////////////////
     // Events
