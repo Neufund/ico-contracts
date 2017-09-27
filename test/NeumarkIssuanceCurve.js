@@ -1,5 +1,4 @@
 import { prettyPrintGasCost } from "./helpers/gasUtils";
-import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
 
 const CurveGas = artifacts.require("./test/CurveGas.sol");
 
@@ -8,17 +7,10 @@ const EUR_DECIMALS = new BigNumber(10).toPower(18);
 const NMK_DECIMALS = new BigNumber(10).toPower(18);
 
 contract("NeumarkIssuanceCurve", () => {
-  let snapshot;
   let curveGas;
 
-  before(async () => {
-    curveGas = await CurveGas.new();
-    snapshot = await saveBlockchain();
-  });
-
   beforeEach(async () => {
-    await restoreBlockchain(snapshot);
-    snapshot = await saveBlockchain();
+    curveGas = await CurveGas.new();
   });
 
   it("should deploy", async () => {

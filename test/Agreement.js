@@ -4,23 +4,18 @@ import { deployControlContracts } from "./helpers/deployContracts";
 import EvmError from "./helpers/EVMThrow";
 import { TriState } from "./helpers/triState";
 import roles from "./helpers/roles";
-import {
-  promisify,
-  saveBlockchain,
-  restoreBlockchain
-} from "./helpers/evmCommands";
+import { promisify } from "./helpers/evmCommands";
 
 const TestAgreement = artifacts.require("TestAgreement");
 
 contract(
   "Agreement",
   ([_, platformOperatorRepresentative, signer1, signer2]) => {
-    let snapshot;
     let agreement;
     let accessControl;
     let forkArbiter;
 
-    before(async () => {
+    beforeEach(async () => {
       [accessControl, forkArbiter] = await deployControlContracts();
 
       agreement = await TestAgreement.new(
@@ -33,12 +28,6 @@ contract(
         agreement.address,
         TriState.Allow
       );
-      snapshot = await saveBlockchain();
-    });
-
-    beforeEach(async () => {
-      await restoreBlockchain(snapshot);
-      snapshot = await saveBlockchain();
     });
 
     async function amendAgreement(agreementUri) {
