@@ -23,6 +23,9 @@ const MIN_TICKET_EUR = web3.toBigNumber("300").mul(Q18);
 const ETH_EUR_FRACTION = web3.toBigNumber("300").mul(Q18);
 
 module.exports = function deployContracts(deployer, network, accounts) {
+  // do not deploy testing network
+  if (network === "inprocess_test") return;
+
   deployer.then(async () => {
     const lockedAccountAdmin = accounts[1];
     const whitelistAdmin = accounts[2];
