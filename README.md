@@ -21,15 +21,10 @@ truffle compile --all
 ```
 Truffle is not able to track dependencies correctly and will not recompile files that import other files
 
-You should consider replacing javascript compiler with `solc`, this will increase your turnover several time. Use following pathces over cli.bundle.js (into which truffle is packed)
+You should consider replacing javascript compiler with `solc`, this will increase your turnover several times. Use following patches over cli.bundle.js (into which truffle is packed)
 ```
 --- var result = solc.compileStandard(JSON.stringify(solcStandardInput));
 +++ var result = require('child_process').execSync('solc --standard-json', {input: JSON.stringify(solcStandardInput)});
-```
-and
-```
----                config.artifactor = new Artifactor(temporaryDirectory);
-+++               // config.artifactor = new Artifactor(temporaryDirectory);
 ```
 
 ### Auto fixing linting problems
@@ -43,6 +38,21 @@ yarn test:coverage
 ```
 
 you will find coverage report in `coverage/index.html`.
+We are using version custom version of `solidity-coverage`. Versions later than `0.2.2` introduce a problem as described in
+https://github.com/sc-forks/solidity-coverage/issues/118
+which results in balances increasing due to code execution and basically the result balance is unpredictable due to returned stipend.
+This issue prevents test that check balances to run properly.
+
+Custom version fixes two other bugs:
+1. For large trace files, `readFileSync` will fail silently, stream is used to read lines instead
+2. `exec` on child process will kill child if stdout buffer overflows, buffer was increased to 10MB
+3. It refers to testrpc `4.0.1` that has stipend not modified.
+
+Solidity code coverage runs own testrpc node (modified). You can run this node via
+```
+./node_modules/ethereumjs-testrpc-sc/build/cli.node.js --gasPrice 1 --gasLimit 0xfffffffffff -v
+```
+and execute tests via `coverage` network to check coverage behavior.
 
 ### Testing
 To run all tests, use the following

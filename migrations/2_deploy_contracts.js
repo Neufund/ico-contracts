@@ -24,7 +24,7 @@ const ETH_EUR_FRACTION = web3.toBigNumber("300").mul(Q18);
 
 module.exports = function deployContracts(deployer, network, accounts) {
   // do not deploy testing network
-  if (network === "inprocess_test") return;
+  if (network === "inprocess_test" || network === "coverage") return;
 
   deployer.then(async () => {
     const lockedAccountAdmin = accounts[1];

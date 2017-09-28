@@ -48,6 +48,6 @@
   "devDependencies": {
     "eslint-plugin-mocha": "^4.11.0",
     "prettier": "^1.5.3",
-    "solidity-coverage": "^0.2.1"
+    "solidity-coverage": "Neufund/solidity-coverage#neufund"
   }
 }
