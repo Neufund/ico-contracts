@@ -4,7 +4,6 @@ import { prettyPrintGasCost } from "./helpers/gasUtils";
 import { eventValue } from "./helpers/events";
 import createAccessPolicy from "./helpers/createAccessPolicy";
 import roles from "./helpers/roles";
-import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
 import {
   basicTokenTests,
   standardTokenTests,
@@ -26,12 +25,11 @@ const NMK_DECIMALS = new BigNumber(10).toPower(18);
 contract(
   "Neumark",
   ([deployer, other, platformRepresentative, transferAdmin, ...accounts]) => {
-    let snapshot;
     let rbac;
     let forkArbiter;
     let neumark;
 
-    before(async () => {
+    beforeEach(async () => {
       rbac = await createAccessPolicy([
         { subject: transferAdmin, role: roles.transferAdmin },
         { subject: accounts[1], role: roles.neumarkIssuer },
@@ -50,12 +48,6 @@ contract(
         from: deployer
       });
       await neumark.amendAgreement(AGREEMENT, { from: platformRepresentative });
-      snapshot = await saveBlockchain();
-    });
-
-    beforeEach(async () => {
-      await restoreBlockchain(snapshot);
-      snapshot = await saveBlockchain();
     });
 
     it("should deploy", async () => {

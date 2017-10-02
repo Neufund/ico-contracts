@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import { prettyPrintGasCost } from "./helpers/gasUtils";
 import createAccessPolicy from "./helpers/createAccessPolicy";
-import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
 import {
   basicTokenTests,
   standardTokenTests,
@@ -18,18 +17,11 @@ import { etherToWei } from "./helpers/unitConverter";
 const EtherToken = artifacts.require("EtherToken");
 
 contract("EtherToken", ([broker, ...investors]) => {
-  let snapshot;
   let etherToken;
 
-  before(async () => {
+  beforeEach(async () => {
     const rbac = await createAccessPolicy([]);
     etherToken = await EtherToken.new(rbac.address);
-    snapshot = await saveBlockchain();
-  });
-
-  beforeEach(async () => {
-    await restoreBlockchain(snapshot);
-    snapshot = await saveBlockchain();
   });
 
   describe("specific tests", () => {

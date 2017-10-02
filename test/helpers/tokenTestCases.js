@@ -345,15 +345,13 @@ export function erc223TokenTests(token, fromAddr, toAddr, initialBalance) {
     expect(fallbackAmount).to.be.bignumber.eq(0);
   });
 
-  it(
-    "erc223 compatible transfer should call fallback (truffle #569 needs to be fixed)"
-  );
-  /* it("erc223 compatible transfer should call fallback", async() => {
+  it("erc223 compatible transfer should call fallback", async () => {
     const erc223cb = await deployTestErc223Callback();
     const data = "!79bc68b14fe3225ab8fe3278b412b93956d49c2dN";
-    const tx = await token().transfer223(erc223cb.address, initialBalance, data, {from: fromAddr} );
+    const tx = await token().transfer[
+      "address,uint256,bytes"
+    ](erc223cb.address, initialBalance, data, { from: fromAddr });
     // expect erc20 backward compatible Transfer event
-    console.log('check event');
     expectTransferEvent(tx, fromAddr, erc223cb.address, initialBalance);
     const finalBalance = await token().balanceOf.call(erc223cb.address);
     expect(finalBalance).to.be.bignumber.eq(initialBalance);
@@ -364,20 +362,18 @@ export function erc223TokenTests(token, fromAddr, toAddr, initialBalance) {
     expect(fallbackFrom).to.eq(fromAddr);
     const fallbackDataKeccak = await erc223cb.dataKeccak();
     expect(fallbackDataKeccak).to.eq(web3.sha3(data));
-  }); */
+  });
 
-  it(
-    "erc223 compatible transfer should send to simple address (truffle #569 needs to be fixed)"
-  );
-  /* it("erc223 compatible transfer should send to simple address", async() => {
+  it("erc223 compatible transfer should send to simple address", async () => {
     const data = "!79bc68b14fe3225ab8fe3278b412b93956d49c2dN";
-    const tx = await token().transfer223(toAddr, initialBalance, data, {from: fromAddr} );
+    const tx = await token().transfer[
+      "address,uint256,bytes"
+    ](toAddr, initialBalance, data, { from: fromAddr });
     // expect erc20 backward compatible Transfer event
-    console.log('check event');
     expectTransferEvent(tx, fromAddr, toAddr, initialBalance);
     const finalBalance = await token().balanceOf.call(toAddr);
     expect(finalBalance).to.be.bignumber.eq(initialBalance);
-  }); */
+  });
 }
 
 export function testWithdrawal(token, investor, initialBalance) {

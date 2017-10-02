@@ -3,7 +3,6 @@ import EvmError from "./helpers/EVMThrow";
 import { eventValue } from "./helpers/events";
 import { TriState } from "./helpers/triState";
 import roles from "./helpers/roles";
-import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
 
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const TestAccessControlTruffleMixin = artifacts.require(
@@ -11,24 +10,16 @@ const TestAccessControlTruffleMixin = artifacts.require(
 );
 
 contract("AccessControl", ([accessController, owner1, owner2]) => {
-  let snapshot;
   let accessControl;
   let accessControlled;
   let exampleRole;
 
-  before(async () => {
+  beforeEach(async () => {
     accessControl = await RoleBasedAccessControl.new();
     accessControlled = await TestAccessControlTruffleMixin.new(
       accessControl.address
     );
-
     exampleRole = roles.example;
-    snapshot = await saveBlockchain();
-  });
-
-  beforeEach(async () => {
-    await restoreBlockchain(snapshot);
-    snapshot = await saveBlockchain();
   });
 
   function expectAccessChangedEvent(

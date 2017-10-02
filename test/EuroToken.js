@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import { prettyPrintGasCost } from "./helpers/gasUtils";
 import createAccessPolicy from "./helpers/createAccessPolicy";
-import { saveBlockchain, restoreBlockchain } from "./helpers/evmCommands";
 import {
   basicTokenTests,
   standardTokenTests,
@@ -19,21 +18,14 @@ import EvmError from "./helpers/EVMThrow";
 const EuroToken = artifacts.require("EuroToken");
 
 contract("EuroToken", ([_, depositManager, other, broker, ...investors]) => {
-  let snapshot;
   let rbac;
   let euroToken;
 
-  before(async () => {
+  beforeEach(async () => {
     rbac = await createAccessPolicy([
       { subject: depositManager, role: roles.eurtDepositManager }
     ]);
     euroToken = await EuroToken.new(rbac.address);
-    snapshot = await saveBlockchain();
-  });
-
-  beforeEach(async () => {
-    await restoreBlockchain(snapshot);
-    snapshot = await saveBlockchain();
   });
 
   describe("specific tests", () => {

@@ -16,11 +16,7 @@ import { LockState } from "./helpers/lockState";
 import forceEther from "./helpers/forceEther";
 import { etherToWei } from "./helpers/unitConverter";
 import roles from "./helpers/roles";
-import {
-  promisify,
-  saveBlockchain,
-  restoreBlockchain
-} from "./helpers/evmCommands";
+import { promisify } from "./helpers/evmCommands";
 
 const LockedAccount = artifacts.require("LockedAccount");
 const EtherToken = artifacts.require("EtherToken");
@@ -35,12 +31,10 @@ const TestLockedAccountMigrationTarget = artifacts.require(
 );
 
 const gasPrice = new web3.BigNumber(0x01); // this low gas price is forced by code coverage
-// const operatorWallet = "0x55d7d863a155f75c5139e20dcbda8d0075ba2a1c";
 
 contract(
   "LockedAccount",
   ([_, admin, investor, investor2, otherMigrationSource, operatorWallet]) => {
-    let snapshot;
     let controller;
     let startTimestamp;
     let assetToken;
@@ -52,14 +46,9 @@ contract(
     let accessControl;
     let forkArbiter;
 
-    before(async () => {
+    beforeEach(async () => {
       [accessControl, forkArbiter] = await deployControlContracts();
       neumark = await deployNeumark(accessControl, forkArbiter);
-    });
-
-    beforeEach(async () => {
-      await restoreBlockchain(snapshot);
-      snapshot = await saveBlockchain();
     });
 
     describe("EtherToken", () => {
@@ -91,23 +80,18 @@ contract(
         );
       }
 
-      before(async () => {
+      beforeEach(async () => {
         await deployEtherToken();
         await deployLockedAccount(assetToken, 18, 0.1);
       });
 
       describe("core tests", () => {
-        before(async () => {
-          snapshot = await saveBlockchain();
-        });
-
         lockedAccountTestCases(makeDepositEth, makeWithdrawEth);
       });
 
       describe("migration tests", () => {
-        before(async () => {
+        beforeEach(async () => {
           migrationTarget = await deployMigrationTarget(assetToken);
-          snapshot = await saveBlockchain();
         });
 
         locketAccountMigrationTestCases(makeDepositEth, makeWithdrawEth);
@@ -158,7 +142,7 @@ contract(
         expect(afterBalance).to.be.bignumber.eq(initalBalance.sub(amount));
       }
 
-      before(async () => {
+      beforeEach(async () => {
         await deployEuroToken();
         await deployLockedAccount(assetToken, 18, 0.1);
         await applyTransferPermissions([
@@ -175,21 +159,16 @@ contract(
       });
 
       describe("core tests", () => {
-        before(async () => {
-          snapshot = await saveBlockchain();
-        });
-
         lockedAccountTestCases(makeDepositEuro, makeWithdrawEuro);
       });
 
       describe("migration tests", () => {
-        before(async () => {
+        beforeEach(async () => {
           migrationTarget = await deployMigrationTarget(assetToken);
           await applyTransferPermissions([
             { side: "from", address: migrationTarget.address },
             { side: "to", address: migrationTarget.address }
           ]);
-          snapshot = await saveBlockchain();
         });
 
         locketAccountMigrationTestCases(makeDepositEuro, makeWithdrawEuro);
@@ -920,9 +899,14 @@ contract(
         await lock(investor, ticket1);
         // send assetToken to locked account
         const shouldBeReclaimedDeposit = etherToWei(0.028319821);
-        makeDeposit(investor2, lockedAccount.address, shouldBeReclaimedDeposit);
+        await makeDeposit(
+          investor2,
+          lockedAccount.address,
+          shouldBeReclaimedDeposit
+        );
         // should reclaim
         await allowToReclaim(admin);
+        // replace assetToken with neumark for this test to fail
         await expect(
           lockedAccount.reclaim(assetToken.address, {
             from: admin

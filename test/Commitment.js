@@ -252,7 +252,7 @@ contract(
           from: other
         });
 
-        expect(tx).to.be.rejectedWith(EvmError);
+        await expect(tx).to.be.rejectedWith(EvmError);
       });
 
       it("should accept whitelist only during Before", async () => {
@@ -1088,7 +1088,7 @@ contract(
         });
         await expect(
           commitment.commitEuro({ from: investor })
-        ).to.to.be.rejectedWith(EvmError);
+        ).to.be.rejectedWith(EvmError);
       });
     });
 
@@ -1440,7 +1440,7 @@ contract(
         await increaseTime(WHITELIST_START);
         await expect(
           commitment.commit({ from: investor, value: MIN_TICKET_ETH.mul(10) })
-        ).to.to.be.rejectedWith(EvmError);
+        ).to.be.rejectedWith(EvmError);
       });
     });
 

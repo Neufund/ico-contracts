@@ -9,7 +9,9 @@ async function increaseTime(duration) {
       {
         jsonrpc: "2.0",
         method: "evm_increaseTime",
-        params: [duration.asSeconds()],
+        params: [
+          typeof duration === "object" ? duration.asSeconds() : duration
+        ],
         id
       },
       err1 => {
