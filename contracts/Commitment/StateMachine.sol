@@ -117,6 +117,20 @@ contract StateMachine is MStateMachine {
             return;
         }
         require(validTransition(oldState, newState));
+
+        // AUDIT[CHF-15]: First of all, this is not used anywhere. Such features
+        //                should be introduced when needed for the first time,
+        //                not for hypothetical future uses.
+        //                Moreover, this can cause race conditions. Consider
+        //                case when we are in Before state and
+        //                mBeforeTransition() will execute transitionTo() twice:
+        //                for Before -> Whitelist and Whitelist -> Public
+        //                (assume infinite recursion is handled).
+        //                The final _state being Public will be overwrite
+        //                after mBeforeTransition returns.
+        //                Without any protection from mBeforeTransition
+        //                modifying the _state, this feature does not seem to
+        //                be a good idea.
         mBeforeTransition(oldState, newState);
         _state = newState;
         LogStateTransition(oldState, newState);
