@@ -1014,7 +1014,9 @@ contract(
         token.address,
         neumark.address,
         unlockDateMonths * monthInSeconds,
-        etherToWei(1).mul(unlockPenalty).round()
+        etherToWei(1)
+          .mul(unlockPenalty)
+          .round()
       );
       await accessControl.setUserRole(
         admin,
@@ -1040,7 +1042,9 @@ contract(
         token.address,
         neumark.address,
         18 * monthInSeconds,
-        etherToWei(1).mul(0.1).round()
+        etherToWei(1)
+          .mul(0.1)
+          .round()
       );
       await accessControl.setUserRole(
         admin,

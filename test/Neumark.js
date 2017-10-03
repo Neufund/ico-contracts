@@ -143,7 +143,9 @@ contract(
     it("should issue same amount in multiple issuances", async () => {
       // 1 ether + 100 wei in eur
       const eurRate = 218.1192809;
-      const euroUlps = EUR_DECIMALS.mul(1).add(100).mul(eurRate);
+      const euroUlps = EUR_DECIMALS.mul(1)
+        .add(100)
+        .mul(eurRate);
       const totNMK = await neumark.cumulative(euroUlps);
       // issue for 1 ether
       const euro1EthUlps = EUR_DECIMALS.mul(1).mul(eurRate);
