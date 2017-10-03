@@ -32,6 +32,8 @@ contract StateMachine is MStateMachine {
     // Modifiers
     ////////////////////////
 
+    // AUDIT[CHF-10]: A suggestion for renaming modifiers:
+    //                inState, inAnyState, notInState.
     modifier onlyState(State state) {
         require(_state == state);
         _;
