@@ -2,7 +2,7 @@ pragma solidity 0.4.15;
 
 import './StateMachine.sol';
 
-
+// AUDIT[CHF-17]: Please add a bit more documentation about this contract.
 //  ------ time ----->
 //  +--------+-----------+--------+------------
 //  | Before | Whitelist | Public | Finished …
