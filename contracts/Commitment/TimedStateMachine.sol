@@ -45,7 +45,11 @@ contract TimedStateMachine is StateMachine {
     // Constructor
     ////////////////////////
 
-    function TimedStateMachine(int256 whitelistStart) {
+    // AUDIT[CHF-18]: Missing visibility specifier. Use `internal`.
+    //                See also AUDIT[CHF-08]. Already fixed.
+    function TimedStateMachine(int256 whitelistStart)
+        internal
+    {
         int256 beforeDuration = whitelistStart - int256(block.timestamp);
         require(beforeDuration >= MIN_BEFORE_DURATION);
         WHITELIST_START = whitelistStart;
