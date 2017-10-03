@@ -112,6 +112,8 @@ contract StateMachine is MStateMachine {
         //                callers depends on this. Also remember to remove
         //                the @dev node above.
         if (oldState == newState) {
+            // AUDIT[CHF-14]: For consistency with the second return statement
+            //                change it to `return oldState`.
             return;
         }
         require(validTransition(oldState, newState));
