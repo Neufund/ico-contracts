@@ -137,6 +137,7 @@ contract StateMachine is MStateMachine {
 
         // TODO: What if mOnAfterTransition wants to transition
         // further?
+        // AUDIT[CHF-16]: Remove oldState argument. Never used.
         mAfterTransition(oldState, newState);
         return oldState;
     }
