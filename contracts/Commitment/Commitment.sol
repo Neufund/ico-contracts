@@ -11,7 +11,6 @@ import "../Agreement.sol";
 import "../Reclaimable.sol";
 
 
-// Consumes MCommitment
 contract Commitment is
     AccessControlled,
     Agreement,
@@ -390,9 +389,6 @@ contract Commitment is
 
             // Rollback unfufilled Euro reservations.
             NEUMARK.burnNeumark(_whitelistEuroNmk);
-
-            // Enable Neumark trading in token controller
-            NEUMARK.enableTransfer(true);
 
             // enable escape hatch and end locking funds phase
             ETHER_LOCK.controllerSucceeded();
