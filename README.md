@@ -94,3 +94,95 @@ Hopefully PRs solving this are pending.
 Modified version of truffle is referenced for running test cases.
 1. Revert and snapshot are removed from `truffle-core` (https://github.com/Neufund/truffle-core/commit/83404a758a684e8d3d4806f24bc40a25c0817b79)
 2. https://github.com/trufflesuite/truffle/issues/569 is fixed as testing overloaded `transfer` is impossible (https://github.com/Neufund/truffle-contract/commit/ecae09942db60039f2dc4768ceeb88776226f0ca)
+
+## Deployment
+
+### Deployed contracts (2_deploy_contracts.js)
+Contracts are deployed in following order
+1. **RoleBasedAccessControl** - used to set up access permissions in other contracts, see below
+2. **EthereumForkArbiter** - used to indicate fork that is actually supported (legally and technically),
+3. **Neumark** - ERC20/223 and snapshotable token representing Neumark reward to investors,
+4. **EtherToken** - encapsulates Ether as a token
+5. **EuroToken** - represents Euro as a token (EUR-T), see below,
+6. **LockedAccount(EtherToken)** - represents investor's individual investment account with unlock date, for Ether investment,
+7. **LockedAccount(EuroToken)** - represents investor's individual investment account with unlock date, for EUR-T investment,
+8. **Commitment** - represents ICBM process with pre-ICO, and ICO stages, whitelisting, possibility to invest in Ether/EUR-T and other features.
+
+Commitment contracts currently serves as a 'Universe'. All contracts, agreements and parameters we officially support during ICBM may be found in it or in other aggregated contracts.
+
+### Contracts parameters (2_deploy_contracts.js)
+Several contracts require parameters to be set in constructors as specified below. Once set those parameters cannot be changed.
+
+**LockedAccount**
+1. **LOCK_DURATION** - duration of lock after which `unlock` comes without penalty, in seconds
+2. **PENALTY_FRACTION** - unlock penalty as fraction of investment amount, where 10\*\*18 is 100%, 10\*\*17 is 10% etc.
+
+**Commitment**
+1. **START_DATE** - start date of ICBM (see `StateMachine` contract for process details), as Unix/Ethereum timestamp (UTC),
+2. **CAP_EUR** - safety cap (in EUR-T) which corresponds to maximum number of Neumarks that may be issued during ICBM, in "wei" (10**-18 parts of EUR-T).
+3. **MIN_TICKET_EUR** - minimum ticket in EUR-T, represented as above
+4. **ETH_EUR_FRACTION** - EUR-T to ETH rate used during whole ICBM. we use constant rate to compute Neumark reward, there's no oracle.
+5. **PLATFORM_OPERATOR_WALLET** - see below.
+
+Please note that several ICBM duration parameters are encoded in `StateMachine` contract. You may choose to change them form test deployments.
+
+### Roles and Accounts (3_deploy_permissions.js, accounts.js)
+Several accounts are required to deploy on `mainnet` due to many roles with specific permissions that are required to control ICBM and Neumark token. Below is a list of those roles.
+
+|Role|Description|Mainnet account|Scope|
+|-----|----------|---------------|-----|
+|LOCKED ACCOUNT ADMIN|May attach controller, set fee disbursal pool and migration in Locked Account contract| PO Admin | LockedAccount |
+|WHITELIST ADMIN|May setup whitelist and abort Commitment contract with curve rollback| PO Admin | Commitment |
+|NEUMARK ISSUER|May issue (generate) Neumarks (only Commitment or ETOs contract may have this right)| N/A| Commitment |
+|TRANSFER ADMIN|May enable/disable transfers on Neumark| PO Admin | Neumark |
+|RECLAIMER|may reclaim tokens/ether from contracts| PO Admin | global role |
+|PLATFORM OPERATOR REPRESENTATIVE|Represents legally platform operator in case of forks and contracts with legal agreement attached| PO Management | global role |
+|EURT DEPOSIT MANAGER|Allows to deposit EUR-T and allow addresses to send and receive EUR-T | PO Admin | EuroToken |
+|ACCESS CONTROLLER|Assigns permissions to addresses and may change access policy for a contract| PO Admin | global role |
+|PLATFORM OPERATOR WALLET|Stores Platform Operator Neumark reward and (temporarily) unlock penalties| PO Wallet | N/A |
+
+Please note that ACCESS CONTROL role is initially assigned to an address of the deploying account (like in `Ownable` pattern). This permission is then relinquished to PO Admin account.
+Accounts are separate physical devices (Nano Ledger S). Please note that account used to deploy has no other uses and its private key can be safely destroyed after control is relinquished.
+
+### Euro Token transfer permissions (3_deploy_permissions.js)
+Euro Token is heavily policed token, where only holders with permission may receive or send EUR-T. Transfer permissions are managed by EURT DEPOSIT MANAGER role which also is the sole issuer of EUR-T. `Issue EUR-T` operation enables issued address to receive EUR-T (and is done only against KYCed accounts) so after deployment no further changes to transfer permissions are necessary. Please note that permission to `transfer from` enables such address to act as a broker (`transferFrom`) which may be used by addresses without such permission to send EUR-T to other address. This property is used by Commitment and LockedAccount contracts to deposit EUR-T during ICBM process.
+
+*EURT DEPOSIT MANAGER issues to -> investor (has transfer to) which approves -> Commitment contract (has transfer from and to) to -> transfer to LockedAccount contract (transfer from and to)*
+
+Full list of transfer permission is as follows.
+
+|who|transfer to|transfer from|
+|---|-----------|-------------|
+|EUR-T investor| Y | N |
+|Commitment| Y | Y |
+|LockedAccount| Y | Y |
+
+### Linking LockedAccount (4_link_contracts.js)
+Both LockedAccount must be linked to Commitment contract (which becomes their controller) to be able to store investor's assets and provide unlock mechanism. Both LockedAccount must also have unlock penalty disbursal pool set for `unlock` operation to work. Per whitepaper, until platform is deployed, penalties are stored in Platform Operator wallet (however LockedAccount supports disbursal contracts as well)
+
+
+### Amend legal agreements (5_amend_agreements.js)
+`Neumark` and `Commitment` contracts need to be provided ipfs link to legal agreement. Otherwise all functions of those contracts that require it will revert. In case of main network this must happen via transaction from `PLATFORM OPERATOR REPRESENTATIVE` using its respective Nano S and it's not done in deployment scripts in this repo. In case of other networks, mock legal agreements will be immediately attached.
+
+### Setting whitelist
+Whitelist may be set during `Before` state of `Commitment` contract. This is not part of deployment script in this repo.
+
+
+### Networks defined in truffle
+There are several conventions in naming truffle networks used for deployment.
+**Network with names ending with `_live`** will be deployed in production mode which means that:
+1. Production accounts addresses as specified in `accounts.js` will be assigned to roles.
+2. Agreements will not be attached.
+3. Deployer will set ACCESS_CONTROLLER as secondary access control admin address and will remove itself as global ACCESS_CONTROLLER (see `6_relinquish_control.js`)
+
+**Other networks** will be deployed in test mode which means that:
+1. All roles are assigned to accounts[0], which is also deployer. This account controls everything.
+2. Everything is deployed and set up. Commitment contract should be ready to go after deployment.
+
+**Special networks**
+1. *simulated_live* will be deployed as live network but is intended to be used against testrpc. Roles will be assigned to testrpc provided accounts. It is intended to test various administrative operations (like enabling/disabling transfers) before live deployment.
+2. *inprocess_test* and *coverage* will not deploy anything.
+
+```
+yarn truffle migrate --reset --network simulated_live
+```
