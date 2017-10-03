@@ -73,8 +73,8 @@ contract RoleBasedAccessControl is
         AccessControlled(this) // We are our own policy. This is immutable.
     {
         // Issue the local and global AccessContoler role to creator
-        _access[msg.sender][ROLE_ACCESS_CONTROLER][this] = TriState.Allow;
-        _access[msg.sender][ROLE_ACCESS_CONTROLER][GLOBAL] = TriState.Allow;
+        _access[msg.sender][ROLE_ACCESS_CONTROLLER][this] = TriState.Allow;
+        _access[msg.sender][ROLE_ACCESS_CONTROLLER][GLOBAL] = TriState.Allow;
     }
 
     ////////////////////////
@@ -84,7 +84,7 @@ contract RoleBasedAccessControl is
     // Overrides `AccessControlled.setAccessPolicy(IAccessPolicy)`
     function setAccessPolicy(IAccessPolicy)
         public
-        only(ROLE_ACCESS_CONTROLER)
+        only(ROLE_ACCESS_CONTROLLER)
     {
         // `RoleBasedAccessControl` always controls its
         // own access. Disallow changing this by overriding
@@ -143,7 +143,7 @@ contract RoleBasedAccessControl is
         TriState newValue
     )
         public
-        only(ROLE_ACCESS_CONTROLER)
+        only(ROLE_ACCESS_CONTROLLER)
     {
         setUserRolePrivate(subject, role, object, newValue);
     }
@@ -156,7 +156,7 @@ contract RoleBasedAccessControl is
         TriState[] newValues
     )
         public
-        only(ROLE_ACCESS_CONTROLER)
+        only(ROLE_ACCESS_CONTROLLER)
     {
         require(subjects.length == roles.length);
         require(subjects.length == objects.length);
@@ -205,7 +205,7 @@ contract RoleBasedAccessControl is
         // contract. This prevents access controlers from locking themselves
         // out. We also require the current contract to be its own policy for
         // this to work. This is enforced elsewhere.
-        require(role != ROLE_ACCESS_CONTROLER || subject != msg.sender || object != this);
+        require(role != ROLE_ACCESS_CONTROLLER || subject != msg.sender || object != this);
 
         // Fetch old value and short-circuit no-ops
         TriState oldValue = _access[subject][role][object];
