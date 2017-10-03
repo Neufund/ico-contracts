@@ -101,6 +101,8 @@ contract StateMachine is MStateMachine {
 
     // @dev Transitioning to the same state is silently ignored, no log events
     //  or handlers are called.
+    // AUDIT[CHF-12]: The returned old state is never used by any caller.
+    //                This function should return nothing.
     function transitionTo(State newState)
         internal
         returns (State oldState)
