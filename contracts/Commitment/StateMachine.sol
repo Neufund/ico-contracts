@@ -72,6 +72,9 @@ contract StateMachine is MStateMachine {
     //                visibility should be good choice.
     //                Already fixed.
     function StateMachine() internal {
+        // AUDIT[CHF-09]: This initialization can be moved to the declaration of
+        //                _state member. Having the init value next to the
+        //                variable declaration is always better.
         _state = State.Before;
     }
 
