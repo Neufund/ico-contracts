@@ -108,6 +108,9 @@ contract StateMachine is MStateMachine {
         returns (State oldState)
     {
         oldState = _state;
+        // AUDIT[CHF-13]: This defensive check can be removed. None of the
+        //                callers depends on this. Also remember to remove
+        //                the @dev node above.
         if (oldState == newState) {
             return;
         }
