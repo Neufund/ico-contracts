@@ -13,6 +13,10 @@ contract TimedStateMachine is StateMachine {
     // Constants
     ////////////////////////
 
+    // AUDIT[CHF-19]: The following constants require comments explaining what
+    //                they are for. If the numeric values are described in any
+    //                external document, the reference to this document would
+    //                be also helpful.
     int256 internal constant MIN_BEFORE_DURATION = 1 days;
 
     int256 internal constant WHITELIST_DURATION = 5 days;
