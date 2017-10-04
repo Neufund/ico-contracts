@@ -105,6 +105,17 @@ contract TimedStateMachine is StateMachine {
             return WHITELIST_START;
         }
         if (state == State.Public) {
+            // AUDIT[CHF-22]: If AUDIT[CHF-20] to be applied the aliases
+            //                PUBLIC_FROM_START and FINISH_FROM_START are not
+            //                going to be very useful. I recommend to remove
+            //                them in this case.
+            //
+            // `WHITELIST_START + PUBLIC_FROM_START` =>
+            // `WHITELIST_START + WHITELIST_DURATION`
+            //
+            // `WHITELIST_START + FINISH_FROM_START` =>
+            // `WHITELIST_START + WHITELIST_DURATION + PUBLIC_DURATION`
+            //
             return WHITELIST_START + PUBLIC_FROM_START;
         }
         if (state == State.Finished) {
