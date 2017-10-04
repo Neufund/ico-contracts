@@ -17,6 +17,8 @@ contract TimedStateMachine is StateMachine {
     //                they are for. If the numeric values are described in any
     //                external document, the reference to this document would
     //                be also helpful.
+    // AUDIT[CHF-21]: The visibility of the following constants should be
+    //                `private`.
     int256 internal constant MIN_BEFORE_DURATION = 1 days;
 
     int256 internal constant WHITELIST_DURATION = 5 days;
