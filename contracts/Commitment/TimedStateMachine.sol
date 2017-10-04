@@ -73,6 +73,13 @@ contract TimedStateMachine is StateMachine {
         // Time induced state transitions.
         // @dev Don't use `else if` and keep sorted by time and call `state()`
         //     or else multiple transitions won't cascade properly.
+        // AUDIT[CHF-20]: Here and in the following conditions the helper
+        //                method startOf can be reused in this way:
+        //    `if (state() == State.Before && now >= startOf(State.Whitelist))`.
+        //                This will increase the gas cost in the worst case by
+        //                1.32% (based on "Timed transtitions" test suite).
+        //                The full proposed change is attached as
+        //                audit/CHF-20.patch.
         if (state() == State.Before && t >= 0) {
             transitionTo(State.Whitelist);
         }
