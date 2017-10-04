@@ -1,9 +1,9 @@
 pragma solidity 0.4.15;
 
-import './MPolicy.sol';
+import './MSnapshotPolicy.sol';
 
 
-contract Daily is MPolicy {
+contract Daily is MSnapshotPolicy {
 
     ////////////////////////
     // Public functions
@@ -25,7 +25,7 @@ contract Daily is MPolicy {
     ////////////////////////
 
     //
-    // Implements MPolicy
+    // Implements MSnapshotPolicy
     //
 
     function mNextSnapshotId()

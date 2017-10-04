@@ -1,16 +1,16 @@
 pragma solidity 0.4.15;
 
-import './MPolicy.sol';
+import './MSnapshotPolicy.sol';
 
 
-contract EveryBlock is MPolicy {
+contract EveryBlock is MSnapshotPolicy {
 
     ////////////////////////
     // Internal functions
     ////////////////////////
 
     //
-    // Implements MPolicy
+    // Implements MSnapshotPolicy
     //
 
     function mNextSnapshotId()

@@ -1,10 +1,10 @@
 pragma solidity 0.4.15;
 
-import './MPolicy.sol';
+import './MSnapshotPolicy.sol';
 
 
-// Snapshot consumes MPolicy
-contract Snapshot is MPolicy {
+// Snapshot consumes MSnapshotPolicy
+contract Snapshot is MSnapshotPolicy {
 
     ////////////////////////
     // Types

@@ -2,7 +2,7 @@ pragma solidity 0.4.15;
 
 
 // Mixin for the snapshot policy
-contract MPolicy {
+contract MSnapshotPolicy {
 
     ////////////////////////
     // Internal functions

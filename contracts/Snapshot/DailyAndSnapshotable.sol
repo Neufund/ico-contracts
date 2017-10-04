@@ -1,11 +1,11 @@
 pragma solidity 0.4.15;
 
 import '../Standards/ISnapshotable.sol';
-import './MPolicy.sol';
+import './MSnapshotPolicy.sol';
 
 
 contract DailyAndSnapshotable is
-    MPolicy,
+    MSnapshotPolicy,
     ISnapshotable
 {
     ////////////////////////
@@ -88,7 +88,7 @@ contract DailyAndSnapshotable is
     ////////////////////////
 
     //
-    // Implements MPolicy
+    // Implements MSnapshotPolicy
     //
 
     function mNextSnapshotId()
