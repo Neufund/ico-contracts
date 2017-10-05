@@ -1,7 +1,7 @@
 pragma solidity 0.4.15;
 
-import '../Standards/ISnapshotable.sol';
-import './MSnapshotPolicy.sol';
+import '../../Standards/ISnapshotable.sol';
+import '../MSnapshotPolicy.sol';
 
 
 /// @title creates snapshot on demand via ISnapshotable interface

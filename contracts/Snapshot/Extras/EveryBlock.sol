@@ -1,6 +1,6 @@
 pragma solidity 0.4.15;
 
-import './MSnapshotPolicy.sol';
+import '../MSnapshotPolicy.sol';
 
 
 /// @title creates snapshot id on each block
