@@ -15,15 +15,10 @@ contract EveryBlock is MSnapshotPolicy {
     // Implements MSnapshotPolicy
     //
 
-    function mNextSnapshotId()
+    function mCurrentSnapshotId()
         internal
         returns (uint256)
     {
         return block.number;
-    }
-
-    function mFlagSnapshotModified()
-        internal
-    {
     }
 }
