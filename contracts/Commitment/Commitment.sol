@@ -101,6 +101,12 @@ contract Commitment is
     /// `investor` commited `amount` in `paymentToken` currency which was
     /// converted to `eurEquivalent` that generates `grantedAmount` of
     /// `ofToken`.
+    // AUDIT[CHF-23]: Typo: commited -> committed.
+    //               This typo is all over the place but here is very important,
+    //               because the name LogFundsCommited is public and will be
+    //               used by external applications.
+    //               The typo "commited" should be fixed everywhere with
+    //               a single find&replace pass.
     event LogFundsCommited(
         address indexed investor,
         uint256 amount,
