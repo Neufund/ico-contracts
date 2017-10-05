@@ -4,6 +4,7 @@ import '../Standards/ISnapshotable.sol';
 import './MSnapshotPolicy.sol';
 
 
+/// @title creates snapshot on demand via ISnapshotable interface
 contract Snapshotable is
     MSnapshotPolicy,
     ISnapshotable

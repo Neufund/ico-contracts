@@ -3,6 +3,8 @@ pragma solidity 0.4.15;
 import './MSnapshotPolicy.sol';
 
 
+/// @title creates new snapshot id on each day boundary
+/// @dev snapshot id is unix timestamp of day boundary (not a block timestamp)
 contract Daily is MSnapshotPolicy {
 
     ////////////////////////

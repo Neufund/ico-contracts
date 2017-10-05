@@ -4,6 +4,8 @@ import '../Standards/ISnapshotable.sol';
 import './MSnapshotPolicy.sol';
 
 
+/// @title creates snapshot id on each day boundary and allows to create additional snapshots within a given day
+/// @dev snapshots are encodes in single uint256, where high 128 bits represents a day number (from unix epoch) and low 128 bits represents additional snapshots within given day
 contract DailyAndSnapshotable is
     MSnapshotPolicy,
     ISnapshotable

@@ -1,7 +1,8 @@
 pragma solidity 0.4.15;
 
 
-// Mixin for the snapshot policy
+/// @title Mixin for the snapshot policy which abstracts snapshot creation mechanics
+/// @dev to be implemented and such implementation should be mixed in with Snapshot contract, see EveryBlock for simplest example
 contract MSnapshotPolicy {
 
     ////////////////////////
