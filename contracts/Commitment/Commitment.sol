@@ -200,6 +200,13 @@ contract Commitment is
         uint256[] amounts
     )
         external
+
+        // AUDIT[CHF-32] Hidden time constraint on whitelist admin.
+        //   The whitelist admin has only 1 day (minimum) to fill the whitelist.
+        //   This adds dependency of the performance of an external entity
+        //   to the system.
+        //   Moreover, the information that this period last minimum 1 day
+        //   is kept in some other file.
         withTimedTransitions()
         onlyState(State.Before)
         only(ROLE_WHITELIST_ADMIN)
