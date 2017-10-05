@@ -24,6 +24,7 @@ contract Math {
         return (v + (d/2)) / d;
     }
 
+    // AUDIT[CHF-35] Please document how this function works.
     function fraction(uint256 amount, uint256 frac)
         internal
         constant
