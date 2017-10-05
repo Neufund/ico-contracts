@@ -334,6 +334,10 @@ contract Commitment is
     /// converts `amount` in wei into EUR with 18 decimals required by Curve
     /// Neufund public commitment uses fixed EUR rate during commitment to level playing field and
     /// prevent strategic behavior around ETH/EUR volatility. equity TOs will use oracles as they need spot prices
+    ///
+    /// Note: Considering the max possible ETH_EUR_FRACTION value, the max
+    ///       amount of ETH (not wei) that is safe to be passed as the argument
+    ///       is ~10**37 (~2**123).
     function convertToEur(uint256 amount)
         public
         constant
