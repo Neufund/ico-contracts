@@ -15,6 +15,7 @@ contract Math {
         return v1 > v2 ? v1 - v2 : v2 - v1;
     }
 
+    // AUDIT[CHF-36] Move the documentation of this function here.
     function divRound(uint256 v, uint256 d)
         internal
         constant
