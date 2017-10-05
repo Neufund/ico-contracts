@@ -4,7 +4,7 @@ import '../MSnapshotPolicy.sol';
 
 
 /// @title creates new snapshot id on each day boundary
-/// @dev snapshot id is unix timestamp of day boundary (not a block timestamp)
+/// @dev snapshot id number of day boundary form unix epoch
 contract Daily is MSnapshotPolicy {
 
     ////////////////////////
@@ -30,7 +30,7 @@ contract Daily is MSnapshotPolicy {
     // Implements MSnapshotPolicy
     //
 
-    function mNextSnapshotId()
+    function mCurrentSnapshotId()
         internal
         returns (uint256)
     {
@@ -41,10 +41,5 @@ contract Daily is MSnapshotPolicy {
         timestamp -= timestamp % 1 days;
 
         return timestamp;
-    }
-
-    function mFlagSnapshotModified()
-        internal
-    {
     }
 }
