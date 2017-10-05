@@ -111,6 +111,13 @@ contract Commitment is
     event LogFundsCommited(
         address indexed investor,
         uint256 amount,
+
+        // AUDIT[CHF-28] Group indexed arguments.
+        //   On the Ethereum RPC level this value is going to be
+        //   passed as a LOG topic together with the first indexed argument
+        //   `investor`. This might be confusing that the order of values in RPC
+        //   is different that the oder of arguments in this declaration.
+        //   Consider putting indexed arguments before non-indexed ones.
         address indexed paymentToken,
         uint256 eurEquivalent,
         uint256 grantedAmount,
