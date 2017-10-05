@@ -485,6 +485,22 @@ contract Commitment is
         uint256 amountEur = isEuro ? amount : convertToEur(amount);
         require(amount == 0 || amountEur >= MIN_TICKET_EUR);
 
+        // AUDIT[CHF-42] Protect against reentrancy attack.
+        //   Although the NEUMARK.issueForEuro() is trusted code,
+        //   you should change the order of operations in this function.
+        //   The general rules are described in
+        //   "Order of operations within an external or public function"
+        //   in CodeStyle.md file.
+        //
+        //   At least `_whitelist[investor].token = token` should be set before
+        //   calling NEUMARK.issueForEuro().
+        //
+        //   The proposed code changes are in audit/CHF-42.patch.
+        //
+        //   Also, having a unit test case for reentracy attack on
+        //   Commitment.addWhitelisted() (by mocking NEUMARK contract)
+        //   would be nice.
+
         // Allocate Neumarks (will be issued to `this`)
         uint256 rewardNmk = NEUMARK.issueForEuro(amountEur);
 
