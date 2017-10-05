@@ -1,6 +1,6 @@
 pragma solidity 0.4.15;
 
-
+// AUDIT[CHF-37] The Math contract should have a dedicated unit test suite.
 contract Math {
 
     ////////////////////////
