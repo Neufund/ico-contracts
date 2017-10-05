@@ -150,6 +150,10 @@ contract Commitment is
         require(etherLock.assetToken() == etherToken);
         require(address(euroLock) != 0x0);
         require(euroLock.assetToken() == euroToken);
+        // AUDIT[CHF-24] EUR token decimals not documented.
+        //   It is not documented here or in constants section than the EUR
+        //   amounts have 18 decimal places. The only comment about this is
+        //   in convertToEur().
         require(capEur >= 10**24); // 1 M€
         require(capEur <= 10**27); // 1 G€
         require(minTicketEur >= 10**20); // 100 €
