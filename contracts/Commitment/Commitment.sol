@@ -338,6 +338,11 @@ contract Commitment is
     /// Note: Considering the max possible ETH_EUR_FRACTION value, the max
     ///       amount of ETH (not wei) that is safe to be passed as the argument
     ///       is ~10**37 (~2**123).
+    // AUDIT[CHF-43] Consistent amount unit names.
+    //   Use suffix `Upls` whenever function/variable represents Euro units of
+    //   last precision (probably everywhere).
+    //   Also, consider consistent naming instead of mixture of
+    //   amount, amountEur, euro, euroUlps, amountEth, amountEthWeis, etc.
     function convertToEur(uint256 amount)
         public
         constant
