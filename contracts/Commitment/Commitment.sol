@@ -326,6 +326,17 @@ contract Commitment is
     {
         uint256 amountEur = convertToEur(amountEth);
         uint256 rewardNmk = NEUMARK.incremental(amountEur);
+        // AUDIT[CHF-47] Investor's share calculation inconsistency.
+        //   Here the investor's share is calculated first,
+        //   in whitelistTicket() and commitToken() the platform's share is
+        //   calculated first and investor's share is the remaining.
+        //   Example:
+        //     rewardNmk = 101
+        //   In estimateNeumarkReward():
+        //     investorNmk = divRound(101, 2) = 51
+        //   In whitelistTicket(), commitToken():
+        //     platformNmk = divRound(101, 2) = 51
+        //     investorNmk = 101 - 51 = 50
         uint256 investorNmk = divRound(rewardNmk, PLATFORM_SHARE);
         return investorNmk;
     }
