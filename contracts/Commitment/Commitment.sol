@@ -215,6 +215,15 @@ contract Commitment is
         for (uint256 i = 0; i < investors.length; i++) {
 
             // Loop body is factored out to keep stack low
+            // AUDIT[CHF-31] Invalid assumption about EVM stack space.
+            //   This pattern will not save you any EVM stack space (probably
+            //   the opposite). Solidity does not use CALLs to execute private
+            //   functions. It will just JUMP to the referenced function
+            //   staying on the same call depth -- so the stack space is
+            //   shared.
+            //   To use a separated call for execution of this function you have
+            //   to use `this.addWhitelistInvestorPrivate()`, but
+            //   addWhitelistInvestorPrivate() has to be public.
             addWhitelistInvestorPrivate(investors[i], tokens[i], amounts[i]);
         }
 
