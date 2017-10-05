@@ -238,6 +238,7 @@ contract Commitment is
         require(NEUMARK.totalEuroUlps() <= CAP_EUR);
     }
 
+    // AUDIT[CHF-44] Explain why Commitment.abort() function is needed.
     function abort()
         external
         withTimedTransitions()
