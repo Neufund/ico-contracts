@@ -60,6 +60,7 @@ contract Math {
         return c;
     }
 
+    // AUDIT[CHF-38] The Math.div() function does not do anything useful.
     function div(uint256 a, uint256 b)
         internal
         constant
