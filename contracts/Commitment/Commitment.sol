@@ -421,6 +421,7 @@ contract Commitment is
         return (ticket.token, ticket.amountEur, investorNmk);
     }
 
+    // AUDIT[CHF-46] What is this function for?
     function whitelistInvestor(uint256 atWhitelistPosition)
         public
         constant
