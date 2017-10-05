@@ -38,7 +38,7 @@ contract Snapshot is MSnapshotPolicy {
         return values.length > 0;
     }
 
-    /// @dev makes sure that 'snapshotId' between current snapshot id (mNextSnapshotId) and first snapshot id. this guarantees that getValueAt returns value.
+    /// @dev makes sure that 'snapshotId' between current snapshot id (mCurrentSnapshotId) and first snapshot id. this guarantees that getValueAt returns value.
     function hasValueAt(
         Values[] storage values,
         uint256 snapshotId
@@ -47,7 +47,7 @@ contract Snapshot is MSnapshotPolicy {
         constant
         returns (bool)
     {
-        require(snapshotId < mNextSnapshotId());
+        require(snapshotId <= mCurrentSnapshotId());
         return values.length > 0 && values[0].snapshotId <= snapshotId;
     }
 
@@ -81,7 +81,7 @@ contract Snapshot is MSnapshotPolicy {
         constant
         returns (uint256)
     {
-        require(snapshotId < mNextSnapshotId());
+        require(snapshotId <= mCurrentSnapshotId());
 
         // Empty value
         if (values.length == 0) {
@@ -123,7 +123,7 @@ contract Snapshot is MSnapshotPolicy {
     {
         // TODO: simplify or break into smaller functions
 
-        uint256 nextSnapshot = mNextSnapshotId();
+        uint256 nextSnapshot = mCurrentSnapshotId();
         // Always create a new entry if there currently is no value
         bool empty = values.length == 0;
         if (empty) {
@@ -134,9 +134,6 @@ contract Snapshot is MSnapshotPolicy {
                     value: value
                 })
             );
-
-            // Flag next snapshot as modified
-            mFlagSnapshotModified();
             return;
         }
 
@@ -157,9 +154,6 @@ contract Snapshot is MSnapshotPolicy {
                     value: value
                 })
             );
-
-            // Flag next snapshot as modified
-            mFlagSnapshotModified();
         } else { // We are updating the nextSnapshot
 
             bool previousUnmodified = last > 0 && values[last - 1].value == value;
