@@ -121,6 +121,10 @@ contract Commitment is
         address indexed paymentToken,
         uint256 eurEquivalent,
         uint256 grantedAmount,
+
+        // AUDIT[CHF-29] Consider removing ofToken argument.
+        //   In every invoke of this event NEUMARK token address is always
+        //   passed as the value of this argument.
         address ofToken
     );
 
