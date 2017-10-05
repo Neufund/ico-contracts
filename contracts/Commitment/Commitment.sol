@@ -70,6 +70,7 @@ contract Commitment is
 
     LockedAccount private EURO_LOCK;
 
+    // AUDIT[CHF-25] Commitment constants are not documented.
     uint256 private CAP_EUR;
 
     uint256 private MIN_TICKET_EUR;
