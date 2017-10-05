@@ -22,6 +22,8 @@ contract Math {
         returns(uint256)
     {
         // round up if % is half or more
+        // AUDIT[CHF-39] The addition in Math.divRound can overflow.
+        //   See TestMath.testDivRound() for a test case showing the problem.
         return (v + (d/2)) / d;
     }
 
