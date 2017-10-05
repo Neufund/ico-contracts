@@ -51,6 +51,8 @@ contract Commitment is
     ////////////////////////
 
     // share of Neumark reward platform operator gets
+    // AUDIT[CHF-48] Explain what the value actually means and that it cannot
+    //   be 0.
     uint256 private constant PLATFORM_SHARE = 2;
 
     ////////////////////////
