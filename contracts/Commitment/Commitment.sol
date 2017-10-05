@@ -246,6 +246,8 @@ contract Commitment is
         only(ROLE_WHITELIST_ADMIN)
     {
         // Return all Neumarks that may have been reserved.
+        // AUDIT[CHF-45] Naming inconsistency: issueForEuro vs burnNeumark.
+        //   Either use issueNeumarksForEuro() or burn(). I prefer burn().
         NEUMARK.burnNeumark(NEUMARK.balanceOf(this));
 
         // At this point we can kill the contract, it can not have aquired any
