@@ -170,6 +170,10 @@ contract Commitment is
         CAP_EUR = capEur;
         MIN_TICKET_EUR = minTicketEur;
         ETH_EUR_FRACTION = ethEurFraction;
+
+        // AUDIT[CHF-26] These initializations can be moved to declarations,
+        //   or ignored, because solidity initializes all storage variables
+        //   with 0 by default.
         _whitelistEtherNmk = 0;
         _whitelistEuroNmk = 0;
     }
