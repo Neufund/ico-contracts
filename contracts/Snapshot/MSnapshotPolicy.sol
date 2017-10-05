@@ -11,15 +11,12 @@ contract MSnapshotPolicy {
 
     // The snapshot Ids need to be monotonically increasing.
     // Whenever the snaspshot id changes, a new snapshot will
-    // be created. As long as the same value is being returned,
-    // this snapshot will be updated.
+    // be created. As long as the same snapshot id is being returned,
+    // last snapshot will be updated.
     //
     // Values passed to `hasValueAt` and `valuteAt` are required
-    // to be strictly less than `mixinNextSnapshotId()`.
-    function mNextSnapshotId()
+    // to be less or equal to `mCurrentSnapshotId()`.
+    function mCurrentSnapshotId()
         internal
         returns (uint256);
-
-    function mFlagSnapshotModified()
-        internal;
 }
