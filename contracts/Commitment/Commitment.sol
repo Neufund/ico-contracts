@@ -497,6 +497,10 @@ contract Commitment is
         _whitelistInvestors.push(investor);
 
         // Add to totals
+        // AUDIT[CHF-41] Use isEuro instead of isEther.
+        //   For consistency, use only isEuro to make decision about conditional
+        //   code execution. This will make the code paths for EUR case always
+        //   the first branch and for ETH always the second.
         if (isEther) {
             _whitelistEtherNmk = add(_whitelistEtherNmk, rewardNmk);
         } else {
