@@ -4,7 +4,7 @@ import '../MSnapshotPolicy.sol';
 
 
 /// @title creates new snapshot id on each day boundary
-/// @dev snapshot id number of day boundary form unix epoch
+/// @dev snapshot id is unit timestamp of current day boundary
 contract Daily is MSnapshotPolicy {
 
     ////////////////////////

@@ -123,14 +123,14 @@ contract Snapshot is MSnapshotPolicy {
     {
         // TODO: simplify or break into smaller functions
 
-        uint256 nextSnapshot = mCurrentSnapshotId();
+        uint256 currentSnapshotId = mCurrentSnapshotId();
         // Always create a new entry if there currently is no value
         bool empty = values.length == 0;
         if (empty) {
             // Create a new entry
             values.push(
                 Values({
-                    snapshotId: nextSnapshot,
+                    snapshotId: currentSnapshotId,
                     value: value
                 })
             );
@@ -138,7 +138,7 @@ contract Snapshot is MSnapshotPolicy {
         }
 
         uint256 last = values.length - 1;
-        bool hasNewSnapshot = values[last].snapshotId < nextSnapshot;
+        bool hasNewSnapshot = values[last].snapshotId < currentSnapshotId;
         if (hasNewSnapshot) {
 
             // Do nothing if the value was not modified
@@ -150,15 +150,16 @@ contract Snapshot is MSnapshotPolicy {
             // Create new entry
             values.push(
                 Values({
-                    snapshotId: nextSnapshot,
+                    snapshotId: currentSnapshotId,
                     value: value
                 })
             );
-        } else { // We are updating the nextSnapshot
+        } else {
 
+            // We are updating the currentSnapshotId
             bool previousUnmodified = last > 0 && values[last - 1].value == value;
             if (previousUnmodified) {
-                // Remove nextSnapshot entry
+                // Remove current snapshot if current value was set to previous value
                 delete values[last];
                 values.length--;
                 return;
