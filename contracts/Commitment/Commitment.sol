@@ -121,6 +121,7 @@ contract Commitment is
     // Constructor
     ////////////////////////
 
+    /// AUDIT[CHF-27] This comment is out-dated.
     /// declare capital commitment into Neufund ecosystem
     /// store funds in _ethToken and lock funds in _lockedAccount while issuing
     /// Neumarks along _curve commitments can be chained via long lived
