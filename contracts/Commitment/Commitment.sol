@@ -587,6 +587,10 @@ contract Commitment is
         // Split the Neumarks
         uint256 platformNmk = divRound(totalNmk, PLATFORM_SHARE);
         assert(platformNmk <= totalNmk);
+
+        // AUDIT[CHF-49] Safe Math.sub() unnecessary below.
+        //   It is guaranteed that totalNmk >= platformNmk.
+        //   The same issue is in whitelistTicket().
         investorNmk = sub(totalNmk, platformNmk);
 
         // Issue Neumarks and distribute
