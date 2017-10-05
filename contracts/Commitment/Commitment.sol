@@ -208,6 +208,10 @@ contract Commitment is
         require(investors.length == amounts.length);
 
         // Process tickets
+        // AUDIT[CHF-30] Use ++i instead of i++.
+        //   This will save 1 (literally one) unit of gas if
+        //   the investors array is not empty. Yupi!!
+        //   The same can be applied in RoleBasedAccessControl lines 164, 225.
         for (uint256 i = 0; i < investors.length; i++) {
 
             // Loop body is factored out to keep stack low
