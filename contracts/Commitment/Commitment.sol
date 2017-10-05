@@ -460,6 +460,18 @@ contract Commitment is
     {
         // Validate
         require(investor != 0x0);
+
+        // AUDIT[CHF-34] Undocumented enum feature used.
+        //   In the following line you are relaying on the undocumented enum
+        //   feature that the first element of an enum is also the "zero"
+        //   element and storage variables of enum types are initialized to
+        //   "zero" elements.
+        //   This is correct: confirmed by solidity developers and community
+        //   (https://ethereum.stackexchange.com/questions/21775/what-is-the-zero-value-for-an-enum).
+        //   Moreover, considering EVM internals there is no
+        //   practical way for solidity to implement this differently.
+        //   A contribution to solidity documentation describing this behavior
+        //   would be a nice addition to this ICO project.
         require(_whitelist[investor].token == Token.None);
         bool isEuro = token == Token.Euro;
         bool isEther = token == Token.Ether;
