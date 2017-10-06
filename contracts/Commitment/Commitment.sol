@@ -266,6 +266,13 @@ contract Commitment is
     {
         // Take with EtherToken allowance (if any)
         uint256 commitedWei = ETHER_TOKEN.allowance(msg.sender, this);
+
+        // AUDIT[CHF-54] Unnecessary call to ETHER_TOKEN.transferFrom().
+        //   When commitedWei is 0, calling ETHER_TOKEN.transferFrom() will
+        //   - waste some amount of gas,
+        //   - produce Transfer event with value 0.
+        //   Checking the value of commitedWei before calling transferFrom()
+        //   seems reasonable.
         assert(ETHER_TOKEN.transferFrom(msg.sender, this, commitedWei));
 
         // Turn msg.value into EtherToken (if any)
