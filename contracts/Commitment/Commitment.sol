@@ -591,6 +591,11 @@ contract Commitment is
 
         // Split the Neumarks
         uint256 platformNmk = divRound(totalNmk, PLATFORM_SHARE);
+
+        // AUDIT[CHF-51] Start trusting in math.
+        //   If you don't trust that divRound() guarantees the following
+        //   post-condition, it's time to take a step back.
+        //   Please remove this assert.
         assert(platformNmk <= totalNmk);
 
         // AUDIT[CHF-49] Safe Math.sub() unnecessary below.
