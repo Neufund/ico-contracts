@@ -557,6 +557,11 @@ contract Commitment is
 
         // Whitelist part
         WhitelistTicket storage ticket = _whitelist[msg.sender];
+
+        // AUDIT[CHF-50] Locally wrong "whitelisted" condition check.
+        //   This condition check is not valid for tokenType being Token.None.
+        //   Add assert(tokenType != Token.None) or add a comment stating
+        //   that passing Token.None is not allowed.
         bool whitelisted = ticket.token == tokenType;
         bool whitelistActiveForToken = tokenType == Token.Euro || state() == State.Whitelist;
         if (whitelisted && whitelistActiveForToken) {
