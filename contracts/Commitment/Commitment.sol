@@ -590,6 +590,18 @@ contract Commitment is
         require(NEUMARK.totalEuroUlps() <= CAP_EUR);
 
         // Split the Neumarks
+        // AUDIT[CHF-52] Simplify calculating the platform share.
+        //   1. In this case where PLATFORM_SHARE is 2, divRound actually means
+        //      "div round up".
+        //   2. Considering 18 decimals of Neumark token, using divRound()
+        //      increases complexity without measurable benefits.
+        //      Use DIV with rounding towards 0 for computing the platform
+        //      share as this:
+        //
+        //          uint256 platformNmk = totalNmk / PLATFORM_SHARE;
+        //          investorNmk = totalNmk - platformNmk;
+        //
+        //   See also AUDIT[CHF-47].
         uint256 platformNmk = divRound(totalNmk, PLATFORM_SHARE);
 
         // AUDIT[CHF-51] Start trusting in math.
