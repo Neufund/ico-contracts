@@ -1,12 +1,15 @@
 pragma solidity 0.4.15;
 
 
+/// @title creates snapshot id when requested
+/// @dev see Snapshot folder for implementation examples ie. DailyAndSnapshotable contract
 contract ISnapshotable {
 
     ////////////////////////
     // Events
     ////////////////////////
 
+    /// @dev should log each new snapshot id created, including snapshots created automatically via MSnapshotPolicy
     event LogSnapshotCreated(uint256 snapshotId);
 
     ////////////////////////

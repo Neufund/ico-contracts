@@ -3,7 +3,8 @@ pragma solidity 0.4.15;
 import './MSnapshotPolicy.sol';
 
 
-/// @title manages reading and writing a series of values, where each value has assigned a snapshot id for access to historical data
+/// @title Reads and writes snapshots
+/// @dev Manages reading and writing a series of values, where each value has assigned a snapshot id for access to historical data
 /// @dev may be added to any contract to provide snapshotting mechanism. should be mixed in with any of MSnapshotPolicy implementations to customize snapshot creation mechanics
 /// based on MiniMe token
 contract Snapshot is MSnapshotPolicy {
@@ -38,7 +39,7 @@ contract Snapshot is MSnapshotPolicy {
         return values.length > 0;
     }
 
-    /// @dev makes sure that 'snapshotId' between current snapshot id (mCurrentSnapshotId) and first snapshot id. this guarantees that getValueAt returns value.
+    /// @dev makes sure that 'snapshotId' between current snapshot id (mCurrentSnapshotId) and first snapshot id. this guarantees that getValueAt returns value from one of the snapshots.
     function hasValueAt(
         Values[] storage values,
         uint256 snapshotId
@@ -51,7 +52,7 @@ contract Snapshot is MSnapshotPolicy {
         return values.length > 0 && values[0].snapshotId <= snapshotId;
     }
 
-    /// gets current (last) value in the series
+    /// gets last value in the series
     function getValue(
         Values[] storage values,
         uint256 defaultValue
@@ -103,6 +104,7 @@ contract Snapshot is MSnapshotPolicy {
         uint256 max = last;
         while (max > min) {
             uint256 mid = (max + min + 1) / 2;
+            // must always return lower indice for approximate searches
             if (values[mid].snapshotId <= snapshotId) {
                 min = mid;
             } else {
