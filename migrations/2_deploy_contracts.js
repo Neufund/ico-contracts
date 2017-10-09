@@ -1,5 +1,5 @@
 require("babel-register");
-const controlAccounts = require("./accounts").default;
+const getConfig = require("./config").default;
 
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
@@ -9,28 +9,14 @@ const EtherToken = artifacts.require("EtherToken");
 const EuroToken = artifacts.require("EuroToken");
 const Commitment = artifacts.require("Commitment");
 
-const now = Date.now() / 1000;
-const Q18 = web3.toBigNumber("10").pow(18);
-
-// Contracts parameters for live network
-const LOCK_DURATION = 18 * 30 * 24 * 60 * 60;
-const PENALTY_FRACTION = web3.toBigNumber("0.1").mul(Q18);
-
-let START_DATE = Date.UTC(2017, 10, 15) / 1000;
-const CAP_EUR = web3.toBigNumber("200000000").mul(Q18);
-const MIN_TICKET_EUR = web3.toBigNumber("300").mul(Q18);
-const ETH_EUR_FRACTION = web3.toBigNumber("300").mul(Q18);
-
-let PLATFORM_OPERATOR_WALLET;
-
 module.exports = function deployContracts(deployer, network, accounts) {
   // do not deploy testing network
   if (network === "inprocess_test" || network === "coverage") return;
-  [, , , PLATFORM_OPERATOR_WALLET] = controlAccounts(network, accounts);
-  if (!network.endsWith("_live")) {
-    // start ICO in one day
-    START_DATE = now * 1 * 24 * 60 * 60;
-  }
+  const CONFIG = getConfig(web3, network, accounts);
+  console.log("----------------------------------");
+  console.log("Deployment parameters:");
+  console.log(CONFIG);
+  console.log("----------------------------------");
 
   deployer.then(async () => {
     console.log("AccessControl deployment...");
@@ -63,8 +49,8 @@ module.exports = function deployContracts(deployer, network, accounts) {
       accessControl.address,
       etherToken.address,
       neumark.address,
-      LOCK_DURATION,
-      PENALTY_FRACTION
+      CONFIG.LOCK_DURATION,
+      CONFIG.PENALTY_FRACTION
     );
     const etherLock = await LockedAccount.deployed();
 
@@ -74,8 +60,8 @@ module.exports = function deployContracts(deployer, network, accounts) {
       accessControl.address,
       euroToken.address,
       neumark.address,
-      LOCK_DURATION,
-      PENALTY_FRACTION
+      CONFIG.LOCK_DURATION,
+      CONFIG.PENALTY_FRACTION
     );
     const euroLock = await LockedAccount.deployed();
 
@@ -84,16 +70,16 @@ module.exports = function deployContracts(deployer, network, accounts) {
       Commitment,
       accessControl.address,
       ethereumForkArbiter.address,
-      START_DATE,
-      PLATFORM_OPERATOR_WALLET,
+      CONFIG.START_DATE,
+      CONFIG.addresses.PLATFORM_OPERATOR_WALLET,
       neumark.address,
       etherToken.address,
       euroToken.address,
       etherLock.address,
       euroLock.address,
-      CAP_EUR,
-      MIN_TICKET_EUR,
-      ETH_EUR_FRACTION
+      CONFIG.CAP_EUR,
+      CONFIG.MIN_TICKET_EUR,
+      CONFIG.ETH_EUR_FRACTION
     );
     const commitment = await Commitment.deployed();
 

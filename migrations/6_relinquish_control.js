@@ -1,20 +1,15 @@
 require("babel-register");
-const controlAccounts = require("./accounts").default;
+const getConfig = require("./config").default;
+const { TriState, GLOBAL } = require("../test/helpers/triState");
 
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const EuroToken = artifacts.require("EuroToken");
 
-// Needs to match contracts/AccessControl/RoleBasedAccessControl.sol:TriState
-const TriState = { Unset: 0, Allow: 1, Deny: 2 };
-const GLOBAL = "0x0";
-
-// Maps roles to accounts on live network
-let ACCESS_CONTROLLER;
-
 module.exports = function deployContracts(deployer, network, accounts) {
   // do not deploy testing network
   if (network === "inprocess_test" || network === "coverage") return;
-  [ACCESS_CONTROLLER] = controlAccounts(network, accounts);
+
+  const CONFIG = getConfig(web3, network, accounts);
 
   deployer.then(async () => {
     if (network.endsWith("_live")) {
@@ -36,15 +31,17 @@ module.exports = function deployContracts(deployer, network, accounts) {
         TriState.Unset
       );
 
-      console.log(`Adding new ACCESS_CONTROLLER to ${ACCESS_CONTROLLER}`);
+      console.log(
+        `Adding new ACCESS_CONTROLLER to ${CONFIG.addresses.ACCESS_CONTROLLER}`
+      );
       await accessControl.setUserRole(
-        ACCESS_CONTROLLER,
+        CONFIG.addresses.ACCESS_CONTROLLER,
         web3.sha3("AccessController"),
         GLOBAL,
         TriState.Allow
       );
       await accessControl.setUserRole(
-        ACCESS_CONTROLLER,
+        CONFIG.addresses.ACCESS_CONTROLLER,
         web3.sha3("AccessController"),
         accessControl.address,
         TriState.Allow
@@ -57,7 +54,8 @@ module.exports = function deployContracts(deployer, network, accounts) {
       );
       console.log("---------------------------------------------");
       console.log(
-        `New ACCESS_CONTROLLER ${ACCESS_CONTROLLER} must remove access to deployer ${DEPLOYER} for object ${accessControl.address}`
+        `New ACCESS_CONTROLLER ${CONFIG.addresses
+          .ACCESS_CONTROLLER} must remove access to deployer ${DEPLOYER} for object ${accessControl.address}`
       );
       console.log("---------------------------------------------");
 
@@ -66,7 +64,7 @@ module.exports = function deployContracts(deployer, network, accounts) {
         web3.sha3("AccessController"),
         accessControl.address,
         TriState.Unset,
-        {from: ACCESS_CONTROLLER}
+        {from: CONFIG.addresses.ACCESS_CONTROLLER}
       ); */
     } else {
       console.log("---------------------------------------------");

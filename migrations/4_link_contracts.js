@@ -1,21 +1,16 @@
 require("babel-register");
-const controlAccounts = require("./accounts").default;
+const getConfig = require("./config").default;
+const { TriState, GLOBAL } = require("../test/helpers/triState");
 
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const LockedAccount = artifacts.require("LockedAccount");
 const Commitment = artifacts.require("Commitment");
 
-// Needs to match contracts/AccessControl/RoleBasedAccessControl.sol:TriState
-const TriState = { Unset: 0, Allow: 1, Deny: 2 };
-const GLOBAL = "0x0";
-
-// Maps roles to accounts on live network
-let PLATFORM_OPERATOR_WALLET;
-
 module.exports = function deployContracts(deployer, network, accounts) {
   // do not deploy testing network
   if (network === "inprocess_test" || network === "coverage") return;
-  [, , , PLATFORM_OPERATOR_WALLET] = controlAccounts(network, accounts);
+
+  const CONFIG = getConfig(web3, network, accounts);
   const DEPLOYER = accounts[0];
 
   deployer.then(async () => {
@@ -40,11 +35,17 @@ module.exports = function deployContracts(deployer, network, accounts) {
       from: DEPLOYER
     });
     console.log("Setting fee disbursal address");
-    await euroLock.setPenaltyDisbursal(PLATFORM_OPERATOR_WALLET, {
-      from: DEPLOYER
-    });
-    await etherLock.setPenaltyDisbursal(PLATFORM_OPERATOR_WALLET, {
-      from: DEPLOYER
-    });
+    await euroLock.setPenaltyDisbursal(
+      CONFIG.addresses.PLATFORM_OPERATOR_WALLET,
+      {
+        from: DEPLOYER
+      }
+    );
+    await etherLock.setPenaltyDisbursal(
+      CONFIG.addresses.PLATFORM_OPERATOR_WALLET,
+      {
+        from: DEPLOYER
+      }
+    );
   });
 };

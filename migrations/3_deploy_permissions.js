@@ -1,5 +1,6 @@
 require("babel-register");
-const controlAccounts = require("./accounts").default;
+const getConfig = require("./config").default;
+const { TriState, EVERYONE, GLOBAL } = require("../test/helpers/triState");
 
 const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
 const Neumark = artifacts.require("Neumark");
@@ -7,28 +8,11 @@ const LockedAccount = artifacts.require("LockedAccount");
 const EuroToken = artifacts.require("EuroToken");
 const Commitment = artifacts.require("Commitment");
 
-// Needs to match contracts/AccessControl/RoleBasedAccessControl.sol:TriState
-const TriState = { Unset: 0, Allow: 1, Deny: 2 };
-const EVERYONE = "0x0";
-const GLOBAL = "0x0";
-
-// Maps roles to accounts on live network
-let LOCKED_ACCOUNT_ADMIN;
-let WHITELIST_ADMIN;
-let PLATFORM_OPERATOR_REPRESENTATIVE;
-let EURT_DEPOSIT_MANAGER;
-
 module.exports = function deployContracts(deployer, network, accounts) {
   // do not deploy testing network
   if (network === "inprocess_test" || network === "coverage") return;
-  [
-    ,
-    LOCKED_ACCOUNT_ADMIN,
-    WHITELIST_ADMIN,
-    ,
-    PLATFORM_OPERATOR_REPRESENTATIVE,
-    EURT_DEPOSIT_MANAGER
-  ] = controlAccounts(network, accounts);
+
+  const CONFIG = getConfig(web3, network, accounts);
   const DEPLOYER = accounts[0];
 
   deployer.then(async () => {
@@ -52,25 +36,25 @@ module.exports = function deployContracts(deployer, network, accounts) {
       TriState.Allow
     );
     await accessControl.setUserRole(
-      LOCKED_ACCOUNT_ADMIN,
+      CONFIG.addresses.LOCKED_ACCOUNT_ADMIN,
       web3.sha3("LockedAccountAdmin"),
       GLOBAL,
       TriState.Allow
     );
     await accessControl.setUserRole(
-      WHITELIST_ADMIN,
+      CONFIG.addresses.WHITELIST_ADMIN,
       web3.sha3("WhitelistAdmin"),
       commitment.address,
       TriState.Allow
     );
     await accessControl.setUserRole(
-      PLATFORM_OPERATOR_REPRESENTATIVE,
+      CONFIG.addresses.PLATFORM_OPERATOR_REPRESENTATIVE,
       web3.sha3("PlatformOperatorRepresentative"),
       GLOBAL,
       TriState.Allow
     );
     await accessControl.setUserRole(
-      EURT_DEPOSIT_MANAGER,
+      CONFIG.addresses.EURT_DEPOSIT_MANAGER,
       web3.sha3("EurtDepositManager"),
       euroToken.address,
       TriState.Allow
