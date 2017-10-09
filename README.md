@@ -110,7 +110,7 @@ Contracts are deployed in following order
 
 Commitment contracts currently serves as a 'Universe'. All contracts, agreements and parameters we officially support during ICBM may be found in it or in other aggregated contracts.
 
-### Contracts parameters (2_deploy_contracts.js)
+### Contracts parameters (2_deploy_contracts.js and config.js)
 Several contracts require parameters to be set in constructors as specified below. Once set those parameters cannot be changed.
 
 **LockedAccount**
@@ -124,9 +124,13 @@ Several contracts require parameters to be set in constructors as specified belo
 4. **ETH_EUR_FRACTION** - EUR-T to ETH rate used during whole ICBM. we use constant rate to compute Neumark reward, there's no oracle.
 5. **PLATFORM_OPERATOR_WALLET** - see below.
 
+**Agreements**
+1. **RESERVATION_AGREEMENT** - ipfs link to Reservation Agreement, attached to `Commitment` contract
+2. **NEUMARK_HOLDER_AGREEMENT** - ipfs link to Neumark Token Holder Agreeement attached to `Neumark` contract
+
 Please note that several ICBM duration parameters are encoded in `StateMachine` contract. You may choose to change them form test deployments.
 
-### Roles and Accounts (3_deploy_permissions.js, accounts.js)
+### Roles and Accounts (3_deploy_permissions.js, config.js)
 Several accounts are required to deploy on `mainnet` due to many roles with specific permissions that are required to control ICBM and Neumark token. Below is a list of those roles.
 
 |Role|Description|Mainnet account|Scope|
@@ -158,25 +162,26 @@ Full list of transfer permission is as follows.
 |LockedAccount| Y | Y |
 
 ### Linking LockedAccount (4_link_contracts.js)
-Both LockedAccount must be linked to Commitment contract (which becomes their controller) to be able to store investor's assets and provide unlock mechanism. Both LockedAccount must also have unlock penalty disbursal pool set for `unlock` operation to work. Per whitepaper, until platform is deployed, penalties are stored in Platform Operator wallet (however LockedAccount supports disbursal contracts as well)
-
+Both `LockedAccount` instances must be linked to Commitment contract (which becomes their controller) to be able to store investor's assets and provide unlock mechanism. Both LockedAccount must also have unlock penalty disbursal pool set for `unlock` operation to work. Per whitepaper, until platform is deployed, penalties are stored in Platform Operator wallet (however `LockedAccount` supports disbursal contracts as well). Linking requires `LOCKED ACCOUNT ROLE`.
 
 ### Amend legal agreements (5_amend_agreements.js)
 `Neumark` and `Commitment` contracts need to be provided ipfs link to legal agreement. Otherwise all functions of those contracts that require it will revert. In case of main network this must happen via transaction from `PLATFORM OPERATOR REPRESENTATIVE` using its respective Nano S and it's not done in deployment scripts in this repo. In case of other networks, mock legal agreements will be immediately attached.
 
 ### Setting whitelist
-Whitelist may be set during `Before` state of `Commitment` contract. This is not part of deployment script in this repo.
+Whitelist may be set during `Before` state of `Commitment` contract. This is not part of deployment script in this repo. Setting whitelist requires `WHITELIST ADMIN` role.
 
 
 ### Networks defined in truffle
 There are several conventions in naming truffle networks used for deployment.
 **Network with names ending with `_live`** will be deployed in production mode which means that:
-1. Production accounts addresses as specified in `accounts.js` will be assigned to roles.
+1. Live accounts addresses as specified in `config.js` will be assigned to roles.
+2. Live smart contracts parameters as specified in `config.js` will be deployed
 2. Agreements will not be attached.
 3. Deployer will set ACCESS_CONTROLLER as secondary access control admin address and will remove itself as global ACCESS_CONTROLLER (see `6_relinquish_control.js`)
 
 **Other networks** will be deployed in test mode which means that:
 1. All roles are assigned to accounts[0], which is also deployer. This account controls everything.
+2. Modify `config.js` as you wish to deploy with custom smart contract parameters.
 2. Everything is deployed and set up. Commitment contract should be ready to go after deployment.
 
 **Special networks**
