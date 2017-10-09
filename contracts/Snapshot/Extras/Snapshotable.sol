@@ -43,6 +43,14 @@ contract Snapshotable is
         return _currentSnapshotId;
     }
 
+    function lastSnapshotId()
+        public
+        constant
+        returns (uint256)
+    {
+        return _currentSnapshotId;
+    }
+
     ////////////////////////
     // Internal functions
     ////////////////////////
