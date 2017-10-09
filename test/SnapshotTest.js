@@ -2,24 +2,28 @@ import { expect } from "chai";
 import moment from "moment";
 import { prettyPrintGasCost } from "./helpers/gasUtils";
 import { latestTimestamp } from "./helpers/latestTime";
-import increaseTime from "./helpers/increaseTime";
+import increaseTime, { setTimeTo } from "./helpers/increaseTime";
+import { eventValue } from "./helpers/events";
+import EvmError from "./helpers/EVMThrow";
 
-const SnapshotTest = artifacts.require("./test/SnapshotTest.sol");
+const TestSnapshot = artifacts.require("TestSnapshot");
 
 const day = 24 * 3600;
 
 contract("Snapshot", () => {
   let snapshotTest;
 
+  const getSnapshotIdFromEvent = tx =>
+    eventValue(tx, "LogSnapshotCreated", "snapshotId");
+
   const createSnapshot = async () => {
     const r = await snapshotTest.createSnapshot();
     assert.equal(r.logs.length, 1);
-    assert.equal(r.logs[0].event, "LogSnapshotCreated");
-    return r.logs[0].args.snapshot;
+    return getSnapshotIdFromEvent(r);
   };
 
   beforeEach(async () => {
-    snapshotTest = await SnapshotTest.new();
+    snapshotTest = await TestSnapshot.new();
   });
 
   it("should deploy", async () => {
@@ -31,12 +35,15 @@ contract("Snapshot", () => {
   });
 
   it("should initially return default", async () => {
-    assert.isFalse(await snapshotTest.hasValue.call());
-  });
-
-  it("should initially return default", async () => {
     assert.equal(12, await snapshotTest.getValue.call(12));
     assert.equal(42, await snapshotTest.getValue.call(42));
+  });
+
+  it("should initially return default when queried by snapshot id", async () => {
+    const day0 = await snapshotTest.snapshotAt.call(
+      (await latestTimestamp()) + 0 * day
+    );
+    expect(await snapshotTest.getValueAt.call(day0, 41)).to.be.bignumber.eq(41);
   });
 
   it("should create a snapshot", async () => {
@@ -53,14 +60,17 @@ contract("Snapshot", () => {
     assert.isTrue(await snapshotTest.hasValue.call());
   });
 
-  it("should reset value", async () => {
-    await snapshotTest.setValue(1234);
+  it("should overwrite last snapshot", async () => {
+    const tx1 = await snapshotTest.setValue(1234);
+    const snapshotId1 = getSnapshotIdFromEvent(tx1);
 
-    const r = await snapshotTest.setValue(12345);
-    prettyPrintGasCost("Resetting new value", r);
+    const tx2 = await snapshotTest.setValue(12345);
+    const snapshotId2 = await snapshotTest.lastSnapshotId.call();
+    prettyPrintGasCost("overwrite last snapshot", tx2);
 
-    assert.equal(12345, await snapshotTest.getValue.call(12));
+    expect(await snapshotTest.getValue.call(12)).to.be.bignumber.eq(12345);
     assert.isTrue(await snapshotTest.hasValue.call());
+    expect(snapshotId1).to.be.bignumber.eq(snapshotId2);
   });
 
   it("should keep values in snapshots", async () => {
@@ -70,12 +80,26 @@ contract("Snapshot", () => {
     await snapshotTest.setValue(200);
     const after = await createSnapshot();
 
-    assert.isFalse(await snapshotTest.hasValueAt.call(before));
+    assert.isFalse(await snapshotTest.hasValueAt.call(before.sub(1)));
+    assert.isTrue(await snapshotTest.hasValueAt.call(before));
+    assert.isTrue(await snapshotTest.hasValueAt.call(middle.sub(1)));
     assert.isTrue(await snapshotTest.hasValueAt.call(middle));
-    assert.isTrue(await snapshotTest.hasValueAt.call(after));
-    assert.equal(41, await snapshotTest.getValueAt.call(before, 41));
-    assert.equal(100, await snapshotTest.getValueAt.call(middle, 41));
-    assert.equal(200, await snapshotTest.getValueAt.call(after, 41));
+    assert.isTrue(await snapshotTest.hasValueAt.call(after.sub(1)));
+    expect(
+      await snapshotTest.getValueAt.call(before.sub(1), 41)
+    ).to.be.bignumber.eq(41);
+    expect(await snapshotTest.getValueAt.call(before, 41)).to.be.bignumber.eq(
+      100
+    );
+    expect(
+      await snapshotTest.getValueAt.call(middle.sub(1), 41)
+    ).to.be.bignumber.eq(100);
+    expect(await snapshotTest.getValueAt.call(middle, 41)).to.be.bignumber.eq(
+      200
+    );
+    expect(
+      await snapshotTest.getValueAt.call(after.sub(1), 41)
+    ).to.be.bignumber.eq(200);
   });
 
   it("should create daily snapshots", async () => {
@@ -88,23 +112,177 @@ contract("Snapshot", () => {
     const day2 = await snapshotTest.snapshotAt.call(
       (await latestTimestamp()) + 2 * day
     );
-    await snapshotTest.snapshotAt.call((await latestTimestamp()) + 3 * day);
+    const day3 = await snapshotTest.snapshotAt.call(
+      (await latestTimestamp()) + 3 * day
+    );
+
+    const tx0 = await snapshotTest.setValue(100);
+    const snapshotId0 = getSnapshotIdFromEvent(tx0);
+    expect(snapshotId0).to.be.bignumber.eq(day0);
+
+    await increaseTime(moment.duration({ days: 1 }));
+    const tx1 = await snapshotTest.setValue(200);
+    const snapshotId1 = getSnapshotIdFromEvent(tx1);
+    expect(snapshotId1).to.be.bignumber.eq(day1);
+
+    await increaseTime(moment.duration({ days: 1 }));
+    const tx2 = await snapshotTest.setValue(300);
+    const snapshotId2 = getSnapshotIdFromEvent(tx2);
+    expect(snapshotId2).to.be.bignumber.eq(day2);
+
+    expect(await snapshotTest.getValueAt.call(day0 - 1, 41)).to.be.bignumber.eq(
+      41
+    );
+    expect(await snapshotTest.getValueAt.call(day0, 41)).to.be.bignumber.eq(
+      100
+    );
+    expect(await snapshotTest.getValueAt.call(day1, 41)).to.be.bignumber.eq(
+      200
+    );
+    expect(await snapshotTest.getValueAt.call(day2, 41)).to.be.bignumber.eq(
+      300
+    );
+    expect(await snapshotTest.getValue.call(41)).to.be.bignumber.eq(300);
+    await expect(snapshotTest.getValueAt.call(day3, 41)).to.be.rejectedWith(
+      EvmError
+    );
+  });
+
+  it("should throw when queried in the future", async () => {
+    const ct = await latestTimestamp();
+    const day1 = await snapshotTest.snapshotAt.call(ct + 1 * day);
+    await expect(snapshotTest.getValueAt.call(day1, 41)).to.be.rejectedWith(
+      EvmError
+    );
+    await expect(snapshotTest.hasValueAt.call(day1)).to.be.rejectedWith(
+      EvmError
+    );
+  });
+
+  it("should not delete interim value when set to previous value", async () => {
+    // this test may fail if betweend createSnapshot() and setValue() there is a day boundary
+    await createSnapshot();
+    await snapshotTest.setValue(100);
+    await createSnapshot();
+    await snapshotTest.setValue(200);
+    const after = await createSnapshot();
+    await snapshotTest.setValue(100);
+    await snapshotTest.setValue(200);
+
+    const afterValue = await snapshotTest.getValueAt.call(after, -1);
+    expect(afterValue).to.be.bignumber.eq(200);
+
+    await snapshotTest.setValue(101);
+    const afterValueChanged = await snapshotTest.getValueAt.call(after, -1);
+    expect(afterValueChanged).to.be.bignumber.eq(101);
+
+    const postMortem = await createSnapshot();
+    // no snapshot were created after after
+    expect(postMortem).to.be.bignumber.eq(after.add(1));
+  });
+
+  it("should perform approximate binary search", async () => {
+    // this search must return previous value for approximate matches
+    // due to end condition it's never O(1)
+    // so let's test it
+    const binSearch = (values, value) => {
+      let min = 0;
+      let max = values.length - 1;
+      let iter = 0;
+      while (max > min) {
+        // eslint-disable-next-line no-bitwise
+        const mid = (max + min + 1) >> 1;
+        if (values[mid] <= value) {
+          min = mid;
+        } else {
+          max = mid - 1;
+        }
+        iter += 1;
+      }
+      return [min, iter];
+    };
+
+    const days = Array.from(new Array(100), (x, i) => i * 2 ** 4);
+    let avgIters = 0;
+    for (let ii = 0; ii < days.length * 2 ** 4; ii += 1) {
+      const r = binSearch(days, ii);
+      // use linear search to verify
+      const expectedIdx = days.findIndex(e => ii - e < 2 ** 4 && ii >= e);
+      expect(r[0]).to.eq(expectedIdx);
+      avgIters += r[1];
+    }
+    // eslint-disable-next-line no-console
+    console.log(
+      `\tAverage searches ${avgIters /
+        (days.length * 2 ** 4)} vs theoretical O(log N) ${Math.log2(
+        days.length
+      )}`
+    );
+  });
+
+  it("should create 100 daily snapshots with deterministic snapshot id", async () => {
+    const day0 = await snapshotTest.snapshotAt.call(await latestTimestamp());
+    const simulatedDays = 100; // 365*10;
+    for (let ii = 0; ii < simulatedDays; ii += 1) {
+      await snapshotTest.setValue(ii * 10 + 1);
+      await increaseTime(moment.duration({ days: 1 }));
+    }
+    const daysMsb = new web3.BigNumber(2).pow(128);
+    // make sure all boundaries crossed
+    const expectedSnapshotId = day0.add(daysMsb.mul(simulatedDays - 1));
+    expect(await snapshotTest.lastSnapshotId()).to.be.bignumber.eq(
+      expectedSnapshotId
+    );
+  });
+
+  it("should return value read between non consecutive snapshot ids", async () => {
+    const day0 = await snapshotTest.snapshotAt.call(
+      (await latestTimestamp()) + 0 * day
+    );
+    const day1 = await snapshotTest.snapshotAt.call(
+      (await latestTimestamp()) + 1 * day
+    );
 
     await snapshotTest.setValue(100);
     await increaseTime(moment.duration({ days: 1 }));
     await snapshotTest.setValue(200);
-    await increaseTime(moment.duration({ days: 1 }));
-    await snapshotTest.setValue(300);
 
-    assert.equal(41, await snapshotTest.getValueAt.call(day0, 41));
-    assert.equal(100, await snapshotTest.getValueAt.call(day1, 41));
-    assert.equal(200, await snapshotTest.getValueAt.call(day2, 41));
+    expect(
+      await snapshotTest.getValueAt.call(day0.add(1), 41)
+    ).to.be.bignumber.eq(100);
+    expect(
+      await snapshotTest.getValueAt.call(day0.add(day1.sub(day0).div(2)), 41)
+    ).to.be.bignumber.eq(100);
+    expect(
+      await snapshotTest.getValueAt.call(day1.sub(1), 41)
+    ).to.be.bignumber.eq(100);
   });
 
-  it("should throw when queried in the future", async () => {
-    const day1 = await snapshotTest.snapshotAt.call(
-      (await latestTimestamp()) + 1 * day
+  it("should return value for snapshot ids after last physical entry was created", async () => {
+    const day0 = await snapshotTest.snapshotAt.call(
+      (await latestTimestamp()) + 0 * day
     );
-    await expect(snapshotTest.getValueAt.call(day1, 41)).to.revert;
+    await snapshotTest.setValue(100);
+    await snapshotTest.createSnapshot();
+    expect(
+      await snapshotTest.getValueAt.call(day0.add(1), 41)
+    ).to.be.bignumber.eq(100);
+  });
+
+  it("should correctly create snapshots around day boundary", async () => {
+    const boundary = Math.floor((await latestTimestamp()) / day + 1) * day;
+    // set time to 3s before boundary
+    await setTimeTo(boundary - 3);
+    // test may fail if block is mined longer than 3 seconds
+    const befTx = await snapshotTest.setValue(100);
+    // 3 seconds into day boundary
+    await increaseTime(3);
+    const aftTx = await snapshotTest.setValue(200);
+    const befSnapshotId = getSnapshotIdFromEvent(befTx);
+    const aftSnapshotId = getSnapshotIdFromEvent(aftTx);
+    // should have 1 day difference
+    expect(aftSnapshotId.sub(befSnapshotId)).to.be.bignumber.eq(
+      new web3.BigNumber(2).pow(128)
+    );
   });
 });
