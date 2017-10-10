@@ -103,36 +103,30 @@ contract("Snapshot", () => {
   });
 
   it("should create daily snapshots", async () => {
-    const day0 = await snapshotTest.snapshotAt.call(
-      (await latestTimestamp()) + 0 * day
-    );
-    const day1 = await snapshotTest.snapshotAt.call(
-      (await latestTimestamp()) + 1 * day
-    );
-    const day2 = await snapshotTest.snapshotAt.call(
-      (await latestTimestamp()) + 2 * day
-    );
-    const day3 = await snapshotTest.snapshotAt.call(
-      (await latestTimestamp()) + 3 * day
-    );
+    const currentTimestamp = await latestTimestamp();
 
+    const day0 = await snapshotTest.snapshotAt.call(currentTimestamp + 0 * day);
     const tx0 = await snapshotTest.setValue(100);
     const snapshotId0 = getSnapshotIdFromEvent(tx0);
     expect(snapshotId0).to.be.bignumber.eq(day0);
 
+    const day1 = await snapshotTest.snapshotAt.call(currentTimestamp + 1 * day);
     await increaseTime(moment.duration({ days: 1 }));
     const tx1 = await snapshotTest.setValue(200);
     const snapshotId1 = getSnapshotIdFromEvent(tx1);
     expect(snapshotId1).to.be.bignumber.eq(day1);
 
+    const day2 = await snapshotTest.snapshotAt.call(currentTimestamp + 2 * day);
     await increaseTime(moment.duration({ days: 1 }));
     const tx2 = await snapshotTest.setValue(300);
     const snapshotId2 = getSnapshotIdFromEvent(tx2);
     expect(snapshotId2).to.be.bignumber.eq(day2);
 
-    expect(await snapshotTest.getValueAt.call(day0 - 1, 41)).to.be.bignumber.eq(
-      41
-    );
+    const day3 = await snapshotTest.snapshotAt.call(currentTimestamp + 3 * day);
+
+    expect(
+      await snapshotTest.getValueAt.call(day0.sub(1), 41)
+    ).to.be.bignumber.eq(41);
     expect(await snapshotTest.getValueAt.call(day0, 41)).to.be.bignumber.eq(
       100
     );
