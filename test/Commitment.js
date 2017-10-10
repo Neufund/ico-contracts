@@ -24,7 +24,11 @@ const PLATFORM_SHARE = web3.toBigNumber("2");
 const WHITELIST_START = BEFORE_DURATION;
 const PUBLIC_START = WHITELIST_START + WHITELIST_DURATION;
 const FINISHED_START = PUBLIC_START + PUBLIC_DURATION;
-const divRound = (v, d) => d.divToInt(2).plus(v).divToInt(d);
+const divRound = (v, d) =>
+  d
+    .divToInt(2)
+    .plus(v)
+    .divToInt(d);
 
 const Q18 = web3.toBigNumber("10").pow(18);
 const AGREEMENT = "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT";
@@ -100,12 +104,27 @@ contract(
       );
       await rbac.set([
         { subject: representative, role: roles.platformOperatorRepresentative },
-        { subject: whitelistAdmin, role: roles.whitelistAdmin },
+        {
+          subject: whitelistAdmin,
+          role: roles.whitelistAdmin,
+          object: commitment.address
+        },
         { subject: lockedAccountAdmin, role: roles.lockedAccountAdmin },
-        { subject: eurtDepositManager, role: roles.eurtDepositManager },
-        { subject: commitment.address, role: roles.neumarkIssuer },
-        { subject: commitment.address, role: roles.neumarkBurner },
-        { subject: commitment.address, role: roles.transferAdmin }
+        {
+          subject: eurtDepositManager,
+          role: roles.eurtDepositManager,
+          object: euroToken.address
+        },
+        {
+          subject: commitment.address,
+          role: roles.neumarkIssuer,
+          object: neumark.address
+        },
+        {
+          subject: commitment.address,
+          role: roles.neumarkBurner,
+          object: neumark.address
+        }
       ]);
       await neumark.amendAgreement(AGREEMENT, { from: representative });
       await commitment.amendAgreement(AGREEMENT, { from: representative });
@@ -154,13 +173,20 @@ contract(
 
     describe("Whitelist", async () => {
       function fillWhitelist(N) {
-        const whitelisted = Array(N).fill(0).map((_, i) => `0xFF${i}`);
+        const whitelisted = Array(N)
+          .fill(0)
+          .map((_, i) => `0xFF${i}`);
         const tokens = Array(N)
           .fill(0)
           .map((_, i) => (i % 2 ? Token.Ether : Token.Euro));
         const amounts = Array(N)
           .fill(0)
-          .map((_, i) => web3.toBigNumber(i * i).mul(Q18).plus(MIN_TICKET_EUR));
+          .map((_, i) =>
+            web3
+              .toBigNumber(i * i)
+              .mul(Q18)
+              .plus(MIN_TICKET_EUR)
+          );
 
         return { whitelisted, tokens, amounts };
       }
@@ -347,7 +373,11 @@ contract(
         const tx = commitment.addWhitelisted(
           [investors[0]],
           [Token.Euro],
-          [MIN_TICKET_EUR.sub(1).mul(Q18).div(ETH_EUR_FRACTION)],
+          [
+            MIN_TICKET_EUR.sub(1)
+              .mul(Q18)
+              .div(ETH_EUR_FRACTION)
+          ],
           { from: whitelistAdmin }
         );
 

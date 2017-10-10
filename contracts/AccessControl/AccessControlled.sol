@@ -36,12 +36,12 @@ contract AccessControlled is IAccessControlled, StandardRoles {
 
     function setAccessPolicy(IAccessPolicy newPolicy)
         public
-        only(ROLE_ACCESS_CONTROLER)
+        only(ROLE_ACCESS_CONTROLLER)
     {
         // The access controler also needs to have this
         // role under the new policy. This provides some
         // protection agains locking yourself out.
-        require(newPolicy.allowed(msg.sender, ROLE_ACCESS_CONTROLER, this, msg.sig));
+        require(newPolicy.allowed(msg.sender, ROLE_ACCESS_CONTROLLER, this, msg.sig));
 
         // We can now safely set the new policy without foot shooting.
         IAccessPolicy oldPolicy = _accessPolicy;

@@ -230,7 +230,10 @@ export function standardTokenTests(
   it("should return correct balances after transferring approval in tranches", async () => {
     await token().approve(broker, initialBalance, { from: fromAddr });
     const tranche1 = initialBalance.mul(0.7182).round();
-    const tranche2 = initialBalance.sub(tranche1).mul(0.1189273).round();
+    const tranche2 = initialBalance
+      .sub(tranche1)
+      .mul(0.1189273)
+      .round();
     const tranche3 = initialBalance.sub(tranche1.add(tranche2));
     // transfer in tranches
     const tx1 = await token().transferFrom(fromAddr, toAddr, tranche1, {
@@ -348,9 +351,12 @@ export function erc223TokenTests(token, fromAddr, toAddr, initialBalance) {
   it("erc223 compatible transfer should call fallback", async () => {
     const erc223cb = await deployTestErc223Callback();
     const data = "!79bc68b14fe3225ab8fe3278b412b93956d49c2dN";
-    const tx = await token().transfer[
-      "address,uint256,bytes"
-    ](erc223cb.address, initialBalance, data, { from: fromAddr });
+    const tx = await token().transfer["address,uint256,bytes"](
+      erc223cb.address,
+      initialBalance,
+      data,
+      { from: fromAddr }
+    );
     // expect erc20 backward compatible Transfer event
     expectTransferEvent(tx, fromAddr, erc223cb.address, initialBalance);
     const finalBalance = await token().balanceOf.call(erc223cb.address);
@@ -366,9 +372,12 @@ export function erc223TokenTests(token, fromAddr, toAddr, initialBalance) {
 
   it("erc223 compatible transfer should send to simple address", async () => {
     const data = "!79bc68b14fe3225ab8fe3278b412b93956d49c2dN";
-    const tx = await token().transfer[
-      "address,uint256,bytes"
-    ](toAddr, initialBalance, data, { from: fromAddr });
+    const tx = await token().transfer["address,uint256,bytes"](
+      toAddr,
+      initialBalance,
+      data,
+      { from: fromAddr }
+    );
     // expect erc20 backward compatible Transfer event
     expectTransferEvent(tx, fromAddr, toAddr, initialBalance);
     const finalBalance = await token().balanceOf.call(toAddr);

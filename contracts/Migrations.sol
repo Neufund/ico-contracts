@@ -43,11 +43,11 @@ contract Migrations {
         _lastCompletedMigration = completed;
     }
 
-    function upgrade(address new_address)
+    function upgrade(address newAddress)
         public
         restricted
     {
-        Migrations upgraded = Migrations(new_address);
+        Migrations upgraded = Migrations(newAddress);
         upgraded.setCompleted(_lastCompletedMigration);
     }
 

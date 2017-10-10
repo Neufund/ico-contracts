@@ -136,7 +136,10 @@ contract("NeumarkIssuanceCurve", () => {
         const [neumarkUlps, gas] = await curveGas.cumulativeWithGas.call(
           EUR_DECIMALS.mul(i)
         );
-        const neumarks = neumarkUlps.div(NMK_DECIMALS).floor().toNumber();
+        const neumarks = neumarkUlps
+          .div(NMK_DECIMALS)
+          .floor()
+          .toNumber();
         assert.equal(neumarks, v, `Curve compute failed for value ${i}`);
         return gas.toNumber();
       })
