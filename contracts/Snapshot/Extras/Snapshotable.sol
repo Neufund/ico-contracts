@@ -4,7 +4,7 @@ import '../../Standards/ISnapshotable.sol';
 import '../MSnapshotPolicy.sol';
 
 
-/// @title creates snapshot on demand via ISnapshotable interface
+/// @title creates snapshot as requested via ISnapshotable interface
 contract Snapshotable is
     MSnapshotPolicy,
     ISnapshotable
@@ -55,7 +55,7 @@ contract Snapshotable is
     // Internal functions
     ////////////////////////
 
-    function mixinNextSnapshotId()
+    function mCurrentSnapshotId()
         internal
         returns (uint256)
     {
