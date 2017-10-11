@@ -5,7 +5,20 @@ import './IAccessControlled.sol';
 import './AccessControlled.sol';
 import '../Reclaimable.sol';
 
-
+/// @title access control based on Access Control Lists
+/// @dev Allows to assign a list addresses to a set of roles (n:n relation) and querying if such specific assignment exists.
+///     This assignment happens in two contexts:
+///         - contract context which allows to build a set of local permissions enforced for particular contract
+///         - global context which defines set of global permissions that apply to any contract using this RoleBasedAccessControl as Access Policy
+///     Permissions are cascading as follows
+///         - evaluate permission for given subject for given object (local)
+///         - evaluate permission for given subject for all objects (globall)
+///         - evaluate permissions for any subject (everyone) for given object (everyone local)
+///         - evaluate permissions for any subject (everyone) for all objects (everyone global)
+///         - if still unset then disallow
+///     Permission is cascaded up only if it was evaluated as Unset at particular level. See EVERYONE and GLOBAL definitions for special values (they are 0x0 addresses)
+///     RoleBasedAccessControl is its own policy. When created, creator has ROLE_ACCESS_CONTROLLER role. Right pattern is to transfer this control to some other (non deployer) account and then destroy deployer private key.
+///     See IAccessControlled for definitions of subject, object and role
 contract RoleBasedAccessControl is
     IAccessPolicy,
     AccessControlled,
@@ -35,12 +48,13 @@ contract RoleBasedAccessControl is
     // Mutable state
     ////////////////////////
 
-    // subject → role → object → allowed
+    /// @dev subject → role → object → allowed
     mapping (address =>
         mapping(bytes32 =>
             mapping(address => TriState))) private _access;
 
-    // object → role → addresses
+    /// @notice used to enumerate all users assigned to given role in object context
+    /// @dev object → role → addresses
     mapping (address =>
         mapping(bytes32 => address[])) private _accessList;
 
@@ -48,6 +62,7 @@ contract RoleBasedAccessControl is
     // Events
     ////////////////////////
 
+    /// @dev logs change of permissions, 'controller' is an address with StandardRoles
     event LogAccessChanged(
         address controller,
         address indexed subject,
@@ -126,6 +141,7 @@ contract RoleBasedAccessControl is
             set = value != TriState.Unset;
             allow = value == TriState.Allow;
         }
+        // If none is set then disallow
         if (!set) {
             allow = false;
         }
@@ -218,12 +234,15 @@ contract RoleBasedAccessControl is
 
         // Update the list on add / remove
         address[] storage list = _accessList[object][role];
+        // Add new subject only when going form Unset to Allow/Deny
         if(oldValue == TriState.Unset && newValue != TriState.Unset) {
             list.push(subject);
         }
+        // Remove subject when unsetting Allow/Deny
         if(oldValue != TriState.Unset && newValue == TriState.Unset) {
             for(uint256 i = 0; i < list.length; i++) {
                 if(list[i] == subject) {
+                    // replace unset address with last address in the list, cut list size
                     list[i] = list[list.length - 1];
                     delete list[list.length - 1];
                     list.length -= 1;
