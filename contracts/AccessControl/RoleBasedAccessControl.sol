@@ -62,7 +62,7 @@ contract RoleBasedAccessControl is
     // Events
     ////////////////////////
 
-    /// @dev logs change of permissions, 'controller' is an address with StandardRoles
+    /// @dev logs change of permissions, 'controller' is an address with ROLE_ACCESS_CONTROLLER
     event LogAccessChanged(
         address controller,
         address indexed subject,
@@ -96,8 +96,8 @@ contract RoleBasedAccessControl is
     // Public functions
     ////////////////////////
 
-    // Overrides `AccessControlled.setAccessPolicy(IAccessPolicy)`
-    function setAccessPolicy(IAccessPolicy)
+    // Overrides `AccessControlled.setAccessPolicy(IAccessPolicy,address)`
+    function setAccessPolicy(IAccessPolicy, address)
         public
         only(ROLE_ACCESS_CONTROLLER)
     {

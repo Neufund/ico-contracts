@@ -45,14 +45,14 @@ contract AccessControlled is IAccessControlled, StandardRoles {
     // Implements IAccessControlled
     //
 
-    function setAccessPolicy(IAccessPolicy newPolicy)
+    function setAccessPolicy(IAccessPolicy newPolicy, address newAccessController)
         public
         only(ROLE_ACCESS_CONTROLLER)
     {
-        // The access controler also needs to have this
-        // role under the new policy. This provides some
-        // protection agains locking yourself out.
-        require(newPolicy.allowed(msg.sender, ROLE_ACCESS_CONTROLLER, this, msg.sig));
+        // ROLE_ACCESS_CONTROLLER must be present
+        // under the new policy. This provides some
+        // protection against locking yourself out.
+        require(newPolicy.allowed(newAccessController, ROLE_ACCESS_CONTROLLER, this, msg.sig));
 
         // We can now safely set the new policy without foot shooting.
         IAccessPolicy oldPolicy = _accessPolicy;
