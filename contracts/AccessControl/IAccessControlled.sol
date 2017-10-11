@@ -2,6 +2,7 @@ pragma solidity 0.4.15;
 
 import './IAccessPolicy.sol';
 
+
 /// @title enables access control in implementing contract
 /// @dev see AccessControlled for implementation
 contract IAccessControlled {

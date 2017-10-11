@@ -7,7 +7,7 @@ import './StandardRoles.sol';
 /// @title Granular code execution permissions
 /// @notice Intended to replace existing Ownable pattern with more granular permissions set to execute smart contract functions
 ///     for each function where 'only' modifier is applied, IAccessPolicy implementation is called to evaluate if msg.sender belongs to required role for contract being called.
-///     Access evaluation specific belong to IAccessPolicy implementation, see RoleBasedAccessControl for details.
+///     Access evaluation specific belong to IAccessPolicy implementation, see RoleBasedAccessPolicy for details.
 /// @dev Should be inherited by a contract requiring such permissions controll. IAccessPolicy must be provided in constructor. Access policy may be replaced to a different one
 ///     by msg.sender with ROLE_ACCESS_CONTROLLER role
 contract AccessControlled is IAccessControlled, StandardRoles {

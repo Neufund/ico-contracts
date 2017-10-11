@@ -2,6 +2,7 @@ pragma solidity 0.4.15;
 
 import './IAccessControlled.sol';
 
+
 /// @title provides subject to role checking logic
 contract IAccessPolicy {
 

@@ -9,7 +9,7 @@ import '../Reclaimable.sol';
 /// @dev Allows to assign a list addresses to a set of roles (n:n relation) and querying if such specific assignment exists.
 ///     This assignment happens in two contexts:
 ///         - contract context which allows to build a set of local permissions enforced for particular contract
-///         - global context which defines set of global permissions that apply to any contract using this RoleBasedAccessControl as Access Policy
+///         - global context which defines set of global permissions that apply to any contract using this RoleBasedAccessPolicy as Access Policy
 ///     Permissions are cascading as follows
 ///         - evaluate permission for given subject for given object (local)
 ///         - evaluate permission for given subject for all objects (globall)
@@ -17,9 +17,9 @@ import '../Reclaimable.sol';
 ///         - evaluate permissions for any subject (everyone) for all objects (everyone global)
 ///         - if still unset then disallow
 ///     Permission is cascaded up only if it was evaluated as Unset at particular level. See EVERYONE and GLOBAL definitions for special values (they are 0x0 addresses)
-///     RoleBasedAccessControl is its own policy. When created, creator has ROLE_ACCESS_CONTROLLER role. Right pattern is to transfer this control to some other (non deployer) account and then destroy deployer private key.
+///     RoleBasedAccessPolicy is its own policy. When created, creator has ROLE_ACCESS_CONTROLLER role. Right pattern is to transfer this control to some other (non deployer) account and then destroy deployer private key.
 ///     See IAccessControlled for definitions of subject, object and role
-contract RoleBasedAccessControl is
+contract RoleBasedAccessPolicy is
     IAccessPolicy,
     AccessControlled,
     Reclaimable
@@ -84,7 +84,7 @@ contract RoleBasedAccessControl is
     // Constructor
     ////////////////////////
 
-    function RoleBasedAccessControl()
+    function RoleBasedAccessPolicy()
         AccessControlled(this) // We are our own policy. This is immutable.
     {
         // Issue the local and global AccessContoler role to creator
@@ -101,7 +101,7 @@ contract RoleBasedAccessControl is
         public
         only(ROLE_ACCESS_CONTROLLER)
     {
-        // `RoleBasedAccessControl` always controls its
+        // `RoleBasedAccessPolicy` always controls its
         // own access. Disallow changing this by overriding
         // the `AccessControlled.setAccessPolicy` function.
         revert();

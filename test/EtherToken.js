@@ -20,8 +20,8 @@ contract("EtherToken", ([broker, ...investors]) => {
   let etherToken;
 
   beforeEach(async () => {
-    const rbac = await createAccessPolicy([]);
-    etherToken = await EtherToken.new(rbac.address);
+    const rbap = await createAccessPolicy([]);
+    etherToken = await EtherToken.new(rbap.address);
   });
 
   describe("specific tests", () => {

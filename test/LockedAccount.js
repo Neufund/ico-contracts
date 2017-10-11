@@ -43,17 +43,17 @@ contract(
     let testDisbursal;
     let noCallbackContract;
     let neumark;
-    let accessControl;
+    let accessPolicy;
     let forkArbiter;
 
     beforeEach(async () => {
-      [accessControl, forkArbiter] = await deployControlContracts();
-      neumark = await deployNeumark(accessControl, forkArbiter);
+      [accessPolicy, forkArbiter] = await deployControlContracts();
+      neumark = await deployNeumark(accessPolicy, forkArbiter);
     });
 
     describe("EtherToken", () => {
       async function deployEtherToken() {
-        assetToken = await EtherToken.new(accessControl.address);
+        assetToken = await EtherToken.new(accessPolicy.address);
       }
 
       async function makeDepositEth(from, to, amount) {
@@ -117,8 +117,8 @@ contract(
       }
 
       async function deployEuroToken() {
-        assetToken = await EuroToken.new(accessControl.address);
-        await accessControl.setUserRole(
+        assetToken = await EuroToken.new(accessPolicy.address);
+        await accessPolicy.setUserRole(
           admin,
           roles.eurtDepositManager,
           assetToken.address,
@@ -595,7 +595,7 @@ contract(
       }
 
       async function allowToReclaim(account) {
-        await accessControl.setUserRole(
+        await accessPolicy.setUserRole(
           account,
           roles.reclaimer,
           lockedAccount.address,
@@ -1010,7 +1010,7 @@ contract(
 
     async function deployLockedAccount(token, unlockDateMonths, unlockPenalty) {
       lockedAccount = await LockedAccount.new(
-        accessControl.address,
+        accessPolicy.address,
         token.address,
         neumark.address,
         unlockDateMonths * monthInSeconds,
@@ -1018,7 +1018,7 @@ contract(
           .mul(unlockPenalty)
           .round()
       );
-      await accessControl.setUserRole(
+      await accessPolicy.setUserRole(
         admin,
         roles.lockedAccountAdmin,
         lockedAccount.address,
@@ -1038,7 +1038,7 @@ contract(
 
     async function deployMigrationTarget(token) {
       const target = await TestLockedAccountMigrationTarget.new(
-        accessControl.address,
+        accessPolicy.address,
         token.address,
         neumark.address,
         18 * monthInSeconds,
@@ -1046,7 +1046,7 @@ contract(
           .mul(0.1)
           .round()
       );
-      await accessControl.setUserRole(
+      await accessPolicy.setUserRole(
         admin,
         roles.lockedAccountAdmin,
         target.address,
