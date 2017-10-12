@@ -307,6 +307,12 @@ contract Commitment is
         _whitelistEtherNmk = sub(_whitelistEtherNmk, ticketNmk);
 
         // Lock EtherToken
+        // AUDIT[CHF-60] Consider using ERC223-like transfer pattern.
+        //   The onTokenTransfer() callback can be implemented in the
+        //   LockedAccount contract to lock tokens received by ERC223-like
+        //   transfers. Still we will have 2 calls to lock tokens, but
+        //   whole complexity would be encapsulated in the LockedAccount.
+        //   This also applies to Commitment.commitEuro().
         ETHER_TOKEN.approve(ETHER_LOCK, commitedWei);
         ETHER_LOCK.lock(msg.sender, commitedWei, investorNmk);
 
