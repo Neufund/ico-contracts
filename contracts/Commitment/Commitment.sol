@@ -282,6 +282,13 @@ contract Commitment is
         assert(ETHER_TOKEN.transferFrom(msg.sender, this, commitedWei));
 
         // Turn msg.value into EtherToken (if any)
+        // AUDIT[CHF-56] Unnecessary call to ETHER_TOKEN.deposit().
+        //   Similar to AUDIT[CHF-54]. When msg.value is 0, calling
+        //   ETHER_TOKEN.deposit() will
+        //   - waste some amount of gas,
+        //   - produce LogDeposit event with value 0.
+        //   - produce Transfer event from address 0 with value 0.
+        // Wrap the following code with `if (msg.value > 0)` condition.
         commitedWei = add(commitedWei, msg.value);
         ETHER_TOKEN.deposit.value(msg.value)();
 
