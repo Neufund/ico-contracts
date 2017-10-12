@@ -25,12 +25,12 @@ const NMK_DECIMALS = new BigNumber(10).toPower(18);
 contract(
   "Neumark",
   ([deployer, other, platformRepresentative, transferAdmin, ...accounts]) => {
-    let rbac;
+    let rbap;
     let forkArbiter;
     let neumark;
 
     beforeEach(async () => {
-      rbac = await createAccessPolicy([
+      rbap = await createAccessPolicy([
         { subject: transferAdmin, role: roles.transferAdmin },
         { subject: accounts[1], role: roles.neumarkIssuer },
         { subject: accounts[2], role: roles.neumarkIssuer },
@@ -41,10 +41,10 @@ contract(
           role: roles.platformOperatorRepresentative
         }
       ]);
-      forkArbiter = await EthereumForkArbiter.new(rbac.address, {
+      forkArbiter = await EthereumForkArbiter.new(rbap.address, {
         from: deployer
       });
-      neumark = await Neumark.new(rbac.address, forkArbiter.address, {
+      neumark = await Neumark.new(rbap.address, forkArbiter.address, {
         from: deployer
       });
       await neumark.amendAgreement(AGREEMENT, { from: platformRepresentative });

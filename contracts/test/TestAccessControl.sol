@@ -1,7 +1,7 @@
 pragma solidity 0.4.15;
 
 import '../AccessControl/AccessControlled.sol';
-import '../AccessControl/RoleBasedAccessControl.sol';
+import '../AccessControl/RoleBasedAccessPolicy.sol';
 
 
 contract TestAccessControlExampleRoles {
@@ -16,6 +16,39 @@ contract TestAccessControlExampleRoles {
 
 
 contract TestAccessControl is AccessControlled, TestAccessControlExampleRoles {
+
+    ////////////////
+    // Types
+    ////////////////
+
+    // Łukasiewicz logic values
+    enum TriState {
+        Unset,
+        Allow,
+        Deny
+    }
+
+    ////////////////////////
+    // Events
+    ////////////////////////
+
+    /// @dev just to have events ABIs as truffle will not handle events from internal transactions to other contracts
+    event LogAccessChanged(
+        address controller,
+        address indexed subject,
+        bytes32 role,
+        IAccessControlled indexed object,
+        TriState oldValue,
+        TriState newValue
+    );
+
+    event LogAccess(
+        address indexed subject,
+        bytes32 role,
+        IAccessControlled indexed object,
+        bytes4 verb,
+        bool granted
+    );
 
     ////////////////////////
     // Constructor
@@ -33,22 +66,6 @@ contract TestAccessControl is AccessControlled, TestAccessControlExampleRoles {
     function someFunction()
         public
         only(ROLE_EXAMPLE)
-    {
-    }
-}
-
-
-// derives from RoleBasedAccessControl just to have events ABIs as truffle will not handle
-// events from internal transactions to other contracts
-// do not change derivation order, RoleBasedAccessControl must be first for tests to pass
-contract TestAccessControlTruffleMixin is RoleBasedAccessControl, TestAccessControl {
-
-    ////////////////////////
-    // Constructor
-    ////////////////////////
-
-    function TestAccessControlTruffleMixin(IAccessPolicy policy)
-        TestAccessControl(policy)
     {
     }
 }

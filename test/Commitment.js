@@ -57,7 +57,7 @@ contract(
       ...investors
     ]
   ) => {
-    let rbac;
+    let rbap;
     let forkArbiter;
     let neumark;
     let etherToken;
@@ -69,27 +69,27 @@ contract(
     beforeEach(async () => {
       const now = await latestTimestamp();
       const startDate = now + BEFORE_DURATION;
-      rbac = await createAccessPolicy();
-      forkArbiter = await EthereumForkArbiter.new(rbac.address);
-      neumark = await Neumark.new(rbac.address, forkArbiter.address);
-      etherToken = await EtherToken.new(rbac.address);
-      euroToken = await EuroToken.new(rbac.address);
+      rbap = await createAccessPolicy();
+      forkArbiter = await EthereumForkArbiter.new(rbap.address);
+      neumark = await Neumark.new(rbap.address, forkArbiter.address);
+      etherToken = await EtherToken.new(rbap.address);
+      euroToken = await EuroToken.new(rbap.address);
       etherLock = await LockedAccount.new(
-        rbac.address,
+        rbap.address,
         etherToken.address,
         neumark.address,
         LOCK_DURATION,
         PENALTY_FRACTION
       );
       euroLock = await LockedAccount.new(
-        rbac.address,
+        rbap.address,
         euroToken.address,
         neumark.address,
         LOCK_DURATION,
         PENALTY_FRACTION
       );
       commitment = await Commitment.new(
-        rbac.address,
+        rbap.address,
         forkArbiter.address,
         startDate,
         platform,
@@ -102,7 +102,7 @@ contract(
         MIN_TICKET_EUR,
         ETH_EUR_FRACTION
       );
-      await rbac.set([
+      await rbap.set([
         { subject: representative, role: roles.platformOperatorRepresentative },
         {
           subject: whitelistAdmin,

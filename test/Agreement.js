@@ -12,17 +12,17 @@ contract(
   "Agreement",
   ([_, platformOperatorRepresentative, signer1, signer2]) => {
     let agreement;
-    let accessControl;
+    let accessPolicy;
     let forkArbiter;
 
     beforeEach(async () => {
-      [accessControl, forkArbiter] = await deployControlContracts();
+      [accessPolicy, forkArbiter] = await deployControlContracts();
 
       agreement = await TestAgreement.new(
-        accessControl.address,
+        accessPolicy.address,
         forkArbiter.address
       );
-      await accessControl.setUserRole(
+      await accessPolicy.setUserRole(
         platformOperatorRepresentative,
         roles.platformOperatorRepresentative,
         agreement.address,

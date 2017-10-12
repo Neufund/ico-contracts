@@ -1,7 +1,7 @@
 require("babel-register");
 const getConfig = require("./config").default;
 
-const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
+const RoleBasedAccessPolicy = artifacts.require("RoleBasedAccessPolicy");
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const Neumark = artifacts.require("Neumark");
 const LockedAccount = artifacts.require("LockedAccount");
@@ -19,34 +19,34 @@ module.exports = function deployContracts(deployer, network, accounts) {
   console.log("----------------------------------");
 
   deployer.then(async () => {
-    console.log("AccessControl deployment...");
-    await deployer.deploy(RoleBasedAccessControl);
-    const accessControl = await RoleBasedAccessControl.deployed();
+    console.log("AccessPolicy deployment...");
+    await deployer.deploy(RoleBasedAccessPolicy);
+    const accessPolicy = await RoleBasedAccessPolicy.deployed();
 
     console.log("EthereumForkArbiter deployment...");
-    await deployer.deploy(EthereumForkArbiter, accessControl.address);
+    await deployer.deploy(EthereumForkArbiter, accessPolicy.address);
     const ethereumForkArbiter = await EthereumForkArbiter.deployed();
 
     console.log("Neumark deploying...");
     await deployer.deploy(
       Neumark,
-      accessControl.address,
+      accessPolicy.address,
       ethereumForkArbiter.address
     );
     const neumark = await Neumark.deployed();
 
     console.log("EtherToken deploying...");
-    await deployer.deploy(EtherToken, accessControl.address);
+    await deployer.deploy(EtherToken, accessPolicy.address);
     const etherToken = await EtherToken.deployed();
 
     console.log("EuroToken deploying...");
-    await deployer.deploy(EuroToken, accessControl.address);
+    await deployer.deploy(EuroToken, accessPolicy.address);
     const euroToken = await EuroToken.deployed();
 
     console.log("LockedAccount(EtherToken) deploying...");
     await deployer.deploy(
       LockedAccount,
-      accessControl.address,
+      accessPolicy.address,
       etherToken.address,
       neumark.address,
       CONFIG.LOCK_DURATION,
@@ -57,7 +57,7 @@ module.exports = function deployContracts(deployer, network, accounts) {
     console.log("LockedAccount(EuroToken) deploying...");
     await deployer.deploy(
       LockedAccount,
-      accessControl.address,
+      accessPolicy.address,
       euroToken.address,
       neumark.address,
       CONFIG.LOCK_DURATION,
@@ -68,7 +68,7 @@ module.exports = function deployContracts(deployer, network, accounts) {
     console.log("Commitment deploying...");
     await deployer.deploy(
       Commitment,
-      accessControl.address,
+      accessPolicy.address,
       ethereumForkArbiter.address,
       CONFIG.START_DATE,
       CONFIG.addresses.PLATFORM_OPERATOR_WALLET,

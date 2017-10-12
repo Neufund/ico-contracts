@@ -5,6 +5,8 @@ import './AccessControl/AccessControlled.sol';
 import './AccessRoles.sol';
 
 
+/// @title allows contract to reclaim ether or any token sent to it
+/// @dev requires ROLE_RECLAIMER permission, tokens must implement IBasicToken which defines 'balanceOf' and 'transfer'
 contract Reclaimable is AccessControlled, AccessRoles {
 
     ////////////////////////

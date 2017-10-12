@@ -2,7 +2,7 @@ require("babel-register");
 const getConfig = require("./config").default;
 const { TriState, GLOBAL } = require("../test/helpers/triState");
 
-const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
+const RoleBasedAccessPolicy = artifacts.require("RoleBasedAccessPolicy");
 const EuroToken = artifacts.require("EuroToken");
 
 module.exports = function deployContracts(deployer, network, accounts) {
@@ -13,18 +13,18 @@ module.exports = function deployContracts(deployer, network, accounts) {
 
   deployer.then(async () => {
     if (network.endsWith("_live")) {
-      const accessControl = await RoleBasedAccessControl.deployed();
+      const accessPolicy = await RoleBasedAccessPolicy.deployed();
       const euroToken = await EuroToken.deployed();
       const DEPLOYER = accounts[0];
 
       console.log("Dropping temporary permissions");
-      await accessControl.setUserRole(
+      await accessPolicy.setUserRole(
         DEPLOYER,
         web3.sha3("EurtDepositManager"),
         euroToken.address,
         TriState.Unset
       );
-      await accessControl.setUserRole(
+      await accessPolicy.setUserRole(
         DEPLOYER,
         web3.sha3("LockedAccountAdmin"),
         GLOBAL,
@@ -34,19 +34,19 @@ module.exports = function deployContracts(deployer, network, accounts) {
       console.log(
         `Adding new ACCESS_CONTROLLER to ${CONFIG.addresses.ACCESS_CONTROLLER}`
       );
-      await accessControl.setUserRole(
+      await accessPolicy.setUserRole(
         CONFIG.addresses.ACCESS_CONTROLLER,
         web3.sha3("AccessController"),
         GLOBAL,
         TriState.Allow
       );
-      await accessControl.setUserRole(
+      await accessPolicy.setUserRole(
         CONFIG.addresses.ACCESS_CONTROLLER,
         web3.sha3("AccessController"),
-        accessControl.address,
+        accessPolicy.address,
         TriState.Allow
       );
-      await accessControl.setUserRole(
+      await accessPolicy.setUserRole(
         DEPLOYER,
         web3.sha3("AccessController"),
         GLOBAL,
@@ -55,14 +55,14 @@ module.exports = function deployContracts(deployer, network, accounts) {
       console.log("---------------------------------------------");
       console.log(
         `New ACCESS_CONTROLLER ${CONFIG.addresses
-          .ACCESS_CONTROLLER} must remove access to deployer ${DEPLOYER} for object ${accessControl.address}`
+          .ACCESS_CONTROLLER} must remove access to deployer ${DEPLOYER} for object ${accessPolicy.address}`
       );
       console.log("---------------------------------------------");
 
-      /* await accessControl.setUserRole(
+      /* await accessPolicy.setUserRole(
         DEPLOYER,
         web3.sha3("AccessController"),
-        accessControl.address,
+        accessPolicy.address,
         TriState.Unset,
         {from: CONFIG.addresses.ACCESS_CONTROLLER}
       ); */

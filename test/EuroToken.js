@@ -18,14 +18,14 @@ import EvmError from "./helpers/EVMThrow";
 const EuroToken = artifacts.require("EuroToken");
 
 contract("EuroToken", ([_, depositManager, other, broker, ...investors]) => {
-  let rbac;
+  let rbap;
   let euroToken;
 
   beforeEach(async () => {
-    rbac = await createAccessPolicy([
+    rbap = await createAccessPolicy([
       { subject: depositManager, role: roles.eurtDepositManager }
     ]);
-    euroToken = await EuroToken.new(rbac.address);
+    euroToken = await EuroToken.new(rbap.address);
   });
 
   describe("specific tests", () => {
