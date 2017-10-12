@@ -1,11 +1,13 @@
 pragma solidity 0.4.15;
 
 import '../Standards/ISnapshotable.sol';
-import './MPolicy.sol';
+import './MSnapshotPolicy.sol';
 
 
+/// @title creates snapshot id on each day boundary and allows to create additional snapshots within a given day
+/// @dev snapshots are encoded in single uint256, where high 128 bits represents a day number (from unix epoch) and low 128 bits represents additional snapshots within given day create via ISnapshotable
 contract DailyAndSnapshotable is
-    MPolicy,
+    MSnapshotPolicy,
     ISnapshotable
 {
     ////////////////////////
@@ -19,19 +21,13 @@ contract DailyAndSnapshotable is
     // Mutable state
     ////////////////////////
 
-    uint256 private _nextSnapshotId;
-
-    bool private _nextSnapshotModified;
+    uint256 private _currentSnapshotId;
 
     ////////////////////////
     // Constructor
     ////////////////////////
 
-    function DailyAndSnapshotable() {
-        uint256 dayBase = 2**128 * (block.timestamp / 1 days);
-        _nextSnapshotId = dayBase + 1;
-        _nextSnapshotModified = false;
-    }
+    function DailyAndSnapshotable() {}
 
     ////////////////////////
     // Public functions
@@ -54,33 +50,25 @@ contract DailyAndSnapshotable is
     {
         uint256 dayBase = 2**128 * (block.timestamp / 1 days);
 
-        // New day has started, create snapshot for midnight
-        if (dayBase > _nextSnapshotId) {
-            _nextSnapshotId = dayBase + 1;
-            _nextSnapshotModified = false;
-
-            LogSnapshotCreated(dayBase);
-            return dayBase;
+        if (dayBase > _currentSnapshotId) {
+            // New day has started, create snapshot for midnight
+            _currentSnapshotId = dayBase;
+        } else {
+            // within single day, increase counter (assume 2**128 will not be crossed)
+            _currentSnapshotId += 1;
         }
-
-        // Same day, no modifications
-        if (!_nextSnapshotModified) {
-            uint256 previousSnapshot = _nextSnapshotId - 1;
-
-            // Log the event anyway, some logic may depend
-            // depend on it.
-            LogSnapshotCreated(previousSnapshot);
-            return previousSnapshot;
-        }
-
-        // Increment the snapshot counter
-        uint256 snapshotId = _nextSnapshotId;
-        _nextSnapshotId += 1;
-        _nextSnapshotModified = false;
 
         // Log and return
-        LogSnapshotCreated(snapshotId);
-        return snapshotId;
+        LogSnapshotCreated(_currentSnapshotId);
+        return _currentSnapshotId;
+    }
+
+    function lastSnapshotId()
+        public
+        constant
+        returns (uint256)
+    {
+        return _currentSnapshotId;
     }
 
     ////////////////////////
@@ -88,33 +76,21 @@ contract DailyAndSnapshotable is
     ////////////////////////
 
     //
-    // Implements MPolicy
+    // Implements MSnapshotPolicy
     //
 
-    function mNextSnapshotId()
+    function mCurrentSnapshotId()
         internal
         returns (uint256)
     {
         uint256 dayBase = 2**128 * (block.timestamp / 1 days);
 
         // New day has started
-        if (dayBase > _nextSnapshotId) {
-            _nextSnapshotId = dayBase + 1;
-            _nextSnapshotModified = false;
-
+        if (dayBase > _currentSnapshotId) {
+            _currentSnapshotId = dayBase;
             LogSnapshotCreated(dayBase);
-            return _nextSnapshotId;
         }
 
-        // Within same day
-        return _nextSnapshotId;
-    }
-
-    function mFlagSnapshotModified()
-        internal
-    {
-        if (!_nextSnapshotModified) {
-            _nextSnapshotModified = true;
-        }
+        return _currentSnapshotId;
     }
 }

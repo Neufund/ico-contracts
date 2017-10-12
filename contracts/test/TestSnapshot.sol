@@ -4,7 +4,7 @@ import '../Snapshot/Snapshot.sol';
 import '../Snapshot/DailyAndSnapshotable.sol';
 
 
-contract SnapshotTest is
+contract TestSnapshot is
     Snapshot,
     DailyAndSnapshotable
 {
