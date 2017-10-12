@@ -294,6 +294,9 @@ contract Commitment is
 
         // Get Neumark reward
         uint256 commitedEur = convertToEur(commitedWei);
+        // AUDIT[CHF-57] Comment about 0-value commitment.
+        //   Add a comment that commitToken() will fail if commitedEur is 0
+        //   or smaller than MIN_TICKET_EUR.
         var (investorNmk, ticketNmk) = commitToken(commitedEur, Token.Ether);
         _whitelistEtherNmk = sub(_whitelistEtherNmk, ticketNmk);
 
