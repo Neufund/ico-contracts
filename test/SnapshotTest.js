@@ -39,6 +39,30 @@ contract("Snapshot", () => {
     assert.equal(42, await snapshotTest.getValue.call(42));
   });
 
+  it("should return correct snapshot id via snapshotAt", async () => {
+    // encodes day number from unix epoch on 128 MSB of 256 word
+    // day boundary on 00:00 UTC
+    function encodeSnapshotId(noOfDays) {
+      return new web3.BigNumber(2).pow(128).mul(noOfDays);
+    }
+
+    async function expectDays(timestamp, expectedNoOfDays) {
+      const snapshotId = await snapshotTest.snapshotAt(timestamp);
+      const expectedSnapshotId = encodeSnapshotId(expectedNoOfDays);
+      expect(snapshotId).to.be.bignumber.eq(expectedSnapshotId);
+    }
+    await expectDays(1107795768, 12821);
+    await expectDays(0, 0);
+    await expectDays(1, 0);
+    // get timestamp from UTC time
+    const utcDayBoundaryTimestamp = Math.floor(Date.UTC(2017, 11, 15) / 1000);
+    const utcDayCount = Math.floor(utcDayBoundaryTimestamp / (24 * 60 * 60));
+    await expectDays(utcDayBoundaryTimestamp - 1, utcDayCount - 1);
+    await expectDays(utcDayBoundaryTimestamp, utcDayCount);
+    await expectDays(utcDayBoundaryTimestamp + 1, utcDayCount);
+    await expectDays(utcDayBoundaryTimestamp + 24 * 60 * 60, utcDayCount + 1);
+  });
+
   it("should initially return default when queried by snapshot id", async () => {
     const day0 = await snapshotTest.snapshotAt.call(
       (await latestTimestamp()) + 0 * day
