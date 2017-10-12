@@ -493,6 +493,12 @@ contract Commitment is
 
             // Rollback unfufilled Ether reservations.
             NEUMARK.burnNeumark(_whitelistEtherNmk);
+
+            // AUDIT[CHF-61] Zero NMK counters in Commitment.mAfterTransition()
+            //   For sanity zero _whitelistEtherNmk after burning tokens,
+            //   you will also get some gas back.
+            //   The same applies to _whitelistEuroNmk when
+            //   newState == State.Finished.
         }
         if (newState == State.Finished) {
 
