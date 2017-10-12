@@ -298,6 +298,12 @@ contract Commitment is
         //   Add a comment that commitToken() will fail if commitedEur is 0
         //   or smaller than MIN_TICKET_EUR.
         var (investorNmk, ticketNmk) = commitToken(commitedEur, Token.Ether);
+        // AUDIT[CHF-58] Move NMK counters updates to Commitment.commitToken().
+        //   The Commitment.commitToken() has all the logic related to whitelist
+        //   checking. Move the _whitelistEtherNmk subtraction from here and
+        //   _whitelistEuroNmk subtraction from commitEuro() there to
+        //   commitToken() too. This will also simplify the return type of
+        //   commitToken().
         _whitelistEtherNmk = sub(_whitelistEtherNmk, ticketNmk);
 
         // Lock EtherToken
