@@ -262,6 +262,12 @@ contract Commitment is
         payable
         withTimedTransitions()
         onlyStates(State.Whitelist, State.Public)
+
+        // AUDIT[CHF-55] Accepting agreement confusion.
+        //   This will automatically put the msg.sender in the list of addresses
+        //   accepting the agreement. Shouldn't the order of actions be
+        //   different? Accepting the agreement being a precondition of commit()
+        //   action?
         acceptAgreement(msg.sender)
     {
         // Take with EtherToken allowance (if any)
