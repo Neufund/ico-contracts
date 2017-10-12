@@ -172,6 +172,9 @@ contract LockedAccount is
         require(amount > 0);
 
         // check if controller made allowance
+        // AUDIT[CHF-59] Redundant require() in LockedAccount.lock().
+        //   This check is not needed because ASSET_TOKEN.transferFrom() will
+        //   check the same precondition.
         require(ASSET_TOKEN.allowance(msg.sender, address(this)) >= amount);
 
         // transfer to self yourself
