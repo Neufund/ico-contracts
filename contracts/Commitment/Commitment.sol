@@ -502,7 +502,7 @@ contract Commitment is
         }
         if (newState == State.Finished) {
 
-            // Rollback unfufilled Euro reservations.
+            // Rollback unfulfilled Euro reservations.
             NEUMARK.burnNeumark(_whitelistEuroNmk);
 
             // Enable Neumark trading in token controller
