@@ -5,16 +5,17 @@ import './IAccessControlled.sol';
 import './AccessControlled.sol';
 import '../Reclaimable.sol';
 
-/// @title access control based on Access Control Lists
-/// @dev Allows to assign a list addresses to a set of roles (n:n relation) and querying if such specific assignment exists.
+
+/// @title access policy based on Access Control Lists concept
+/// @dev Allows to assign an address to a set of roles (n:n relation) and querying if such specific assignment exists.
 ///     This assignment happens in two contexts:
 ///         - contract context which allows to build a set of local permissions enforced for particular contract
 ///         - global context which defines set of global permissions that apply to any contract using this RoleBasedAccessPolicy as Access Policy
 ///     Permissions are cascading as follows
-///         - evaluate permission for given subject for given object (local)
-///         - evaluate permission for given subject for all objects (globall)
-///         - evaluate permissions for any subject (everyone) for given object (everyone local)
-///         - evaluate permissions for any subject (everyone) for all objects (everyone global)
+///         - evaluate permission for given subject for given object (local context)
+///         - evaluate permission for given subject for all objects (global context)
+///         - evaluate permissions for any subject (everyone) for given object (everyone local context)
+///         - evaluate permissions for any subject (everyone) for all objects (everyone global context)
 ///         - if still unset then disallow
 ///     Permission is cascaded up only if it was evaluated as Unset at particular level. See EVERYONE and GLOBAL definitions for special values (they are 0x0 addresses)
 ///     RoleBasedAccessPolicy is its own policy. When created, creator has ROLE_ACCESS_CONTROLLER role. Right pattern is to transfer this control to some other (non deployer) account and then destroy deployer private key.
@@ -246,6 +247,8 @@ contract RoleBasedAccessPolicy is
                     list[i] = list[list.length - 1];
                     delete list[list.length - 1];
                     list.length -= 1;
+                    // there will be no more matches
+                    break;
                 }
             }
         }
