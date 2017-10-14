@@ -3,14 +3,14 @@ pragma solidity 0.4.15;
 import '../Snapshot/Snapshot.sol';
 import '../Standards/ISnapshotToken.sol';
 import './Helpers/MTokenTransfer.sol';
-import './Helpers/MTokenController.sol';
+import './Helpers/MTokenTransferController.sol';
 
 
 /// @title token with snapshots and transfer functionality
 /// @dev !
 contract BasicSnapshotToken is
     MTokenTransfer,
-    MTokenController,
+    MTokenTransferController,
     ISnapshotToken,
     Snapshot
 {
