@@ -3,6 +3,7 @@ pragma solidity 0.4.15;
 import './AccessControl/AccessControlled.sol';
 import './AccessRoles.sol';
 import './Agreement.sol';
+import './Snapshot/DailyAndSnapshotable.sol';
 import './SnapshotToken/SnapshotToken.sol';
 import './NeumarkIssuanceCurve.sol';
 import './Reclaimable.sol';
@@ -12,6 +13,7 @@ contract Neumark is
     AccessControlled,
     AccessRoles,
     Agreement,
+    DailyAndSnapshotable,
     SnapshotToken,
     NeumarkIssuanceCurve,
     Reclaimable
@@ -67,6 +69,7 @@ contract Neumark is
             TOKEN_DECIMALS,
             TOKEN_SYMBOL
         )
+        DailyAndSnapshotable()
         NeumarkIssuanceCurve()
         Reclaimable()
     {

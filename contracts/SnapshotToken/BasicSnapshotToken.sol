@@ -1,13 +1,17 @@
 pragma solidity 0.4.15;
 
-import '../../Snapshot/Snapshot.sol';
-import '../../Standards/ISnapshotToken.sol';
-import './MMint.sol';
+import '../Snapshot/Snapshot.sol';
+import '../Standards/ISnapshotToken.sol';
+import './Helpers/MTokenTransfer.sol';
+import './Helpers/MTokenController.sol';
 
 
+/// @title token with snapshots and transfer functionality
+/// @dev !
 contract BasicSnapshotToken is
+    MTokenTransfer,
+    MTokenController,
     ISnapshotToken,
-    MMint,
     Snapshot
 {
     ////////////////////////
@@ -29,10 +33,10 @@ contract BasicSnapshotToken is
     // `balances` is the map that tracks the balance of each address, in this
     //  contract when the balance changes the block number that the change
     //  occurred is also included in the map
-    mapping (address => Values[]) private _balances;
+    mapping (address => Values[]) internal _balances;
 
     // Tracks the history of the `totalSupply` of the token
-    Values[] private _totalSupplyValues;
+    Values[] internal _totalSupplyValues;
 
     ////////////////////////
     // Constructor
@@ -167,6 +171,8 @@ contract BasicSnapshotToken is
         internal
     {
         require(to != address(0));
+        // Alerts the token controller of the transfer
+        require(mOnTransfer(from, to, amount));
 
         // If the amount being transfered is more than the balance of the
         //  account the transfer reverts
@@ -187,49 +193,5 @@ contract BasicSnapshotToken is
 
         // An event to make the transfer easy to find on the blockchain
         Transfer(from, to, amount);
-    }
-
-    /// @notice Generates `amount` tokens that are assigned to `owner`
-    /// @param owner The address that will be assigned the new tokens
-    /// @param amount The quantity of tokens generated
-    /// @return True if the tokens are generated correctly
-    function mGenerateTokens(address owner, uint256 amount)
-        internal
-    {
-        require(owner != address(0));
-
-        uint256 curTotalSupply = totalSupply();
-        uint256 newTotalSupply = curTotalSupply + amount;
-        require(newTotalSupply >= curTotalSupply); // Check for overflow
-
-        uint256 previousBalanceTo = balanceOf(owner);
-        uint256 newBalanceTo = previousBalanceTo + amount;
-        assert(newBalanceTo >= previousBalanceTo); // Check for overflow
-
-        setValue(_totalSupplyValues, newTotalSupply);
-        setValue(_balances[owner], newBalanceTo);
-
-        Transfer(0, owner, amount);
-    }
-
-    /// @notice Burns `amount` tokens from `owner`
-    /// @param owner The address that will lose the tokens
-    /// @param amount The quantity of tokens to burn
-    /// @return True if the tokens are burned correctly
-    function mDestroyTokens(address owner, uint256 amount)
-        internal
-    {
-        uint256 curTotalSupply = totalSupply();
-        require(curTotalSupply >= amount);
-
-        uint256 previousBalanceFrom = balanceOf(owner);
-        require(previousBalanceFrom >= amount);
-
-        uint256 newTotalSupply = curTotalSupply - amount;
-        uint256 newBalanceFrom = previousBalanceFrom - amount;
-        setValue(_totalSupplyValues, newTotalSupply);
-        setValue(_balances[owner], newBalanceFrom);
-
-        Transfer(owner, 0, amount);
     }
 }

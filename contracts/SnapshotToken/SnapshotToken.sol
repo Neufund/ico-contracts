@@ -1,23 +1,18 @@
 pragma solidity 0.4.15;
 
-import '../Snapshot/DailyAndSnapshotable.sol';
 import '../Standards/IERC223Token.sol';
 import '../Standards/IERC223Callback.sol';
-import '../Standards/IERC677Token.sol';
-import '../Standards/IERC677Callback.sol';
-import '../Standards/IERC20Token.sol';
-import '../Standards/ISnapshotToken.sol';
-import '../Standards/ISnapshotTokenParent.sol';
 import '../IsContract.sol';
-import './Helpers/Allowance.sol';
-import './Helpers/BasicSnapshotToken.sol';
-import './Helpers/MMint.sol';
+import './Helpers/TokenAllowance.sol';
+import './MintableSnapshotToken.sol';
 import './Helpers/TokenMetadata.sol';
-import './MTokenController.sol';
+import './Helpers/MTokenController.sol';
+import './Helpers/MTokenTransfer.sol';
 
 
 /*
-    Copyright 2016, Remco Bloemen, Jordi Baylina
+    Copyright 2016, Jordi Baylina
+    Copyright 2017, Remco Bloemen, Marcin Rudolf
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -44,15 +39,8 @@ import './MTokenController.sol';
 ///  token controller contract, which Giveth will call a "Campaign"
 // Consumes the MMint mixin from SnapshotToken
 contract SnapshotToken is
-    IERC20Token,
-    IERC223Token,
-    IERC677Token,
-    ISnapshotToken,
-    MMint,
-    MTokenController,
-    BasicSnapshotToken,
-    DailyAndSnapshotable,
-    Allowance,
+    MintableSnapshotToken,
+    TokenAllowance,
     TokenMetadata,
     IsContract
 {
@@ -76,9 +64,8 @@ contract SnapshotToken is
         uint8 decimalUnits,
         string tokenSymbol
     )
-        BasicSnapshotToken(ISnapshotTokenParent(0x0), 0)
-        DailyAndSnapshotable()
-        Allowance()
+        MintableSnapshotToken(ISnapshotTokenParent(0x0), 0)
+        TokenAllowance()
         TokenMetadata(tokenName, decimalUnits, tokenSymbol, VERSION)
     {
     }
@@ -87,27 +74,16 @@ contract SnapshotToken is
     // Public functions
     ////////////////////////
 
-    /// @notice Send `amount` tokens to `to` from `msg.sender`
-    /// @param to The address of the recipient
-    /// @param amount The amount of tokens to be transferred
-    /// @return True if the transfer was successful, reverts in any other case
-    /// Overrides the public function in SnapshotTokenBase
-    function transfer(address to, uint256 amount)
-        public
-        returns (bool success)
-    {
-        // NOTE: We do not call the ERC223 callback
-        // here for compatibility reasons. Please use
-        // tranfser(to, amount, bytes()) instead.
-        transferInternal(msg.sender, to, amount);
-        return true;
-    }
+    //
+    // Implements IERC223Token
+    //
 
     function transfer(address to, uint256 amount, bytes data)
         public
         returns (bool)
     {
-        transferInternal(msg.sender, to, amount);
+        // it is necessary to point out implementation to be called
+        BasicSnapshotToken.mTransfer(msg.sender, to, amount);
 
         // Notify the receiving contract.
         if (isContract(to)) {
@@ -115,82 +91,4 @@ contract SnapshotToken is
         }
         return true;
     }
-
-    /// @notice `msg.sender` approves `spender` to spend `amount` tokens on
-    ///  its behalf. This is a modified version of the ERC20 approve function
-    ///  to be a little bit safer
-    /// @param spender The address of the account able to transfer the tokens
-    /// @param amount The amount of tokens to be approved for transfer
-    /// @return True if the approval was successful
-    /// Overrides the public function in Allowance
-    function approve(address spender, uint256 amount)
-        public
-        returns (bool success)
-    {
-        // Alerts the token controller of the approve function call
-        require(mOnApprove(msg.sender, spender, amount));
-
-        return Allowance.approve(spender, amount);
-    }
-
-    /// @notice `msg.sender` approves `spender` to send `amount` tokens on
-    ///  its behalf, and then a function is triggered in the contract that is
-    ///  being approved, `spender`. This allows users to use their tokens to
-    ///  interact with contracts in one function call instead of two
-    /// @param spender The address of the contract able to transfer the tokens
-    /// @param amount The amount of tokens to be approved for transfer
-    /// @return True if the function call was successful, reverts in any other case
-    /// Reimplements the public function in Allowance (TODO: is this necessary?)
-    function approveAndCall(address spender, uint256 amount, bytes extraData)
-        public
-        returns (bool)
-    {
-        require(approve(spender, amount));
-
-        bool success = IERC677Callback(spender).receiveApproval(
-            msg.sender,
-            amount,
-            this,
-            extraData
-        );
-        require(success);
-
-        return true;
-    }
-
-    ////////////////////////
-    // Internal functions
-    ////////////////////////
-
-    /// @dev This is the actual transfer function in the token contract, it can
-    ///  only be called by other functions in this contract.
-    /// @param from The address holding the tokens being transferred
-    /// @param to The address of the recipient
-    /// @param amount The amount of tokens to be transferred
-    /// Implements the abstract function from AllowanceBase
-    function transferInternal(address from, address to, uint256 amount)
-        internal
-    {
-        // Alerts the token controller of the transfer
-        require(mOnTransfer(from, to, amount));
-
-        mTransfer(from, to, amount);
-    }
-
-    //
-    // Implements MAllowance
-    //
-
-    /// @dev This is the actual transfer function in the token contract, it can
-    ///  only be called by other functions in this contract.
-    /// @param from The address holding the tokens being transferred
-    /// @param to The address of the recipient
-    /// @param amount The amount of tokens to be transferred
-    /// Implements the abstract function from AllowanceBase
-    function mAllowanceTransfer(address from, address to, uint256 amount)
-        internal
-    {
-        transferInternal(from, to, amount);
-    }
-
 }

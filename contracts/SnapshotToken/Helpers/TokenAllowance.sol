@@ -1,14 +1,18 @@
 pragma solidity 0.4.15;
 
+import './MTokenTransfer.sol';
+import './MTokenController.sol';
+import '../../Standards/IERC20Token.sol';
 import '../../Standards/IERC677Token.sol';
 import '../../Standards/IERC677Callback.sol';
-import './MAllowance.sol';
 
 
 // Consumes the MAllowance mixin
-contract Allowance is
-    IERC677Token,
-    MAllowance
+contract TokenAllowance is
+    MTokenTransfer,
+    MTokenController,
+    IERC20Token,
+    IERC677Token
 {
 
     ////////////////////////
@@ -22,7 +26,7 @@ contract Allowance is
     // Constructor
     ////////////////////////
 
-    function Allowance()
+    function TokenAllowance()
         internal
     {
     }
@@ -54,6 +58,9 @@ contract Allowance is
         public
         returns (bool success)
     {
+        // Alerts the token controller of the approve function call
+        require(mOnApprove(msg.sender, spender, amount));
+
         // To change the approve amount you first have to reduce the addresses`
         //  allowance to zero by calling `approve(_spender,0)` if it is not
         //  already 0 to mitigate the race condition described here:
@@ -88,8 +95,9 @@ contract Allowance is
             this,
             extraData
         );
+        require(success);
 
-        return success;
+        return true;
     }
 
     /// @notice Send `_amount` tokens to `_to` from `_from` on the condition it
@@ -107,7 +115,7 @@ contract Allowance is
         require(amountApproved);
 
         _allowed[from][msg.sender] -= amount;
-        mAllowanceTransfer(from, to, amount);
+        mTransfer(from, to, amount);
 
         return true;
     }
