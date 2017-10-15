@@ -68,6 +68,15 @@ contract(
       assert.equal(await neumark.decimals.call(), 18);
     });
 
+    it("should have curve parameters", async () => {
+      expect(await neumark.neumarkCap.call()).to.be.bignumber.eq(
+        NMK_DECIMALS.mul(1500000000)
+      );
+      expect(await neumark.initialRewardFraction.call()).to.be.bignumber.eq(
+        NMK_DECIMALS.mul(6.5)
+      );
+    });
+
     it("should have transfers enabled after deployment", async () => {
       assert.equal(await neumark.transferEnabled.call(), true);
     });
