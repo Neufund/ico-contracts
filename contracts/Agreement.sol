@@ -50,8 +50,11 @@ contract Agreement is
     // Mutable state
     ////////////////////////
 
+    // stores all amendments to the agreement, first amendment is the original
     SignedAgreement[] private _amendments;
-    mapping(address => bool) private _signatories;
+
+    // stores block numbers of all addresses that signed the agreement (signatory => block number)
+    mapping(address => uint256) private _signatories;
 
     ////////////////////////
     // Events
@@ -73,9 +76,9 @@ contract Agreement is
     /// @notice logs that agreement was accepted by platform user
     /// @dev intended to be added to functions that if used make 'accepter' origin to enter legally binding agreement
     modifier acceptAgreement(address accepter) {
-        if(!_signatories[accepter]) {
+        if(_signatories[accepter] == 0) {
             require(_amendments.length > 0);
-            _signatories[accepter] = true;
+            _signatories[accepter] = block.number;
             LogAgreementAccepted(accepter);
         }
         _;
@@ -159,10 +162,10 @@ contract Agreement is
         );
     }
 
-    function isAgreementSignedBy(address signatory)
+    function agreementSignedAtBlock(address signatory)
         public
         constant
-        returns (bool signed)
+        returns (uint256)
     {
         return _signatories[signatory];
     }
