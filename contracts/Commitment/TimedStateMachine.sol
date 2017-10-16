@@ -1,3 +1,4 @@
+// THIS FILE WAS MODIFIED FOR E2E TESTS DO NOT MERGE TO MASTER
 pragma solidity 0.4.15;
 
 import './StateMachine.sol';
@@ -93,5 +94,9 @@ contract TimedStateMachine is StateMachine {
         if (state == State.Finished) {
             return WHITELIST_START + FINISH_FROM_START;
         }
+    }
+
+    function setWhitelistingStartDate(int256 whitelistStart) public {
+        WHITELIST_START = whitelistStart;
     }
 }
