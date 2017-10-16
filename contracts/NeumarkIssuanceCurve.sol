@@ -61,8 +61,12 @@ contract NeumarkIssuanceCurve {
             return cap;
         }
 
-        // Approximate cap-cap·(1-1/D)^n using the Binomial theorem
+        // Approximate cap-cap·(1-1/D)^n using the Binomial expansion
         // http://galileo.phys.virginia.edu/classes/152.mf1i.spring02/Exponential_Function.htm
+        // Function[imax, -CAP*Sum[(-IR*EUR/CAP)^i/Factorial[i], {i, imax}]]
+        // which may be simplified to
+        // Function[imax, -CAP*Sum[(EUR)^i/(Factorial[i]*(-d)^i), {i, 1, imax}]]
+        // where d = cap/initial_reward
         uint256 term = cap;
         uint256 sum = 0;
         uint256 denom = d;
@@ -72,6 +76,7 @@ contract NeumarkIssuanceCurve {
             term  := div(mul(term, euroUlps), denom)
             sum   := add(sum, term)
             denom := add(denom, d)
+            // sub next term as we have power of negative value in the binomial expansion
             term  := div(mul(term, euroUlps), denom)
             sum   := sub(sum, term)
             denom := add(denom, d)
