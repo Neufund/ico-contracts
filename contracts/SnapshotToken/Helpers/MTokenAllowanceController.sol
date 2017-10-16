@@ -1,6 +1,8 @@
 pragma solidity 0.4.15;
 
 
+/// @title controls spending approvals
+/// @dev TokenAllowance observes this interface, Neumark contract implements it
 contract MTokenAllowanceController {
 
     ////////////////////////

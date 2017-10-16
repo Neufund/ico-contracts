@@ -4,6 +4,7 @@ import '../../Standards/ITokenMetadata.sol';
 
 
 /// @title adds token metadata to token contract
+/// @dev see Neumark for example implementation
 contract TokenMetadata is ITokenMetadata {
 
     ////////////////////////

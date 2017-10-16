@@ -7,7 +7,9 @@ import './Helpers/MTokenTransferController.sol';
 
 
 /// @title token with snapshots and transfer functionality
-/// @dev !
+/// @dev observes MTokenTransferController interface
+///     observes ISnapshotToken interface
+///     implementes MTokenTransfer interface
 contract BasicSnapshotToken is
     MTokenTransfer,
     MTokenTransferController,
@@ -23,15 +25,15 @@ contract BasicSnapshotToken is
     ISnapshotTokenParent private PARENT_TOKEN;
 
     // `parentSnapShotBlock` is the block number from the Parent Token that was
-    //  used to determine the initial distribution of the Clone Token
-    uint256 private PARENT_SNAPSHOT;
+    //  used to determine the initial distribution of the cloned token
+    uint256 private PARENT_SNAPSHOT_ID;
 
     ////////////////////////
     // Mutable state
     ////////////////////////
 
     // `balances` is the map that tracks the balance of each address, in this
-    //  contract when the balance changes the block number that the change
+    //  contract when the balance changes the snapshot id that the change
     //  occurred is also included in the map
     mapping (address => Values[]) internal _balances;
 
@@ -42,18 +44,19 @@ contract BasicSnapshotToken is
     // Constructor
     ////////////////////////
 
-    /// @notice Constructor to create a MiniMeToken
+    /// @notice Constructor to create snapshot token
     /// @param parentToken Address of the parent token, set to 0x0 if it is a
     ///  new token
+    /// @param parentSnapshotId at which snapshot id clone was created
     function BasicSnapshotToken(
         ISnapshotTokenParent parentToken,
-        uint256 parentSnapshot
+        uint256 parentSnapshotId
     )
         public
         Snapshot()
     {
         PARENT_TOKEN = parentToken;
-        PARENT_SNAPSHOT = parentSnapshot;
+        PARENT_SNAPSHOT_ID = parentSnapshotId;
     }
 
     ////////////////////////
@@ -100,49 +103,51 @@ contract BasicSnapshotToken is
     // Implements ISnapshotTokenParent
     //
 
-    /// @notice Total amount of tokens at a specific `snapshot`.
-    /// @param snapshot The block number when the totalSupply is queried
-    /// @return The total amount of tokens at `snapshot`
-    function totalSupplyAt(uint256 snapshot)
+    /// @notice Total amount of tokens at a specific `snapshotId`.
+    /// @param snapshotId of snapshot at which totalSupply is queried
+    /// @return The total amount of tokens at `snapshotId`
+    function totalSupplyAt(uint256 snapshotId)
         public
         constant
         returns(uint256)
     {
         Values[] storage values = _totalSupplyValues;
 
-        // If there is a value, return it
-        if (hasValueAt(values, snapshot)) {
-            return getValueAt(values, snapshot, 0);
+        // If there is a value, return it, reverts if value is in the future
+        if (hasValueAt(values, snapshotId)) {
+            return getValueAt(values, snapshotId, 0);
         }
 
         // Try parent contract at or before the fork
         if (address(PARENT_TOKEN) != 0) {
-            return PARENT_TOKEN.totalSupplyAt(PARENT_SNAPSHOT);
+            // TODO: this is certainly wrong, should be totalSupplyAt(min(PARENT_SNAPSHOT_ID, snapshotId))
+            return PARENT_TOKEN.totalSupplyAt(PARENT_SNAPSHOT_ID);
         }
 
         // Default to an empty balance
         return 0;
     }
 
-    /// @dev Queries the balance of `owner` at a specific `snapshot`
+    /// @dev Queries the balance of `owner` at a specific `snapshotId`
     /// @param owner The address from which the balance will be retrieved
-    /// @param snapshot The block number when the balance is queried
-    /// @return The balance at `snapshot`
-    function balanceOfAt(address owner, uint256 snapshot)
+    /// @param snapshotId of snapshot at which the balance is queried
+    /// @return The balance at `snapshotId`
+    function balanceOfAt(address owner, uint256 snapshotId)
         public
         constant
         returns (uint256)
     {
         Values[] storage values = _balances[owner];
 
-        // If there is a value, return it
-        if (hasValueAt(values, snapshot)) {
-            return getValueAt(values, snapshot, 0);
+        // If there is a value, return it, reverts if value is in the future
+        if (hasValueAt(values, snapshotId)) {
+            return getValueAt(values, snapshotId, 0);
         }
 
         // Try parent contract at or before the fork
         if (address(PARENT_TOKEN) != 0) {
-            return PARENT_TOKEN.balanceOfAt(owner, PARENT_SNAPSHOT);
+            // TODO: this is certainly wrong, should be balanceOfAt(owner, min(PARENT_SNAPSHOT_ID, snapshotId))
+            return PARENT_TOKEN.balanceOfAt(owner, PARENT_SNAPSHOT_ID);
         }
 
         // Default to an empty balance
@@ -154,7 +159,7 @@ contract BasicSnapshotToken is
     ////////////////////////
 
     //
-    // Implements MMint
+    // Implements MTokenTransfer
     //
 
     /// @dev This is the actual transfer function in the token contract, it can

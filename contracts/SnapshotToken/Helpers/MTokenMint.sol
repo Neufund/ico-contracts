@@ -1,6 +1,8 @@
 pragma solidity 0.4.15;
 
 
+/// @title token generation and destruction
+/// @dev internal interface providing token generation and destruction, see MintableSnapshotToken for implementation
 contract MTokenMint {
 
     ////////////////////////

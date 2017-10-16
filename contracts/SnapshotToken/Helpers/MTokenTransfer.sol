@@ -1,8 +1,8 @@
 pragma solidity 0.4.15;
 
 
-/// @title mixin interface to implement internal token transfer function
-/// @dev see BasicSnapshotToken for example implementation
+/// @title internal token transfer function
+/// @dev see BasicSnapshotToken for implementation
 contract MTokenTransfer {
 
     ////////////////////////

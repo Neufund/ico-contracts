@@ -5,8 +5,8 @@ import './Helpers/MTokenMint.sol';
 import '../Standards/ISnapshotTokenParent.sol';
 
 
-/// @title snapshot token with facitilites to generate and destroy tokens
-/// @dev implemented MTokenMint
+/// @title basic snapshot token with facitilites to generate and destroy tokens
+/// @dev implementes MTokenMint, does not expose any public functions that create/destroy tokens
 contract MintableSnapshotToken is
     BasicSnapshotToken,
     MTokenMint
@@ -31,7 +31,6 @@ contract MintableSnapshotToken is
     /// @notice Generates `amount` tokens that are assigned to `owner`
     /// @param owner The address that will be assigned the new tokens
     /// @param amount The quantity of tokens generated
-    /// @return True if the tokens are generated correctly
     function mGenerateTokens(address owner, uint256 amount)
         internal
     {
@@ -54,7 +53,6 @@ contract MintableSnapshotToken is
     /// @notice Burns `amount` tokens from `owner`
     /// @param owner The address that will lose the tokens
     /// @param amount The quantity of tokens to burn
-    /// @return True if the tokens are burned correctly
     function mDestroyTokens(address owner, uint256 amount)
         internal
     {

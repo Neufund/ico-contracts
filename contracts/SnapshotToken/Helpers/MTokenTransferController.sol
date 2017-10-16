@@ -1,6 +1,8 @@
 pragma solidity 0.4.15;
 
 
+/// @title controls token transfers
+/// @dev BasicSnapshotToken observes this interface, Neumark contract implements it
 contract MTokenTransferController {
 
     ////////////////////////

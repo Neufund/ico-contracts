@@ -28,16 +28,20 @@ import './Helpers/MTokenTransfer.sol';
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /// @title SnapshotToken Contract
-/// @author Remco Bloemen, Jordi Baylina
+/// @author Jordi Baylina, Remco Bloemen, Marcin Rudolf
 /// @dev This token contract's goal is to make it easy for anyone to clone this
 ///  token using the token distribution at a given block, this will allow DAO's
 ///  and DApps to upgrade their features in a decentralized manner without
 ///  affecting the original token
 /// @dev It is ERC20 compliant, but still needs to under go further testing.
-/// @dev The actual token contract, the default controller is the msg.sender
-///  that deploys the contract, so usually this token will be deployed by a
-///  token controller contract, which Giveth will call a "Campaign"
-// Consumes the MMint mixin from SnapshotToken
+/// @dev Various contracts are composed to provide required functionality of this token, different compositions are possible
+///     MintableSnapshotToken provides transfer, miniting and snapshotting functions
+///     TokenAllowance provides approve/transferFrom functions
+///     TokenMetadata adds name, symbol and other token metadata
+/// @dev This token is still abstract, Snapshot, BasicSnapshotToken and TokenAllowance observe interfaces that must be implemented
+///     MSnapshotPolicy - particular snapshot id creation mechanism
+///     MTokenController - controlls approvals and transfers
+///     see Neumark as an example
 contract SnapshotToken is
     MintableSnapshotToken,
     TokenAllowance,
