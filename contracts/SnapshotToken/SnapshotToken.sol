@@ -45,32 +45,23 @@ import './Helpers/MTokenTransfer.sol';
 contract SnapshotToken is
     MintableSnapshotToken,
     TokenAllowance,
-    TokenMetadata,
     IsContract
 {
-    ////////////////////////
-    // Constants
-    ////////////////////////
-
-    string private constant VERSION = "ST_1.0";
-
     ////////////////////////
     // Constructor
     ////////////////////////
 
     /// @notice Constructor to create a MiniMeToken
     ///  is a new token
-    /// @param tokenName Name of the new token
-    /// @param decimalUnits Number of decimals of the new token
-    /// @param tokenSymbol Token Symbol for the new token
+    /// param tokenName Name of the new token
+    /// param decimalUnits Number of decimals of the new token
+    /// param tokenSymbol Token Symbol for the new token
     function SnapshotToken(
-        string tokenName,
-        uint8 decimalUnits,
-        string tokenSymbol
+        ISnapshotTokenParent parentToken,
+        uint256 parentSnapshotId
     )
-        MintableSnapshotToken(ISnapshotTokenParent(0x0), 0)
+        MintableSnapshotToken(parentToken, parentSnapshotId)
         TokenAllowance()
-        TokenMetadata(tokenName, decimalUnits, tokenSymbol, VERSION)
     {
     }
 

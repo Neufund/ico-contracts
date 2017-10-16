@@ -21,10 +21,10 @@ contract MintableSnapshotToken is
     ///  new token
     function MintableSnapshotToken(
         ISnapshotTokenParent parentToken,
-        uint256 parentSnapshot
+        uint256 parentSnapshotId
     )
         public
-        BasicSnapshotToken(parentToken, parentSnapshot)
+        BasicSnapshotToken(parentToken, parentSnapshotId)
     {
     }
 

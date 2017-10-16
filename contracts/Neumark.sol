@@ -15,6 +15,7 @@ contract Neumark is
     Agreement,
     DailyAndSnapshotable,
     SnapshotToken,
+    TokenMetadata,
     NeumarkIssuanceCurve,
     Reclaimable
 {
@@ -28,6 +29,8 @@ contract Neumark is
     uint8  private constant TOKEN_DECIMALS = 18;
 
     string private constant TOKEN_SYMBOL = "NMK";
+
+    string private constant VERSION = "NMK_1.0";
 
     ////////////////////////
     // Mutable state
@@ -65,9 +68,14 @@ contract Neumark is
         AccessRoles()
         Agreement(accessPolicy, forkArbiter)
         SnapshotToken(
+            SnapshotToken(0x0),
+            0
+        )
+        TokenMetadata(
             TOKEN_NAME,
             TOKEN_DECIMALS,
-            TOKEN_SYMBOL
+            TOKEN_SYMBOL,
+            VERSION
         )
         DailyAndSnapshotable()
         NeumarkIssuanceCurve()
