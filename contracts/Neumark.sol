@@ -4,7 +4,7 @@ import './AccessControl/AccessControlled.sol';
 import './AccessRoles.sol';
 import './Agreement.sol';
 import './Snapshot/DailyAndSnapshotable.sol';
-import './SnapshotToken/SnapshotToken.sol';
+import './SnapshotToken/StandardSnapshotToken.sol';
 import './NeumarkIssuanceCurve.sol';
 import './Reclaimable.sol';
 
@@ -14,7 +14,7 @@ contract Neumark is
     AccessRoles,
     Agreement,
     DailyAndSnapshotable,
-    SnapshotToken,
+    StandardSnapshotToken,
     TokenMetadata,
     NeumarkIssuanceCurve,
     Reclaimable
@@ -67,8 +67,8 @@ contract Neumark is
         AccessControlled(accessPolicy)
         AccessRoles()
         Agreement(accessPolicy, forkArbiter)
-        SnapshotToken(
-            SnapshotToken(0x0),
+        StandardSnapshotToken(
+            ISnapshotTokenParent(0x0),
             0
         )
         TokenMetadata(

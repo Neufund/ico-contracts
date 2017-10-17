@@ -27,7 +27,7 @@ import './Helpers/MTokenTransfer.sol';
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/// @title SnapshotToken Contract
+/// @title StandardSnapshotToken Contract
 /// @author Jordi Baylina, Remco Bloemen, Marcin Rudolf
 /// @dev This token contract's goal is to make it easy for anyone to clone this
 ///  token using the token distribution at a given block, this will allow DAO's
@@ -42,7 +42,8 @@ import './Helpers/MTokenTransfer.sol';
 ///     MSnapshotPolicy - particular snapshot id creation mechanism
 ///     MTokenController - controlls approvals and transfers
 ///     see Neumark as an example
-contract SnapshotToken is
+/// @dev implements ERC223 token transfer
+contract StandardSnapshotToken is
     MintableSnapshotToken,
     TokenAllowance,
     IsContract
@@ -56,7 +57,7 @@ contract SnapshotToken is
     /// param tokenName Name of the new token
     /// param decimalUnits Number of decimals of the new token
     /// param tokenSymbol Token Symbol for the new token
-    function SnapshotToken(
+    function StandardSnapshotToken(
         ISnapshotTokenParent parentToken,
         uint256 parentSnapshotId
     )
