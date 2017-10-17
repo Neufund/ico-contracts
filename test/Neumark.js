@@ -50,6 +50,15 @@ contract(
       await neumark.amendAgreement(AGREEMENT, { from: platformRepresentative });
     });
 
+    async function expectAgreementAccepted(signer, signTx) {
+      const signedAtBlock = await neumark.agreementSignedAtBlock.call(signer);
+      if (signTx) {
+        expect(signedAtBlock).to.be.bignumber.eq(signTx.receipt.blockNumber);
+      } else {
+        expect(signedAtBlock).to.be.bignumber.gt(0);
+      }
+    }
+
     it("should deploy", async () => {
       await prettyPrintGasCost("Neumark deploy", neumark);
     });
@@ -212,8 +221,7 @@ contract(
         .map(({ args: { accepter } }) => accepter);
       expect(agreements).to.have.length(1);
       expect(agreements).to.contain(from);
-      const isSigned = await neumark.isAgreementSignedBy.call(from);
-      expect(isSigned).to.be.true;
+      expectAgreementAccepted(from, tx);
     });
 
     it("should accept agreement on transfer", async () => {
@@ -232,11 +240,10 @@ contract(
         .map(({ args: { accepter } }) => accepter);
       expect(agreements).to.have.length(1);
       expect(agreements).to.contain(from);
-      const isFromSigned = await neumark.isAgreementSignedBy.call(from);
-      expect(isFromSigned).to.be.true;
+      expectAgreementAccepted(from, tx);
       // 'to' should not be passively signed
-      const isToSigned = await neumark.isAgreementSignedBy.call(to);
-      expect(isToSigned).to.be.false;
+      const toSignedAt = await neumark.agreementSignedAtBlock.call(to);
+      expect(toSignedAt).to.be.bignumber.eq(0);
     });
 
     it("should accept agreement on distribute Neumarks", async () => {
@@ -254,8 +261,7 @@ contract(
         .map(({ args: { accepter } }) => accepter);
       expect(agreements).to.have.length(1);
       expect(agreements).to.contain(from);
-      const isFromSigned = await neumark.isAgreementSignedBy.call(from);
-      expect(isFromSigned).to.be.true;
+      expectAgreementAccepted(from, tx);
     });
 
     it("should accept agreement on approve", async () => {
@@ -273,8 +279,7 @@ contract(
         .map(({ args: { accepter } }) => accepter);
       expect(agreements).to.have.length(1);
       expect(agreements).to.contain(to);
-      const isToSigned = await neumark.isAgreementSignedBy.call(to);
-      expect(isToSigned).to.be.true;
+      expectAgreementAccepted(to, tx);
     });
 
     it("should transfer Neumarks only when enabled", async () => {
