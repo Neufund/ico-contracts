@@ -624,6 +624,11 @@ contract Commitment is
         }
 
         // Curve
+        // AUDIT[CHF-63] Add condition remainingEur > 0 in commitToken().
+        //   The following code block make sense only for remainingEur > 0.
+        //   Adding this condition makes the code easier to understand and
+        //   avoids making a call to NEUMARK.issueForEuro() in the opposite
+        //   case.
         if (whitelisted || state() == State.Public) {
             totalNmk = add(totalNmk, NEUMARK.issueForEuro(remainingEur));
             remainingEur = 0;
