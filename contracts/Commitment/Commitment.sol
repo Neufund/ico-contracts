@@ -615,6 +615,11 @@ contract Commitment is
             ticket.amountEur = sub(ticket.amountEur, ticketEur);
             ticket.rewardNmk = sub(ticket.rewardNmk, ticketNmk);
             remainingEur = sub(remainingEur, ticketEur);
+
+            // AUDIT[CHF-62] Usage of "+=" instead of "=".
+            //  The totalNmk is always 0 in this place.
+            //  Use `totalNmk = tickerNmk;` or use totalNmk variable instead of
+            //  ticketNmk in this code block.
             totalNmk = add(totalNmk, ticketNmk);
         }
 
