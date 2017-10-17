@@ -4,6 +4,16 @@ pragma solidity 0.4.15;
 contract NeumarkIssuanceCurve {
 
     ////////////////////////
+    // Constants
+    ////////////////////////
+
+    // maximum number of neumarks that may be created
+    uint256 private constant NEUMARK_CAP = 1500000000000000000000000000;
+
+    // initial neumark reward fraction (controls curve steepness)
+    uint256 private constant INITIAL_REWARD_FRACTION = 6500000000000000000;
+
+    ////////////////////////
     // Public functions
     ////////////////////////
 
@@ -42,7 +52,7 @@ contract NeumarkIssuanceCurve {
         constant
         returns(uint256 neumarkUlps)
     {
-        uint256 cap = 1500000000000000000000000000;
+        uint256 cap = NEUMARK_CAP;
         uint256 d = 230769230769230769230769231;
         uint256 nLim = 8300000000000000000000000000;
 
@@ -52,6 +62,7 @@ contract NeumarkIssuanceCurve {
         }
 
         // Approximate cap-cap·(1-1/D)^n using the Binomial theorem
+        // http://galileo.phys.virginia.edu/classes/152.mf1i.spring02/Exponential_Function.htm
         uint256 term = cap;
         uint256 sum = 0;
         uint256 denom = d;
@@ -112,5 +123,21 @@ contract NeumarkIssuanceCurve {
         // be burned. It also ensure that the total supply of Neumarks
         // remains below the cap.
         return max + 1;
+    }
+
+    function neumarkCap()
+        public
+        constant
+        returns (uint256)
+    {
+        return NEUMARK_CAP;
+    }
+
+    function initialRewardFraction()
+        public
+        constant
+        returns (uint256)
+    {
+        return INITIAL_REWARD_FRACTION;
     }
 }
