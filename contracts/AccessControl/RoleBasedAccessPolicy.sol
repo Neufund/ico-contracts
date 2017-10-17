@@ -6,7 +6,21 @@ import './AccessControlled.sol';
 import '../Reclaimable.sol';
 
 
-contract RoleBasedAccessControl is
+/// @title access policy based on Access Control Lists concept
+/// @dev Allows to assign an address to a set of roles (n:n relation) and querying if such specific assignment exists.
+///     This assignment happens in two contexts:
+///         - contract context which allows to build a set of local permissions enforced for particular contract
+///         - global context which defines set of global permissions that apply to any contract using this RoleBasedAccessPolicy as Access Policy
+///     Permissions are cascading as follows
+///         - evaluate permission for given subject for given object (local context)
+///         - evaluate permission for given subject for all objects (global context)
+///         - evaluate permissions for any subject (everyone) for given object (everyone local context)
+///         - evaluate permissions for any subject (everyone) for all objects (everyone global context)
+///         - if still unset then disallow
+///     Permission is cascaded up only if it was evaluated as Unset at particular level. See EVERYONE and GLOBAL definitions for special values (they are 0x0 addresses)
+///     RoleBasedAccessPolicy is its own policy. When created, creator has ROLE_ACCESS_CONTROLLER role. Right pattern is to transfer this control to some other (non deployer) account and then destroy deployer private key.
+///     See IAccessControlled for definitions of subject, object and role
+contract RoleBasedAccessPolicy is
     IAccessPolicy,
     AccessControlled,
     Reclaimable
@@ -35,12 +49,13 @@ contract RoleBasedAccessControl is
     // Mutable state
     ////////////////////////
 
-    // subject → role → object → allowed
+    /// @dev subject → role → object → allowed
     mapping (address =>
         mapping(bytes32 =>
             mapping(address => TriState))) private _access;
 
-    // object → role → addresses
+    /// @notice used to enumerate all users assigned to given role in object context
+    /// @dev object → role → addresses
     mapping (address =>
         mapping(bytes32 => address[])) private _accessList;
 
@@ -48,6 +63,7 @@ contract RoleBasedAccessControl is
     // Events
     ////////////////////////
 
+    /// @dev logs change of permissions, 'controller' is an address with ROLE_ACCESS_CONTROLLER
     event LogAccessChanged(
         address controller,
         address indexed subject,
@@ -69,24 +85,24 @@ contract RoleBasedAccessControl is
     // Constructor
     ////////////////////////
 
-    function RoleBasedAccessControl()
+    function RoleBasedAccessPolicy()
         AccessControlled(this) // We are our own policy. This is immutable.
     {
         // Issue the local and global AccessContoler role to creator
-        _access[msg.sender][ROLE_ACCESS_CONTROLER][this] = TriState.Allow;
-        _access[msg.sender][ROLE_ACCESS_CONTROLER][GLOBAL] = TriState.Allow;
+        _access[msg.sender][ROLE_ACCESS_CONTROLLER][this] = TriState.Allow;
+        _access[msg.sender][ROLE_ACCESS_CONTROLLER][GLOBAL] = TriState.Allow;
     }
 
     ////////////////////////
     // Public functions
     ////////////////////////
 
-    // Overrides `AccessControlled.setAccessPolicy(IAccessPolicy)`
-    function setAccessPolicy(IAccessPolicy)
+    // Overrides `AccessControlled.setAccessPolicy(IAccessPolicy,address)`
+    function setAccessPolicy(IAccessPolicy, address)
         public
-        only(ROLE_ACCESS_CONTROLER)
+        only(ROLE_ACCESS_CONTROLLER)
     {
-        // `RoleBasedAccessControl` always controls its
+        // `RoleBasedAccessPolicy` always controls its
         // own access. Disallow changing this by overriding
         // the `AccessControlled.setAccessPolicy` function.
         revert();
@@ -126,6 +142,7 @@ contract RoleBasedAccessControl is
             set = value != TriState.Unset;
             allow = value == TriState.Allow;
         }
+        // If none is set then disallow
         if (!set) {
             allow = false;
         }
@@ -143,7 +160,7 @@ contract RoleBasedAccessControl is
         TriState newValue
     )
         public
-        only(ROLE_ACCESS_CONTROLER)
+        only(ROLE_ACCESS_CONTROLLER)
     {
         setUserRolePrivate(subject, role, object, newValue);
     }
@@ -156,7 +173,7 @@ contract RoleBasedAccessControl is
         TriState[] newValues
     )
         public
-        only(ROLE_ACCESS_CONTROLER)
+        only(ROLE_ACCESS_CONTROLLER)
     {
         require(subjects.length == roles.length);
         require(subjects.length == objects.length);
@@ -205,7 +222,7 @@ contract RoleBasedAccessControl is
         // contract. This prevents access controlers from locking themselves
         // out. We also require the current contract to be its own policy for
         // this to work. This is enforced elsewhere.
-        require(role != ROLE_ACCESS_CONTROLER || subject != msg.sender || object != this);
+        require(role != ROLE_ACCESS_CONTROLLER || subject != msg.sender || object != this);
 
         // Fetch old value and short-circuit no-ops
         TriState oldValue = _access[subject][role][object];
@@ -218,15 +235,20 @@ contract RoleBasedAccessControl is
 
         // Update the list on add / remove
         address[] storage list = _accessList[object][role];
+        // Add new subject only when going form Unset to Allow/Deny
         if(oldValue == TriState.Unset && newValue != TriState.Unset) {
             list.push(subject);
         }
+        // Remove subject when unsetting Allow/Deny
         if(oldValue != TriState.Unset && newValue == TriState.Unset) {
             for(uint256 i = 0; i < list.length; i++) {
                 if(list[i] == subject) {
+                    // replace unset address with last address in the list, cut list size
                     list[i] = list[list.length - 1];
                     delete list[list.length - 1];
                     list.length -= 1;
+                    // there will be no more matches
+                    break;
                 }
             }
         }

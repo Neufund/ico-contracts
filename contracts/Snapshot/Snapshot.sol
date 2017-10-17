@@ -1,24 +1,27 @@
 pragma solidity 0.4.15;
 
-import './MPolicy.sol';
+import './MSnapshotPolicy.sol';
 
 
-// Snapshot consumes MPolicy
-contract Snapshot is MPolicy {
+/// @title Reads and writes snapshots
+/// @dev Manages reading and writing a series of values, where each value has assigned a snapshot id for access to historical data
+/// @dev may be added to any contract to provide snapshotting mechanism. should be mixed in with any of MSnapshotPolicy implementations to customize snapshot creation mechanics
+/// based on MiniMe token
+contract Snapshot is MSnapshotPolicy {
 
     ////////////////////////
     // Types
     ////////////////////////
 
-    /// @dev `Checkpoint` is the structure that attaches a block number to a
-    ///  given value, the block number attached is the one that last changed the
+    /// @dev `Values` is the structure that attaches a snapshot id to a
+    ///  given value, the snapshot id attached is the one that last changed the
     ///  value
     struct Values {
 
-        // `fromBlock` is the block number that the value was generated from
-        uint256 snapshot;
+        // `snapshotId` is the snapshot id that the value was generated at
+        uint256 snapshotId;
 
-        // `value` is the amount of tokens at a specific block number
+        // `value` at a specific snapshot id
         uint256 value;
     }
 
@@ -36,71 +39,73 @@ contract Snapshot is MPolicy {
         return values.length > 0;
     }
 
+    /// @dev makes sure that 'snapshotId' between current snapshot id (mCurrentSnapshotId) and first snapshot id. this guarantees that getValueAt returns value from one of the snapshots.
     function hasValueAt(
         Values[] storage values,
-        uint256 _snapshot
+        uint256 snapshotId
     )
         internal
         constant
         returns (bool)
     {
-        require(_snapshot < mNextSnapshotId());
-        return values.length > 0 && values[0].snapshot <= _snapshot;
+        require(snapshotId <= mCurrentSnapshotId());
+        return values.length > 0 && values[0].snapshotId <= snapshotId;
     }
 
+    /// gets last value in the series
     function getValue(
         Values[] storage values,
-        uint256 _defaultValue
+        uint256 defaultValue
     )
         internal
         constant
         returns (uint256)
     {
         if (values.length == 0) {
-            return _defaultValue;
+            return defaultValue;
         } else {
             uint256 last = values.length - 1;
             return values[last].value;
         }
     }
 
-    /// @dev `getValueAt` retrieves the number of tokens at a given block number
-    /// @param values The history of values being queried
-    /// @param _snapshot The block number to retrieve the value at
-    /// @return The number of tokens being queried
+    /// @dev `getValueAt` retrieves value at a given snapshot id
+    /// @param values The series of values being queried
+    /// @param snapshotId Snapshot id to retrieve the value at
+    /// @return Value in series being queried
     function getValueAt(
         Values[] storage values,
-        uint256 _snapshot,
-        uint256 _defaultValue
+        uint256 snapshotId,
+        uint256 defaultValue
     )
         internal
         constant
         returns (uint256)
     {
-        require(_snapshot < mNextSnapshotId());
+        require(snapshotId <= mCurrentSnapshotId());
 
         // Empty value
         if (values.length == 0) {
-            return _defaultValue;
+            return defaultValue;
         }
 
         // Shortcut for the out of bounds snapshots
         uint256 last = values.length - 1;
-        uint256 lastSnapshot = values[last].snapshot;
-        if (_snapshot >= lastSnapshot) {
+        uint256 lastSnapshot = values[last].snapshotId;
+        if (snapshotId >= lastSnapshot) {
             return values[last].value;
         }
-        uint256 firstSnapshot = values[0].snapshot;
-        if (_snapshot < firstSnapshot) {
-            return _defaultValue;
+        uint256 firstSnapshot = values[0].snapshotId;
+        if (snapshotId < firstSnapshot) {
+            return defaultValue;
         }
-
         // Binary search of the value in the array
         uint256 min = 0;
         uint256 max = last;
         while (max > min) {
             uint256 mid = (max + min + 1) / 2;
-            if (values[mid].snapshot <= _snapshot) {
+            // must always return lower indice for approximate searches
+            if (values[mid].snapshotId <= snapshotId) {
                 min = mid;
             } else {
                 max = mid - 1;
@@ -109,43 +114,37 @@ contract Snapshot is MPolicy {
         return values[min].value;
     }
 
-    /// @dev `setValue` used to update the `balances` map and the
-    ///  `totalSupplyHistory`
-    /// @param values The history of data being updated
-    /// @param _value The new number of tokens
+    /// @dev `setValue` used to update sequence at next snapshot
+    /// @param values The sequence being updated
+    /// @param value The new last value of sequence
     function setValue(
         Values[] storage values,
-        uint256 _value
+        uint256 value
     )
         internal
     {
         // TODO: simplify or break into smaller functions
 
-        uint256 nextSnapshot = mNextSnapshotId();
-
+        uint256 currentSnapshotId = mCurrentSnapshotId();
         // Always create a new entry if there currently is no value
         bool empty = values.length == 0;
         if (empty) {
-
             // Create a new entry
             values.push(
                 Values({
-                    snapshot: nextSnapshot,
-                    value: _value
+                    snapshotId: currentSnapshotId,
+                    value: value
                 })
             );
-
-            // Flag next snapshot as modified
-            mFlagSnapshotModified();
             return;
         }
 
         uint256 last = values.length - 1;
-        bool frozen = values[last].snapshot < nextSnapshot;
-        if (frozen) {
+        bool hasNewSnapshot = values[last].snapshotId < currentSnapshotId;
+        if (hasNewSnapshot) {
 
             // Do nothing if the value was not modified
-            bool unmodified = values[last].value == _value;
+            bool unmodified = values[last].value == value;
             if (unmodified) {
                 return;
             }
@@ -153,26 +152,23 @@ contract Snapshot is MPolicy {
             // Create new entry
             values.push(
                 Values({
-                    snapshot: nextSnapshot,
-                    value: _value
+                    snapshotId: currentSnapshotId,
+                    value: value
                 })
             );
+        } else {
 
-            // Flag next snapshot as modified
-            mFlagSnapshotModified();
-
-        } else { // We are updating the nextSnapshot
-
-            bool unmodifiedd = last > 0 && values[last - 1].value == _value;
-            if (unmodifiedd) {
-                // Remove nextSnapshot entry
+            // We are updating the currentSnapshotId
+            bool previousUnmodified = last > 0 && values[last - 1].value == value;
+            if (previousUnmodified) {
+                // Remove current snapshot if current value was set to previous value
                 delete values[last];
                 values.length--;
                 return;
             }
 
             // Overwrite next snapshot entry
-            values[last].value = _value;
+            values[last].value = value;
         }
     }
 }

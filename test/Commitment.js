@@ -24,7 +24,11 @@ const PLATFORM_SHARE = web3.toBigNumber("2");
 const WHITELIST_START = BEFORE_DURATION;
 const PUBLIC_START = WHITELIST_START + WHITELIST_DURATION;
 const FINISHED_START = PUBLIC_START + PUBLIC_DURATION;
-const divRound = (v, d) => d.divToInt(2).plus(v).divToInt(d);
+const divRound = (v, d) =>
+  d
+    .divToInt(2)
+    .plus(v)
+    .divToInt(d);
 
 const Q18 = web3.toBigNumber("10").pow(18);
 const AGREEMENT = "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT";
@@ -53,7 +57,7 @@ contract(
       ...investors
     ]
   ) => {
-    let rbac;
+    let rbap;
     let forkArbiter;
     let neumark;
     let etherToken;
@@ -65,27 +69,28 @@ contract(
     beforeEach(async () => {
       const now = await latestTimestamp();
       const startDate = now + BEFORE_DURATION;
-      rbac = await createAccessPolicy();
-      forkArbiter = await EthereumForkArbiter.new(rbac.address);
-      neumark = await Neumark.new(rbac.address, forkArbiter.address);
-      etherToken = await EtherToken.new(rbac.address);
-      euroToken = await EuroToken.new(rbac.address);
+      rbap = await createAccessPolicy();
+      forkArbiter = await EthereumForkArbiter.new(rbap.address);
+      neumark = await Neumark.new(rbap.address, forkArbiter.address);
+      etherToken = await EtherToken.new(rbap.address);
+      euroToken = await EuroToken.new(rbap.address);
       etherLock = await LockedAccount.new(
-        rbac.address,
+        rbap.address,
         etherToken.address,
         neumark.address,
         LOCK_DURATION,
         PENALTY_FRACTION
       );
       euroLock = await LockedAccount.new(
-        rbac.address,
+        rbap.address,
         euroToken.address,
         neumark.address,
         LOCK_DURATION,
         PENALTY_FRACTION
       );
       commitment = await Commitment.new(
-        rbac.address,
+        rbap.address,
+        forkArbiter.address,
         startDate,
         platform,
         neumark.address,
@@ -97,17 +102,32 @@ contract(
         MIN_TICKET_EUR,
         ETH_EUR_FRACTION
       );
-      await rbac.set([
+      await rbap.set([
         { subject: representative, role: roles.platformOperatorRepresentative },
-        { subject: whitelistAdmin, role: roles.whitelistAdmin },
+        {
+          subject: whitelistAdmin,
+          role: roles.whitelistAdmin,
+          object: commitment.address
+        },
         { subject: lockedAccountAdmin, role: roles.lockedAccountAdmin },
-        { subject: eurtDepositManager, role: roles.eurtDepositManager },
-        { subject: commitment.address, role: roles.neumarkIssuer },
-        { subject: commitment.address, role: roles.neumarkBurner },
-        { subject: commitment.address, role: roles.transferAdmin },
-        { subject: commitment.address, role: roles.transferer }
+        {
+          subject: eurtDepositManager,
+          role: roles.eurtDepositManager,
+          object: euroToken.address
+        },
+        {
+          subject: commitment.address,
+          role: roles.neumarkIssuer,
+          object: neumark.address
+        },
+        {
+          subject: commitment.address,
+          role: roles.neumarkBurner,
+          object: neumark.address
+        }
       ]);
       await neumark.amendAgreement(AGREEMENT, { from: representative });
+      await commitment.amendAgreement(AGREEMENT, { from: representative });
       await etherLock.setController(commitment.address, {
         from: lockedAccountAdmin
       });
@@ -153,13 +173,20 @@ contract(
 
     describe("Whitelist", async () => {
       function fillWhitelist(N) {
-        const whitelisted = Array(N).fill(0).map((_, i) => `0xFF${i}`);
+        const whitelisted = Array(N)
+          .fill(0)
+          .map((_, i) => `0xFF${i}`);
         const tokens = Array(N)
           .fill(0)
           .map((_, i) => (i % 2 ? Token.Ether : Token.Euro));
         const amounts = Array(N)
           .fill(0)
-          .map((_, i) => web3.toBigNumber(i * i).mul(Q18).plus(MIN_TICKET_EUR));
+          .map((_, i) =>
+            web3
+              .toBigNumber(i * i)
+              .mul(Q18)
+              .plus(MIN_TICKET_EUR)
+          );
 
         return { whitelisted, tokens, amounts };
       }
@@ -251,7 +278,7 @@ contract(
           from: other
         });
 
-        expect(tx).to.be.rejectedWith(EvmError);
+        await expect(tx).to.be.rejectedWith(EvmError);
       });
 
       it("should accept whitelist only during Before", async () => {
@@ -346,7 +373,11 @@ contract(
         const tx = commitment.addWhitelisted(
           [investors[0]],
           [Token.Euro],
-          [MIN_TICKET_EUR.sub(1).mul(Q18).div(ETH_EUR_FRACTION)],
+          [
+            MIN_TICKET_EUR.sub(1)
+              .mul(Q18)
+              .div(ETH_EUR_FRACTION)
+          ],
           { from: whitelistAdmin }
         );
 
@@ -1087,7 +1118,7 @@ contract(
         });
         await expect(
           commitment.commitEuro({ from: investor })
-        ).to.to.be.rejectedWith(EvmError);
+        ).to.be.rejectedWith(EvmError);
       });
     });
 
@@ -1439,7 +1470,7 @@ contract(
         await increaseTime(WHITELIST_START);
         await expect(
           commitment.commit({ from: investor, value: MIN_TICKET_ETH.mul(10) })
-        ).to.to.be.rejectedWith(EvmError);
+        ).to.be.rejectedWith(EvmError);
       });
     });
 

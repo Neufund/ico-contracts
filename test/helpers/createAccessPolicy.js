@@ -1,12 +1,10 @@
 import { TriState, EVERYONE, GLOBAL } from "./triState";
 
-const RoleBasedAccessControl = artifacts.require(
-  "./AccessControl/RoleBasedAccessControl.sol"
-);
+const RoleBasedAccessPolicy = artifacts.require("RoleBasedAccessPolicy");
 
 export default async initialRules => {
-  const rbac = await RoleBasedAccessControl.new();
-  rbac.set = async rules => {
+  const rbap = await RoleBasedAccessPolicy.new();
+  rbap.set = async rules => {
     if (!rules || rules.length === 0) {
       return;
     }
@@ -16,13 +14,13 @@ export default async initialRules => {
         rule
       )
     );
-    await rbac.setUserRoles(
+    await rbap.setUserRoles(
       completedRules.map(({ subject }) => subject),
       completedRules.map(({ role }) => role),
       completedRules.map(({ object }) => object),
       completedRules.map(({ state }) => state)
     );
   };
-  await rbac.set(initialRules);
-  return rbac;
+  await rbap.set(initialRules);
+  return rbap;
 };

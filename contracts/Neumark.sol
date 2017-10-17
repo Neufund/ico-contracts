@@ -70,7 +70,7 @@ contract Neumark is
         NeumarkIssuanceCurve()
         Reclaimable()
     {
-        _transferEnabled = false;
+        _transferEnabled = true;
         _totalEuroUlps = 0;
     }
 
@@ -87,9 +87,18 @@ contract Neumark is
         require(_totalEuroUlps + euroUlps >= _totalEuroUlps);
         uint256 neumarkUlps = incremental(euroUlps);
         _totalEuroUlps += euroUlps;
-        assert(mGenerateTokens(msg.sender, neumarkUlps));
+        mGenerateTokens(msg.sender, neumarkUlps);
         LogNeumarksIssued(msg.sender, euroUlps, neumarkUlps);
         return neumarkUlps;
+    }
+
+    function distributeNeumark(address to, uint256 neumarkUlps)
+        public
+        only(ROLE_NEUMARK_ISSUER)
+        acceptAgreement(to)
+    {
+        bool success = transfer(to, neumarkUlps);
+        require(success);
     }
 
     function burnNeumark(uint256 neumarkUlps)
@@ -99,7 +108,7 @@ contract Neumark is
     {
         uint256 euroUlps = incrementalInverse(neumarkUlps);
         _totalEuroUlps -= euroUlps;
-        assert(mDestroyTokens(msg.sender, neumarkUlps));
+        mDestroyTokens(msg.sender, neumarkUlps);
         LogNeumarksBurned(msg.sender, euroUlps, neumarkUlps);
         return euroUlps;
     }
@@ -169,18 +178,7 @@ contract Neumark is
         acceptAgreement(from)
         returns (bool allow)
     {
-        // When enabled, anyone can
-        if (_transferEnabled) {
-            return true;
-        }
-
-        // When disabled, require ROLE_TRANSFERER
-        return accessPolicy().allowed(
-            msg.sender,
-            ROLE_TRANSFERER,
-            this,
-            msg.sig
-        );
+        return _transferEnabled;
     }
 
     function mOnApprove(

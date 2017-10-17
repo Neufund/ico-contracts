@@ -49,7 +49,7 @@ contract Allowance is
     ///  to be a little bit safer
     /// @param spender The address of the account able to transfer the tokens
     /// @param amount The amount of tokens to be approved for transfer
-    /// @return True if the approval was successful
+    /// @return True if the approve was successful, reverts in any other case
     function approve(address spender, uint256 amount)
         public
         returns (bool success)
@@ -97,18 +97,19 @@ contract Allowance is
     /// @param from The address holding the tokens being transferred
     /// @param to The address of the recipient
     /// @param amount The amount of tokens to be transferred
-    /// @return True if the transfer was successful
+    /// @return True if the transfer was successful, reverts in any other case
     function transferFrom(address from, address to, uint256 amount)
         public
         returns (bool success)
     {
         // The standard ERC 20 transferFrom functionality
-        if (_allowed[from][msg.sender] < amount) {
-            return false;
-        }
+        bool amountApproved = _allowed[from][msg.sender] >= amount;
+        require(amountApproved);
 
         _allowed[from][msg.sender] -= amount;
-        return mAllowanceTransfer(from, to, amount);
+        mAllowanceTransfer(from, to, amount);
+
+        return true;
     }
 
 }

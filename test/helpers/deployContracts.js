@@ -3,44 +3,44 @@ import roles from "./roles";
 
 const Neumark = artifacts.require("Neumark");
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
-const RoleBasedAccessControl = artifacts.require("RoleBasedAccessControl");
+const RoleBasedAccessPolicy = artifacts.require("RoleBasedAccessPolicy");
 
 export const dayInSeconds = 24 * 60 * 60;
 export const monthInSeconds = 30 * dayInSeconds;
 
 export async function deployControlContracts() {
-  const accessControl = await RoleBasedAccessControl.new();
-  const forkArbiter = await EthereumForkArbiter.new(accessControl.address);
-  return [accessControl, forkArbiter];
+  const accessPolicy = await RoleBasedAccessPolicy.new();
+  const forkArbiter = await EthereumForkArbiter.new(accessPolicy.address);
+  return [accessPolicy, forkArbiter];
 }
 
-export async function deployNeumark(accessControl, forkArbiter) {
-  const neumark = await Neumark.new(accessControl.address, forkArbiter.address);
-  await accessControl.setUserRole(
+export async function deployNeumark(accessPolicy, forkArbiter) {
+  const neumark = await Neumark.new(accessPolicy.address, forkArbiter.address);
+  await accessPolicy.setUserRole(
     EVERYONE,
     roles.snapshotCreator,
     neumark.address,
     TriState.Allow
   );
-  await accessControl.setUserRole(
+  await accessPolicy.setUserRole(
     EVERYONE,
     roles.neumarkIssuer,
     neumark.address,
     TriState.Allow
   );
-  await accessControl.setUserRole(
+  await accessPolicy.setUserRole(
     EVERYONE,
     roles.neumarkBurner,
     neumark.address,
     TriState.Allow
   );
-  await accessControl.setUserRole(
+  await accessPolicy.setUserRole(
     EVERYONE,
     roles.transferAdmin,
     neumark.address,
     TriState.Allow
   );
-  await accessControl.setUserRole(
+  await accessPolicy.setUserRole(
     EVERYONE,
     roles.platformOperatorRepresentative,
     neumark.address,

@@ -1,4 +1,7 @@
 module.exports = {
+  port: 8255,
+  testCommand: 'truffle test --network coverage',
+  skipFiles: ['SnapshotToken/Extensions/Disbursal.sol', 'SnapshotToken/Extensions/Vote.sol', 'Snapshot/Extras/Daily.sol', 'Snapshot/Extras/EveryBlock.sol', 'Snapshot/Extras/Snapshotable.sol'],
   testrpcOptions:
     '--port 8555 --gasLimit 0xfffffffffff --gasPrice 1 \
   --account="0x47be2b1589bb515b76b47c514be96b23cd60ee37e81d63c2ae9c92f7d7667e1a,12300000000000000000000000" \

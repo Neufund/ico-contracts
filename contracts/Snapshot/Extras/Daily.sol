@@ -1,9 +1,11 @@
 pragma solidity 0.4.15;
 
-import './MPolicy.sol';
+import '../MSnapshotPolicy.sol';
 
 
-contract Daily is MPolicy {
+/// @title creates new snapshot id on each day boundary
+/// @dev snapshot id is unix timestamp of current day boundary
+contract Daily is MSnapshotPolicy {
 
     ////////////////////////
     // Public functions
@@ -25,10 +27,10 @@ contract Daily is MPolicy {
     ////////////////////////
 
     //
-    // Implements MPolicy
+    // Implements MSnapshotPolicy
     //
 
-    function mNextSnapshotId()
+    function mCurrentSnapshotId()
         internal
         returns (uint256)
     {
@@ -39,10 +41,5 @@ contract Daily is MPolicy {
         timestamp -= timestamp % 1 days;
 
         return timestamp;
-    }
-
-    function mFlagSnapshotModified()
-        internal
-    {
     }
 }

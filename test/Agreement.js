@@ -4,41 +4,30 @@ import { deployControlContracts } from "./helpers/deployContracts";
 import EvmError from "./helpers/EVMThrow";
 import { TriState } from "./helpers/triState";
 import roles from "./helpers/roles";
-import {
-  promisify,
-  saveBlockchain,
-  restoreBlockchain
-} from "./helpers/evmCommands";
+import { promisify } from "./helpers/evmCommands";
 
 const TestAgreement = artifacts.require("TestAgreement");
 
 contract(
   "Agreement",
   ([_, platformOperatorRepresentative, signer1, signer2]) => {
-    let snapshot;
     let agreement;
-    let accessControl;
+    let accessPolicy;
     let forkArbiter;
 
-    before(async () => {
-      [accessControl, forkArbiter] = await deployControlContracts();
+    beforeEach(async () => {
+      [accessPolicy, forkArbiter] = await deployControlContracts();
 
       agreement = await TestAgreement.new(
-        accessControl.address,
+        accessPolicy.address,
         forkArbiter.address
       );
-      await accessControl.setUserRole(
+      await accessPolicy.setUserRole(
         platformOperatorRepresentative,
         roles.platformOperatorRepresentative,
         agreement.address,
         TriState.Allow
       );
-      snapshot = await saveBlockchain();
-    });
-
-    beforeEach(async () => {
-      await restoreBlockchain(snapshot);
-      snapshot = await saveBlockchain();
     });
 
     async function amendAgreement(agreementUri) {
@@ -77,9 +66,13 @@ contract(
       expect(event.args.accepter).to.eq(signer);
     }
 
-    async function expectAgreementAccepted(signer) {
-      const signed = await agreement.isAgreementSignedBy.call(signer);
-      expect(signed).to.be.true;
+    async function expectAgreementAccepted(signer, signTx) {
+      const signedAtBlock = await agreement.agreementSignedAtBlock.call(signer);
+      if (signTx) {
+        expect(signedAtBlock).to.be.bignumber.eq(signTx.receipt.blockNumber);
+      } else {
+        expect(signedAtBlock).to.be.bignumber.gt(0);
+      }
     }
 
     it("should amend agreement", async () => {
@@ -124,7 +117,7 @@ contract(
       await amendAgreement(agreementUri);
       const tx = await agreement.signMeUp({ from: signer1 });
       expectAgreementAcceptedEvent(tx, signer1);
-      await expectAgreementAccepted(signer1);
+      await expectAgreementAccepted(signer1, tx);
     });
 
     it("should sign agreement once", async () => {
@@ -153,10 +146,10 @@ contract(
       await amendAgreement(agreementUri);
       const tx1 = await agreement.signMeUp({ from: signer1 });
       expectAgreementAcceptedEvent(tx1, signer1);
-      await expectAgreementAccepted(signer1);
+      await expectAgreementAccepted(signer1, tx1);
       const tx2 = await agreement.signMeUpAgain({ from: signer2 });
       expectAgreementAcceptedEvent(tx2, signer2);
-      await expectAgreementAccepted(signer2);
+      await expectAgreementAccepted(signer2, tx2);
     });
 
     it("should reject to sign when no agreement", async () => {
