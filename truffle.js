@@ -48,6 +48,30 @@ module.exports = {
       host: "localhost",
       port: 8545
     },
+    nf_private: {
+      host: "localhost",
+      port: 8545,
+      network_id: "11",
+      gas: 4600000,
+      // gasPrice: 11904761856
+      gasPrice: 21000000000
+    },
+    nf_private_test: {
+      host: "localhost",
+      port: 8545,
+      network_id: "11",
+      gas: 4600000,
+      // gasPrice: 11904761856
+      gasPrice: 21000000000
+    },
+    nf_dev_test: {
+      host: "localhost",
+      port: 8545,
+      network_id: "17",
+      gas: 4600000,
+      // gasPrice: 11904761856
+      gasPrice: 21000000000
+    },
     live: {
       network_id: 1, // Ethereum public network
       host: "192.168.100.30",
