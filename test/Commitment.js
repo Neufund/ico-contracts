@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import EvmError from "./helpers/EVMThrow";
-import { mineBlock, increaseTime } from "./helpers/evmCommands";
+import increaseTime from "./helpers/increaseTime";
 import { latestTimestamp } from "./helpers/latestTime";
 import { eventValue } from "./helpers/events";
 import createAccessPolicy from "./helpers/createAccessPolicy";
@@ -303,7 +303,6 @@ contract(
         await commitment.addWhitelisted(whitelisted, tokens, amounts, {
           from: whitelistAdmin
         });
-
         const totalEur = await neumark.totalEuroUlps();
         const totalNmk = await neumark.totalSupply();
         const whitelistNmk = await neumark.balanceOf(commitment.address);
@@ -842,7 +841,7 @@ contract(
 
       it("should lock EtherToken", async () => {
         await increaseTime(PUBLIC_START);
-        await mineBlock();
+        // await mineBlock();
         const now = await latestTimestamp();
         const expectUnlockDate = now + LOCK_DURATION;
         const epsilon = 3600;
@@ -1265,7 +1264,7 @@ contract(
 
       it("should lock EuroToken", async () => {
         await increaseTime(PUBLIC_START);
-        await mineBlock();
+        // await mineBlock();
         const now = await latestTimestamp();
         const expectUnlockDate = now + LOCK_DURATION;
         const epsilon = 3600;
