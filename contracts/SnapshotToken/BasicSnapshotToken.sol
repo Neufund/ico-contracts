@@ -1,7 +1,8 @@
 pragma solidity 0.4.15;
 
+import '../Standards/IBasicToken.sol';
+import '../Standards/ITokenSnapshots.sol';
 import '../Snapshot/Snapshot.sol';
-import '../Standards/ISnapshotToken.sol';
 import './Helpers/MTokenTransfer.sol';
 import './Helpers/MTokenTransferController.sol';
 
@@ -13,7 +14,8 @@ import './Helpers/MTokenTransferController.sol';
 contract BasicSnapshotToken is
     MTokenTransfer,
     MTokenTransferController,
-    ISnapshotToken,
+    IBasicToken,
+    ITokenSnapshots,
     Snapshot
 {
     ////////////////////////
@@ -22,7 +24,7 @@ contract BasicSnapshotToken is
 
     // `parentToken` is the Token address that was cloned to produce this token;
     //  it will be 0x0 for a token that was not cloned
-    ISnapshotTokenParent private PARENT_TOKEN;
+    ITokenSnapshots private PARENT_TOKEN;
 
     // `parentSnapShotBlock` is the block number from the Parent Token that was
     //  used to determine the initial distribution of the cloned token
@@ -49,7 +51,7 @@ contract BasicSnapshotToken is
     ///  new token
     /// @param parentSnapshotId at which snapshot id clone was created
     function BasicSnapshotToken(
-        ISnapshotTokenParent parentToken,
+        ITokenSnapshots parentToken,
         uint256 parentSnapshotId
     )
         public
@@ -100,12 +102,9 @@ contract BasicSnapshotToken is
     }
 
     //
-    // Implements ISnapshotTokenParent
+    // Implements ITokenSnapshots
     //
 
-    /// @notice Total amount of tokens at a specific `snapshotId`.
-    /// @param snapshotId of snapshot at which totalSupply is queried
-    /// @return The total amount of tokens at `snapshotId`
     function totalSupplyAt(uint256 snapshotId)
         public
         constant
@@ -128,10 +127,6 @@ contract BasicSnapshotToken is
         return 0;
     }
 
-    /// @dev Queries the balance of `owner` at a specific `snapshotId`
-    /// @param owner The address from which the balance will be retrieved
-    /// @param snapshotId of snapshot at which the balance is queried
-    /// @return The balance at `snapshotId`
     function balanceOfAt(address owner, uint256 snapshotId)
         public
         constant
@@ -152,6 +147,14 @@ contract BasicSnapshotToken is
 
         // Default to an empty balance
         return 0;
+    }
+
+    function currentSnapshotId()
+        public
+        constant
+        returns (uint256)
+    {
+        return mCurrentSnapshotId();
     }
 
     ////////////////////////

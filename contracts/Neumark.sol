@@ -68,7 +68,7 @@ contract Neumark is
         AccessRoles()
         Agreement(accessPolicy, forkArbiter)
         StandardSnapshotToken(
-            ISnapshotTokenParent(0x0),
+            ITokenSnapshots(0x0),
             0
         )
         TokenMetadata(
