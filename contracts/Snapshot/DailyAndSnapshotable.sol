@@ -63,12 +63,12 @@ contract DailyAndSnapshotable is
         return _currentSnapshotId;
     }
 
-    function lastSnapshotId()
+    function currentSnapshotId()
         public
         constant
         returns (uint256)
     {
-        return _currentSnapshotId;
+        return mCurrentSnapshotId();
     }
 
     ////////////////////////

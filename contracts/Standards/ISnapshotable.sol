@@ -1,7 +1,7 @@
 pragma solidity 0.4.15;
 
 
-/// @title creates snapshot id when requested
+/// @title advances snapshot id on demand
 /// @dev see Snapshot folder for implementation examples ie. DailyAndSnapshotable contract
 contract ISnapshotable {
 
@@ -22,8 +22,8 @@ contract ISnapshotable {
         public
         returns (uint256);
 
-    /// last created snapshot id
-    function lastSnapshotId()
+    /// upper bound of series snapshotIds for which there's a value
+    function currentSnapshotId()
         public
         constant
         returns (uint256);

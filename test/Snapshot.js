@@ -89,7 +89,7 @@ contract("Snapshot", () => {
     const snapshotId1 = getSnapshotIdFromEvent(tx1);
 
     const tx2 = await snapshotTest.setValue(12345);
-    const snapshotId2 = await snapshotTest.lastSnapshotId.call();
+    const snapshotId2 = await snapshotTest.currentSnapshotId.call();
     prettyPrintGasCost("overwrite last snapshot", tx2);
 
     expect(await snapshotTest.getValue.call(12)).to.be.bignumber.eq(12345);
@@ -247,8 +247,8 @@ contract("Snapshot", () => {
     }
     const daysMsb = new web3.BigNumber(2).pow(128);
     // make sure all boundaries crossed
-    const expectedSnapshotId = day0.add(daysMsb.mul(simulatedDays - 1));
-    expect(await snapshotTest.lastSnapshotId()).to.be.bignumber.eq(
+    const expectedSnapshotId = day0.add(daysMsb.mul(simulatedDays));
+    expect(await snapshotTest.currentSnapshotId()).to.be.bignumber.eq(
       expectedSnapshotId
     );
   });
