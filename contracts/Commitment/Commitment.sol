@@ -635,6 +635,23 @@ contract Commitment is
         }
 
         // We don't do partial tickets
+        // AUDIT[CHF-64] Refactor preconditions in Commitment.commitToken().
+        //   The comment "We don't do partial tickets" is misleading.
+        //   This does not protects against partial tickets. The partial tickets
+        //   are not possible according to the 2 code blocks above.
+        //   This check protects against "empty" tickets when someone is sending
+        //   tokens in Whitelist state not being whitelisted. Then at this point
+        //   remainingEur is still euroUlp.
+        //
+        //   My recommendation for improvement:
+        //   1. Replace `require(remainingEur == 0)` with
+        //      `require(whitelisted || state() == State.Public)` after
+        //      `bool whitelisted = ...`.
+        //   2. Remove `if (whitelisted || state() == State.Public)` condition
+        //      or replace with `if (remainingEur > 0)` as suggested in
+        //      AUDIT[CHF-63].
+        //
+        //   The proposed changes are in audit/CHF-64.patch.
         require(remainingEur == 0);
 
         // We don't go over the cap
