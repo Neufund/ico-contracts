@@ -31,8 +31,9 @@ export default function getConfig(web3, network, accounts) {
   // modify live configuration according to network type
   if (!network.endsWith("_live")) {
     // start ICO in one day
-    const now = Math.floor(Date.now() / 1000);
-    config.START_DATE = now + 1 * 24 * 60 * 60 + 1;
+    const now = Math.floor(new Date().getTime() / 1000);
+    // give 5 minutes for deployment - Commitment deployment will fail if less than 24h from beginning
+    config.START_DATE = now + 1 * 24 * 60 * 60 + 5 * 60;
   }
 
   // assign addresses to roles according to network type

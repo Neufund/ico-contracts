@@ -43,7 +43,8 @@
     "test": "truffle compile && truffle test --network inprocess_test",
     "test:coverage": "SKIP_GAS_CHECKS=true solidity-coverage && codecov",
     "build": "rm -rf ./build && truffle compile --all",
-    "deploy": "truffle migrate --reset --compile-all --network localhost"
+    "deploy": "truffle migrate --reset --compile-all --network localhost",
+    "solctruffle": "./scripts/solctruffle.sh"
   },
   "devDependencies": {
     "eslint-plugin-mocha": "^4.11.0",

@@ -11,7 +11,7 @@ const Commitment = artifacts.require("Commitment");
 
 module.exports = function deployContracts(deployer, network, accounts) {
   // do not deploy testing network
-  if (network === "inprocess_test" || network === "coverage") return;
+  if (network.endsWith("_test") || network === "coverage") return;
   const CONFIG = getConfig(web3, network, accounts);
   console.log("----------------------------------");
   console.log("Deployment parameters:");
@@ -19,6 +19,14 @@ module.exports = function deployContracts(deployer, network, accounts) {
   console.log("----------------------------------");
 
   deployer.then(async () => {
+    // check deployment date
+    if (CONFIG.START_DATE - new Date().getTime() / 1000 < 24 * 60 * 60) {
+      console.log(
+        `Commitment will not deploy due to START DATE ${CONFIG.START_DATE}`
+      );
+      throw new Error();
+    }
+
     console.log("AccessPolicy deployment...");
     await deployer.deploy(RoleBasedAccessPolicy);
     const accessPolicy = await RoleBasedAccessPolicy.deployed();
