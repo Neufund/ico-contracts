@@ -32,7 +32,7 @@ export default function getConfig(web3, network, accounts) {
   if (!network.endsWith("_live")) {
     // start ICO in one day
     const now = Math.floor(Date.now() / 1000);
-    config.START_DATE = now + 1 * 24 * 60 * 60 + 1;
+    config.START_DATE = now + 60;
   }
 
   // assign addresses to roles according to network type

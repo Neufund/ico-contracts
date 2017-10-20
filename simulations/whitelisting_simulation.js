@@ -9,7 +9,7 @@ const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
 const accounts = web3.eth.accounts.slice(0, -1);
 
-const whitelistAdmin = accounts[2];
+const whitelistAdmin = accounts[0];
 
 console.log("Using contract at ", crowdsaleContractAddress);
 const Crowdsale = address => {
