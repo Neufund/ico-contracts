@@ -24,7 +24,6 @@
     "eslint-plugin-prettier": "^2.2.0",
     "eslint-plugin-react": "^7.0.1",
     "ethereumjs-testrpc": "^4.1.1",
-    "git-rev-sync": "^1.9.1",
     "invariant": "^2.2.2",
     "istanbul": "next",
     "lodash": "^4.17.4",
@@ -35,7 +34,8 @@
     "solium": "Neufund/Solium#neufund",
     "swarm-js": "^0.1.35",
     "truffle": "Neufund/truffle#neufund",
-    "web3": "0.20.1"
+    "web3": "0.20.1",
+    "web3-provider-engine": "^13.3.2",
   },
   "scripts": {
     "lint": "yarn lint:solium && yarn lint:eslint",

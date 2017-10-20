@@ -2,6 +2,39 @@ require("babel-register");
 require("babel-polyfill");
 const TestRPC = require("ethereumjs-testrpc");
 
+/**
+  In order to deploy normally without this setup you will have to comment all the code from =====>
+*/
+const Web3 = require("web3");
+
+const ProviderEngine = require("web3-provider-engine");
+const LedgerWalletSubproviderFactory = require("ledger-wallet-provider");
+const Web3Subprovider = require("web3-provider-engine/subproviders/web3.js");
+const FilterSubprovider = require("web3-provider-engine/subproviders/filters.js");
+
+const providerUrl = "http://localhost:8545";
+const nanoPath = "44'/60'/0'/0`";
+
+const web3HttpProvider = new Web3.providers.HttpProvider(providerUrl);
+const engine = new ProviderEngine();
+
+engine.addProvider(new FilterSubprovider());
+engine.addProvider(
+  LedgerWalletSubproviderFactory.default(new Web3(web3HttpProvider), nanoPath)
+);
+engine.addProvider(new Web3Subprovider(web3HttpProvider));
+engine.start();
+/**
+  =====> Till here
+  BUG: truffle cannot finish deployment without commenting the above section
+  apparently for some reason something happens with there default instance regardless
+  if you don't comment this section smart contracts will not deploy
+  TEST CASE:  1 - deploy contracts using truffle's default deployer instance
+              2 - Use Nano engine with truffle console
+              3 - in console commitment = Commitment.at("ICO ADDRESS")
+              4 - in console commitment.amendAgreement("ipfs").then((data) => console.log(data))
+              Transaction was signed succseffully
+*/
 module.exports = {
   networks: {
     localhost: {
@@ -46,7 +79,8 @@ module.exports = {
     simulated_live: {
       network_id: "*",
       host: "localhost",
-      port: 8545
+      port: 8545,
+      provider: engine // Our costume instance
     },
     nf_private: {
       host: "localhost",
