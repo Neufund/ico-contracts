@@ -25,7 +25,6 @@
     "eslint-plugin-prettier": "^2.2.0",
     "eslint-plugin-react": "^7.0.1",
     "ethereumjs-testrpc": "^4.1.1",
-    "git-rev-sync": "^1.9.1",
     "invariant": "^2.2.2",
     "ipfs-api": "https://github.com/Neufund/js-ipfs-api",
     "istanbul": "next",
@@ -38,6 +37,7 @@
     "swarm-js": "^0.1.35",
     "truffle": "Neufund/truffle#neufund",
     "truffle-flattener": "https://github.com/Neufund/truffle-flattener",
+    "web3-provider-engine": "^13.3.2",
     "web3": "0.20.1"
   },
   "scripts": {
