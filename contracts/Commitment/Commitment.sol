@@ -227,33 +227,21 @@ contract Commitment is
         acceptAgreement(msg.sender) // agreement accepted by act of reserving funds in this function
     {
         // Take with EtherToken allowance (if any)
-        uint256 committedWei = ETHER_TOKEN.allowance(msg.sender, this);
+        uint256 allowedWei = ETHER_TOKEN.allowance(msg.sender, this);
+        uint256 committedWei = add(allowedWei, msg.value);
+        uint256 committedEurUlp = convertToEur(committedWei);
+        // check against minimum ticket before proceeding
+        require(committedEurUlp >= MIN_TICKET_EUR);
 
-        // AUDIT[CHF-54] Unnecessary call to ETHER_TOKEN.transferFrom().
-        //   When committedWei is 0, calling ETHER_TOKEN.transferFrom() will
-        //   - waste some amount of gas,
-        //   - produce Transfer event with value 0.
-        //   Checking the value of committedWei before calling transferFrom()
-        //   seems reasonable.
-        assert(ETHER_TOKEN.transferFrom(msg.sender, this, committedWei));
+        if (allowedWei > 0) {
+            assert(ETHER_TOKEN.transferFrom(msg.sender, this, allowedWei));
+        }
+        if (msg.value > 0) {
+            ETHER_TOKEN.deposit.value(msg.value)();
+        }
 
-        // Turn msg.value into EtherToken (if any)
-        // AUDIT[CHF-56] Unnecessary call to ETHER_TOKEN.deposit().
-        //   Similar to AUDIT[CHF-54]. When msg.value is 0, calling
-        //   ETHER_TOKEN.deposit() will
-        //   - waste some amount of gas,
-        //   - produce LogDeposit event with value 0.
-        //   - produce Transfer event from address 0 with value 0.
-        // Wrap the following code with `if (msg.value > 0)` condition.
-        committedWei = add(committedWei, msg.value);
-        ETHER_TOKEN.deposit.value(msg.value)();
-
-        // Get Neumark reward
-        uint256 committedEur = convertToEur(committedWei);
-        // AUDIT[CHF-57] Comment about 0-value commitment.
-        //   Add a comment that commitToken() will fail if committedEur is 0
-        //   or smaller than MIN_TICKET_EUR.
-        var (investorNmk, ticketNmk) = commitToken(committedEur, Token.Ether);
+        // calculate Neumark reward and update Whitelist ticket
+        var (investorNmk, ticketNmk) = commitToken(committedEurUlp, Token.Ether);
         // AUDIT[CHF-58] Move NMK counters updates to Commitment.commitToken().
         //   The Commitment.commitToken() has all the logic related to whitelist
         //   checking. Move the _whitelistEtherNmk subtraction from here and
@@ -271,7 +259,7 @@ contract Commitment is
             msg.sender,
             ETHER_TOKEN,
             committedWei,
-            committedEur,
+            committedEurUlp,
             investorNmk,
             NEUMARK
         );
@@ -283,24 +271,27 @@ contract Commitment is
         onlyStates(State.Whitelist, State.Public)
         acceptAgreement(msg.sender) // agreement accepted by act of reserving funds in this function
     {
-        // Receive Euro tokens
-        uint256 euroUlp = EURO_TOKEN.allowance(msg.sender, this);
-        assert(EURO_TOKEN.transferFrom(msg.sender, this, euroUlp));
+        // receive Euro tokens
+        uint256 committedEurUlp = EURO_TOKEN.allowance(msg.sender, this);
+        // check against minimum ticket before proceeding
+        require(committedEurUlp >= MIN_TICKET_EUR);
 
-        // Get Neumark reward
-        var (investorNmk, ticketNmk) = commitToken(euroUlp, Token.Euro);
+        assert(EURO_TOKEN.transferFrom(msg.sender, this, committedEurUlp));
+
+        // calculate Neumark reward and update Whitelist ticket
+        var (investorNmk, ticketNmk) = commitToken(committedEurUlp, Token.Euro);
         _whitelistEuroNmk = sub(_whitelistEuroNmk, ticketNmk);
 
         // Lock EuroToken
-        EURO_TOKEN.approve(EURO_LOCK, euroUlp);
-        EURO_LOCK.lock(msg.sender, euroUlp, investorNmk);
+        EURO_TOKEN.approve(EURO_LOCK, committedEurUlp);
+        EURO_LOCK.lock(msg.sender, committedEurUlp, investorNmk);
 
         // Log successful commitment
         LogFundsCommitted(
             msg.sender,
             EURO_TOKEN,
-            euroUlp,
-            euroUlp,
+            committedEurUlp,
+            committedEurUlp,
             investorNmk,
             NEUMARK
         );
@@ -349,6 +340,7 @@ contract Commitment is
         constant
         returns (uint256)
     {
+        require(amount < 2**123);
         return fraction(amount, ETH_EUR_FRACTION);
     }
 
@@ -513,13 +505,15 @@ contract Commitment is
     }
 
     /// @dev Token.None should not be passed to 'tokenType' parameter
-    function commitToken(uint256 euroUlp, Token tokenType)
+    function commitToken(uint256 committedEuroUlp, Token tokenType)
         private
         returns (uint256 investorNmk, uint256 ticketNmk)
     {
+        // We don't go over the cap
+        require(add(NEUMARK.totalEuroUlps(), committedEuroUlp) <= CAP_EUR);
+
         // Compute committed funds
-        require(euroUlp >= MIN_TICKET_EUR);
-        uint256 remainingEur = euroUlp;
+        uint256 remainingEur = committedEuroUlp;
         uint256 totalNmk = 0;
 
         // Whitelist part
@@ -548,9 +542,6 @@ contract Commitment is
             totalNmk = add(totalNmk, NEUMARK.issueForEuro(remainingEur));
             remainingEur = 0; // not used later but we should keep variable semantics
         }
-
-        // We don't go over the cap
-        require(NEUMARK.totalEuroUlps() <= CAP_EUR);
 
         // Split the Neumarks
         // AUDIT[CHF-52] Simplify calculating the platform share.
