@@ -13,9 +13,11 @@ import {
   expectTransferEvent,
   ZERO_ADDRESS
 } from "./helpers/tokenTestCases";
+import { snapshotTokenTests } from "./helpers/snapshotTokenTestCases";
 
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
-const Neumark = artifacts.require("./Neumark.sol");
+const Neumark = artifacts.require("TestNeumark");
+const TestSnapshotToken = artifacts.require("TestSnapshotToken");
 
 const BigNumber = web3.BigNumber;
 const AGREEMENT = "ipfs:QmPXME1oRtoT627YKaDPDQ3PwA8tdP9rWuAAweLzqSwAWT";
@@ -32,6 +34,7 @@ contract(
     beforeEach(async () => {
       rbap = await createAccessPolicy([
         { subject: transferAdmin, role: roles.transferAdmin },
+        { subject: deployer, role: roles.snapshotCreator },
         { subject: accounts[1], role: roles.neumarkIssuer },
         { subject: accounts[2], role: roles.neumarkIssuer },
         { subject: accounts[0], role: roles.neumarkBurner },
@@ -373,6 +376,27 @@ contract(
       });
 
       erc223TokenTests(getToken, accounts[1], accounts[2], initialBalanceNmk);
+    });
+
+    describe("ITokenSnapshots tests", () => {
+      const getToken = () => neumark;
+
+      const advanceSnapshotId = async snapshotable => {
+        await snapshotable.createSnapshot({ from: deployer });
+        return snapshotable.currentSnapshotId.call();
+      };
+
+      const createClone = async (parentToken, parentSnapshotId) =>
+        TestSnapshotToken.new(parentToken.address, parentSnapshotId);
+
+      snapshotTokenTests(
+        getToken,
+        createClone,
+        advanceSnapshotId,
+        accounts[0],
+        accounts[1],
+        accounts[2]
+      );
     });
   }
 );
