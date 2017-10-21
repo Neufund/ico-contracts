@@ -91,7 +91,7 @@ contract BasicSnapshotToken is
         constant
         returns (uint256)
     {
-        return getValue(_totalSupplyValues, 0);
+        return totalSupplyAtInternal(mCurrentSnapshotId());
     }
 
     /// @param owner The address that's balance is being requested
@@ -101,7 +101,7 @@ contract BasicSnapshotToken is
         constant
         returns (uint256 balance)
     {
-        return getValue(_balances[owner], 0);
+        return balanceOfAtInternal(owner, mCurrentSnapshotId());
     }
 
     /// @notice Send `amount` tokens to `to` from `msg.sender`
