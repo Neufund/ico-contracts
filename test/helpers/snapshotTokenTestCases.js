@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import EvmError from "./EVMThrow";
+import { ZERO_ADDRESS } from "./tokenTestCases";
 
 export function snapshotTokenTests(
   getToken,
@@ -403,6 +404,9 @@ export function snapshotTokenTests(
       snapshots.push([snapshotId, [supply.sub(1), 1, supply]]);
 
       await expectTokenBalances(clonedClonedToken, snapshots);
+      expect(await clonedClonedToken.parentToken()).to.eq(clonedToken.address);
+      expect(await clonedToken.parentToken()).to.eq(token.address);
+      expect(await token.parentToken()).to.eq(ZERO_ADDRESS);
     });
   });
 }
