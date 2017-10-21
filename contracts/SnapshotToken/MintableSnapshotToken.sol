@@ -2,7 +2,6 @@ pragma solidity 0.4.15;
 
 import './BasicSnapshotToken.sol';
 import './Helpers/MTokenMint.sol';
-import '../Standards/ITokenSnapshots.sol';
 
 
 /// @title basic snapshot token with facitilites to generate and destroy tokens
@@ -20,7 +19,7 @@ contract MintableSnapshotToken is
     /// @param parentToken Address of the parent token, set to 0x0 if it is a
     ///  new token
     function MintableSnapshotToken(
-        ITokenSnapshots parentToken,
+        IClonedTokenParent parentToken,
         uint256 parentSnapshotId
     )
         public

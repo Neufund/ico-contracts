@@ -68,7 +68,7 @@ contract Neumark is
         AccessRoles()
         Agreement(accessPolicy, forkArbiter)
         StandardSnapshotToken(
-            ITokenSnapshots(0x0),
+            IClonedTokenParent(0x0),
             0
         )
         TokenMetadata(
@@ -77,7 +77,7 @@ contract Neumark is
             TOKEN_SYMBOL,
             VERSION
         )
-        DailyAndSnapshotable()
+        DailyAndSnapshotable(0)
         NeumarkIssuanceCurve()
         Reclaimable()
     {

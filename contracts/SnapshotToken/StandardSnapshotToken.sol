@@ -58,7 +58,7 @@ contract StandardSnapshotToken is
     /// param decimalUnits Number of decimals of the new token
     /// param tokenSymbol Token Symbol for the new token
     function StandardSnapshotToken(
-        ITokenSnapshots parentToken,
+        IClonedTokenParent parentToken,
         uint256 parentSnapshotId
     )
         MintableSnapshotToken(parentToken, parentSnapshotId)
