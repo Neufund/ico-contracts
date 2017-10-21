@@ -31,14 +31,6 @@ contract TestSnapshot is
         setValue(_val, x);
     }
 
-    function curDays()
-        public
-        constant
-        returns (uint256)
-    {
-        return block.timestamp / 1 days;
-    }
-
     function hasValue()
         public
         constant
