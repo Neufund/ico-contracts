@@ -53,6 +53,7 @@ contract NeumarkIssuanceCurve {
         returns(uint256 neumarkUlps)
     {
         uint256 cap = NEUMARK_CAP;
+        // NEUMARK_CAP / INITIAL_REWARD_FRACTION
         uint256 d = 230769230769230769230769231;
         uint256 nLim = 8300000000000000000000000000;
 
