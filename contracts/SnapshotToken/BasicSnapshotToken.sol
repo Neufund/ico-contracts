@@ -125,6 +125,75 @@ contract BasicSnapshotToken is
         constant
         returns(uint256)
     {
+        return totalSupplyAtInternal(snapshotId);
+    }
+
+    function balanceOfAt(address owner, uint256 snapshotId)
+        public
+        constant
+        returns (uint256)
+    {
+        return balanceOfAtInternal(owner, snapshotId);
+    }
+
+    function currentSnapshotId()
+        public
+        constant
+        returns (uint256)
+    {
+        return mCurrentSnapshotId();
+    }
+
+    //
+    // Implements IClonedTokenParent
+    //
+
+    function parentToken()
+        public
+        constant
+        returns(IClonedTokenParent parent)
+    {
+        return PARENT_TOKEN;
+    }
+
+    /// @return snapshot at wchich initial token distribution was taken
+    function parentSnapshotId()
+        public
+        constant
+        returns(uint256 snapshotId)
+    {
+        return PARENT_SNAPSHOT_ID;
+    }
+
+    //
+    // Other public functions
+    //
+
+    /// @notice gets all token balances of 'owner'
+    /// @dev intended to be called via eth_call where gas limit is not an issue
+    function allBalancesOf(address owner)
+        external
+        constant
+        returns (uint256[2][] balances)
+    {
+        // copy to memory
+        Values[] memory values = _balances[owner];
+        // in memory structs have simple layout where every item occupies uint256
+        assembly {
+            balances := values
+        }
+        return balances;
+    }
+
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
+
+    function totalSupplyAtInternal(uint256 snapshotId)
+        public
+        constant
+        returns(uint256)
+    {
         Values[] storage values = _totalSupplyValues;
 
         // If there is a value, return it, reverts if value is in the future
@@ -134,16 +203,17 @@ contract BasicSnapshotToken is
 
         // Try parent contract at or before the fork
         if (address(PARENT_TOKEN) != 0) {
-            // TODO: this is certainly wrong, should be totalSupplyAt(min(PARENT_SNAPSHOT_ID, snapshotId))
-            return PARENT_TOKEN.totalSupplyAt(PARENT_SNAPSHOT_ID);
+            uint256 earlierSnapshotId = PARENT_SNAPSHOT_ID > snapshotId ? snapshotId : PARENT_SNAPSHOT_ID;
+            return PARENT_TOKEN.totalSupplyAt(earlierSnapshotId);
         }
 
         // Default to an empty balance
         return 0;
     }
 
-    function balanceOfAt(address owner, uint256 snapshotId)
-        public
+    // get balance at snapshot if with continuation in parent token
+    function balanceOfAtInternal(address owner, uint256 snapshotId)
+        internal
         constant
         returns (uint256)
     {
@@ -155,26 +225,14 @@ contract BasicSnapshotToken is
         }
 
         // Try parent contract at or before the fork
-        if (address(PARENT_TOKEN) != 0) {
-            // TODO: this is certainly wrong, should be balanceOfAt(owner, min(PARENT_SNAPSHOT_ID, snapshotId))
-            return PARENT_TOKEN.balanceOfAt(owner, PARENT_SNAPSHOT_ID);
+        if (PARENT_TOKEN != address(0)) {
+            uint256 earlierSnapshotId = PARENT_SNAPSHOT_ID > snapshotId ? snapshotId : PARENT_SNAPSHOT_ID;
+            return PARENT_TOKEN.balanceOfAt(owner, earlierSnapshotId);
         }
 
         // Default to an empty balance
         return 0;
     }
-
-    function currentSnapshotId()
-        public
-        constant
-        returns (uint256)
-    {
-        return mCurrentSnapshotId();
-    }
-
-    ////////////////////////
-    // Internal functions
-    ////////////////////////
 
     //
     // Implements MTokenTransfer
