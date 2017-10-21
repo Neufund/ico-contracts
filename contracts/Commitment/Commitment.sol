@@ -598,6 +598,8 @@ contract Commitment is
         //   Add assert(tokenType != Token.None) or add a comment stating
         //   that passing Token.None is not allowed.
         bool whitelisted = ticket.token == tokenType;
+        require(whitelisted || state() == State.Public);
+
         bool whitelistActiveForToken = tokenType == Token.Euro || state() == State.Whitelist;
         if (whitelisted && whitelistActiveForToken) {
             uint256 ticketEur = min(remainingEur, ticket.amountEur);
@@ -617,36 +619,11 @@ contract Commitment is
             totalNmk = add(totalNmk, ticketNmk);
         }
 
-        // Curve
-        // AUDIT[CHF-63] Add condition remainingEur > 0 in commitToken().
-        //   The following code block make sense only for remainingEur > 0.
-        //   Adding this condition makes the code easier to understand and
-        //   avoids making a call to NEUMARK.issueForEuro() in the opposite
-        //   case.
-        if (whitelisted || state() == State.Public) {
+        // issue Neumarks against curve for amount left after pre-defined ticket was realized
+        if (remainingEur > 0) {
             totalNmk = add(totalNmk, NEUMARK.issueForEuro(remainingEur));
-            remainingEur = 0;
+            remainingEur = 0; // not used later but we should keep variable semantics
         }
-
-        // We don't do partial tickets
-        // AUDIT[CHF-64] Refactor preconditions in Commitment.commitToken().
-        //   The comment "We don't do partial tickets" is misleading.
-        //   This does not protects against partial tickets. The partial tickets
-        //   are not possible according to the 2 code blocks above.
-        //   This check protects against "empty" tickets when someone is sending
-        //   tokens in Whitelist state not being whitelisted. Then at this point
-        //   remainingEur is still euroUlp.
-        //
-        //   My recommendation for improvement:
-        //   1. Replace `require(remainingEur == 0)` with
-        //      `require(whitelisted || state() == State.Public)` after
-        //      `bool whitelisted = ...`.
-        //   2. Remove `if (whitelisted || state() == State.Public)` condition
-        //      or replace with `if (remainingEur > 0)` as suggested in
-        //      AUDIT[CHF-63].
-        //
-        //   The proposed changes are in audit/CHF-64.patch.
-        require(remainingEur == 0);
 
         // We don't go over the cap
         require(NEUMARK.totalEuroUlps() <= CAP_EUR);
