@@ -130,7 +130,7 @@ contract(
       });
     });
 
-    function expectFundsCommitedEvent(
+    function expectFundsCommittedEvent(
       tx,
       investor,
       amount,
@@ -138,7 +138,7 @@ contract(
       amountEur,
       grantedAmount
     ) {
-      const event = eventValue(tx, "LogFundsCommited");
+      const event = eventValue(tx, "LogFundsCommitted");
       expect(event).to.exist;
       expect(event.args.investor).to.be.eq(investor);
       expect(event.args.amount).to.be.bignumber.eq(amount);
@@ -673,7 +673,7 @@ contract(
         });
 
         await prettyPrintGasCost("commit", tx);
-        expectFundsCommitedEvent(
+        expectFundsCommittedEvent(
           tx,
           investor,
           amountEth,
@@ -695,7 +695,7 @@ contract(
           from: investor,
           value: part2
         });
-        expectFundsCommitedEvent(
+        expectFundsCommittedEvent(
           tx,
           investor,
           amountEth,
@@ -716,7 +716,7 @@ contract(
           from: investor,
           value: 0
         });
-        expectFundsCommitedEvent(
+        expectFundsCommittedEvent(
           tx,
           investor,
           amountEth,
@@ -902,7 +902,7 @@ contract(
         });
 
         await prettyPrintGasCost("commit", tx);
-        expectFundsCommitedEvent(
+        expectFundsCommittedEvent(
           tx,
           investor,
           amountEth,
@@ -1120,7 +1120,7 @@ contract(
         });
 
         await prettyPrintGasCost("commit", tx);
-        expectFundsCommitedEvent(
+        expectFundsCommittedEvent(
           tx,
           investor,
           amountEur,
@@ -1288,7 +1288,7 @@ contract(
         });
 
         await prettyPrintGasCost("commit", tx);
-        expectFundsCommitedEvent(
+        expectFundsCommittedEvent(
           tx,
           investor,
           amountEur,

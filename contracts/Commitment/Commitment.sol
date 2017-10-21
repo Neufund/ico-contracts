@@ -33,10 +33,10 @@ contract Commitment is
     // Pre-allocated tickets with a pre-allocated neumark reward.
     struct WhitelistTicket {
 
-        // The currency the investor wants and is allowed to commited.
+        // The currency the investor wants and is allowed to committed.
         Token token;
 
-        // The amount the investor commited. The investor can invest more or
+        // The amount the investor committed. The investor can invest more or
         // less than this amount. In units of least precision of the token.
         uint256 amountEur;
 
@@ -104,16 +104,10 @@ contract Commitment is
     ////////////////////////
 
     /// on every commitment transaction
-    /// `investor` commited `amount` in `paymentToken` currency which was
+    /// `investor` committed `amount` in `paymentToken` currency which was
     /// converted to `eurEquivalent` that generates `grantedAmount` of
     /// `ofToken`.
-    // AUDIT[CHF-23]: Typo: commited -> committed.
-    //               This typo is all over the place but here is very important,
-    //               because the name LogFundsCommited is public and will be
-    //               used by external applications.
-    //               The typo "commited" should be fixed everywhere with
-    //               a single find&replace pass.
-    event LogFundsCommited(
+    event LogFundsCommitted(
         address indexed investor,
         address indexed paymentToken,
         uint256 amount,
@@ -233,15 +227,15 @@ contract Commitment is
         acceptAgreement(msg.sender) // agreement accepted by act of reserving funds in this function
     {
         // Take with EtherToken allowance (if any)
-        uint256 commitedWei = ETHER_TOKEN.allowance(msg.sender, this);
+        uint256 committedWei = ETHER_TOKEN.allowance(msg.sender, this);
 
         // AUDIT[CHF-54] Unnecessary call to ETHER_TOKEN.transferFrom().
-        //   When commitedWei is 0, calling ETHER_TOKEN.transferFrom() will
+        //   When committedWei is 0, calling ETHER_TOKEN.transferFrom() will
         //   - waste some amount of gas,
         //   - produce Transfer event with value 0.
-        //   Checking the value of commitedWei before calling transferFrom()
+        //   Checking the value of committedWei before calling transferFrom()
         //   seems reasonable.
-        assert(ETHER_TOKEN.transferFrom(msg.sender, this, commitedWei));
+        assert(ETHER_TOKEN.transferFrom(msg.sender, this, committedWei));
 
         // Turn msg.value into EtherToken (if any)
         // AUDIT[CHF-56] Unnecessary call to ETHER_TOKEN.deposit().
@@ -251,15 +245,15 @@ contract Commitment is
         //   - produce LogDeposit event with value 0.
         //   - produce Transfer event from address 0 with value 0.
         // Wrap the following code with `if (msg.value > 0)` condition.
-        commitedWei = add(commitedWei, msg.value);
+        committedWei = add(committedWei, msg.value);
         ETHER_TOKEN.deposit.value(msg.value)();
 
         // Get Neumark reward
-        uint256 commitedEur = convertToEur(commitedWei);
+        uint256 committedEur = convertToEur(committedWei);
         // AUDIT[CHF-57] Comment about 0-value commitment.
-        //   Add a comment that commitToken() will fail if commitedEur is 0
+        //   Add a comment that commitToken() will fail if committedEur is 0
         //   or smaller than MIN_TICKET_EUR.
-        var (investorNmk, ticketNmk) = commitToken(commitedEur, Token.Ether);
+        var (investorNmk, ticketNmk) = commitToken(committedEur, Token.Ether);
         // AUDIT[CHF-58] Move NMK counters updates to Commitment.commitToken().
         //   The Commitment.commitToken() has all the logic related to whitelist
         //   checking. Move the _whitelistEtherNmk subtraction from here and
@@ -269,15 +263,15 @@ contract Commitment is
         _whitelistEtherNmk = sub(_whitelistEtherNmk, ticketNmk);
 
         // Lock EtherToken
-        ETHER_TOKEN.approve(ETHER_LOCK, commitedWei);
-        ETHER_LOCK.lock(msg.sender, commitedWei, investorNmk);
+        ETHER_TOKEN.approve(ETHER_LOCK, committedWei);
+        ETHER_LOCK.lock(msg.sender, committedWei, investorNmk);
 
         // Log successful commitment
-        LogFundsCommited(
+        LogFundsCommitted(
             msg.sender,
             ETHER_TOKEN,
-            commitedWei,
-            commitedEur,
+            committedWei,
+            committedEur,
             investorNmk,
             NEUMARK
         );
@@ -302,7 +296,7 @@ contract Commitment is
         EURO_LOCK.lock(msg.sender, euroUlp, investorNmk);
 
         // Log successful commitment
-        LogFundsCommited(
+        LogFundsCommitted(
             msg.sender,
             EURO_TOKEN,
             euroUlp,
@@ -523,7 +517,7 @@ contract Commitment is
         private
         returns (uint256 investorNmk, uint256 ticketNmk)
     {
-        // Compute commited funds
+        // Compute committed funds
         require(euroUlp >= MIN_TICKET_EUR);
         uint256 remainingEur = euroUlp;
         uint256 totalNmk = 0;
