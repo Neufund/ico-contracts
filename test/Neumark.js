@@ -129,7 +129,7 @@ contract(
       // Burn a third the Neumarks
       const toBurn = neumarks.div(3).round();
       const toBurnUlps = NMK_DECIMALS.mul(toBurn);
-      const burned = await neumark.burnNeumark(toBurnUlps, {
+      const burned = await neumark.burn(toBurnUlps, {
         from: accounts[1]
       });
       await prettyPrintGasCost("Burn", burned);
@@ -293,7 +293,7 @@ contract(
         from: accounts[1]
       });
       const balance = await neumark.balanceOf.call(accounts[1]);
-      await neumark.burnNeumark(balance.sub(initialBalanceNmk), {
+      await neumark.burn(balance.sub(initialBalanceNmk), {
         from: accounts[1]
       });
       // every ulp counts

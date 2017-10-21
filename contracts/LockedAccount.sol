@@ -474,7 +474,7 @@ contract LockedAccount is
                 }
 
                 // burn neumarks corresponding to unspent funds
-                NEUMARK.burnNeumark(a.neumarksDue);
+                NEUMARK.burn(a.neumarksDue);
 
                 // take the penalty if before unlockDate
                 if (currentTime() < a.unlockDate) {

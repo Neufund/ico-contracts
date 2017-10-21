@@ -103,7 +103,7 @@ contract Neumark is
         require(success);
     }
 
-    function burnNeumark(uint256 neumarkUlps)
+    function burn(uint256 neumarkUlps)
         public
         only(ROLE_NEUMARK_BURNER)
         returns (uint256)
