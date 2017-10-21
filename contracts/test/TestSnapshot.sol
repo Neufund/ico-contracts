@@ -15,6 +15,13 @@ contract TestSnapshot is
     Values[] private _val;
 
     ////////////////////////
+    // Constructor
+    ////////////////////////
+    function TestSnapshot(uint256 start)
+        DailyAndSnapshotable(start)
+    {}
+
+    ////////////////////////
     // Public functions
     ////////////////////////}
 
