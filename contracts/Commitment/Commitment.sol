@@ -202,7 +202,7 @@ contract Commitment is
     }
 
     /// @notice used by WHITELIST_ADMIN to kill commitment process before it starts
-    ///     @dev by selfdestruct we make all LockContracts controlled by this contract dysfunctional
+    /// @dev by selfdestruct we make all LockContracts controlled by this contract dysfunctional
     function abort()
         external
         withTimedTransitions()
@@ -241,14 +241,7 @@ contract Commitment is
         }
 
         // calculate Neumark reward and update Whitelist ticket
-        var (investorNmk, ticketNmk) = commitToken(committedEurUlp, Token.Ether);
-        // AUDIT[CHF-58] Move NMK counters updates to Commitment.commitToken().
-        //   The Commitment.commitToken() has all the logic related to whitelist
-        //   checking. Move the _whitelistEtherNmk subtraction from here and
-        //   _whitelistEuroNmk subtraction from commitEuro() there to
-        //   commitToken() too. This will also simplify the return type of
-        //   commitToken().
-        _whitelistEtherNmk = sub(_whitelistEtherNmk, ticketNmk);
+        uint256 investorNmk = commitToken(committedEurUlp, Token.Ether);
 
         // Lock EtherToken
         ETHER_TOKEN.approve(ETHER_LOCK, committedWei);
@@ -279,8 +272,7 @@ contract Commitment is
         assert(EURO_TOKEN.transferFrom(msg.sender, this, committedEurUlp));
 
         // calculate Neumark reward and update Whitelist ticket
-        var (investorNmk, ticketNmk) = commitToken(committedEurUlp, Token.Euro);
-        _whitelistEuroNmk = sub(_whitelistEuroNmk, ticketNmk);
+        uint256 investorNmk = commitToken(committedEurUlp, Token.Euro);
 
         // Lock EuroToken
         EURO_TOKEN.approve(EURO_LOCK, committedEurUlp);
@@ -507,7 +499,7 @@ contract Commitment is
     /// @dev Token.None should not be passed to 'tokenType' parameter
     function commitToken(uint256 committedEuroUlp, Token tokenType)
         private
-        returns (uint256 investorNmk, uint256 ticketNmk)
+        returns (uint256 investorNmk)
     {
         // We don't go over the cap
         require(add(NEUMARK.totalEuroUlps(), committedEuroUlp) <= CAP_EUR);
@@ -515,6 +507,7 @@ contract Commitment is
         // Compute committed funds
         uint256 remainingEur = committedEuroUlp;
         uint256 totalNmk = 0;
+        uint256 ticketNmk = 0;
 
         // Whitelist part
         WhitelistTicket storage ticket = _whitelist[msg.sender];
@@ -563,6 +556,13 @@ contract Commitment is
         NEUMARK.distributeNeumark(msg.sender, investorNmk);
         NEUMARK.distributeNeumark(PLATFORM_WALLET, platformNmk);
 
-        return (investorNmk, ticketNmk);
+        if (ticketNmk > 0) {
+            if (tokenType == Token.Euro) {
+                _whitelistEuroNmk = sub(_whitelistEuroNmk, ticketNmk);
+            } else {
+                _whitelistEtherNmk = sub(_whitelistEtherNmk, ticketNmk);
+            }
+        }
+        return investorNmk;
     }
 }
