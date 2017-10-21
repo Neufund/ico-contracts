@@ -1,14 +1,23 @@
 pragma solidity 0.4.15;
 
-import './MStateMachine.sol';
-
 
 // AUDIT[CHF-06]: Missing documenting comment, but the contract name
 //                tells a lot what this is about.
 //
 // Before --> Whitelist --> Public --> Finished
 //
-contract StateMachine is MStateMachine {
+contract StateMachine {
+
+    ////////////////////////
+    // Types
+    ////////////////////////
+
+    enum State {
+        Before,
+        Whitelist,
+        Public,
+        Finished
+    }
 
     ////////////////////////
     // Mutable state
@@ -96,4 +105,9 @@ contract StateMachine is MStateMachine {
             oldState == State.Public && newState == State.Finished
         );
     }
+
+    /// @notice gets called after every state transition.
+    /// @dev may not change state, transitionTo will revert on that condition
+    function mAfterTransition(State oldState, State newState)
+        internal;
 }
