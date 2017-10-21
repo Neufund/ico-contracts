@@ -1,7 +1,7 @@
 pragma solidity 0.4.15;
 
 import '../Standards/IBasicToken.sol';
-import '../Standards/ITokenSnapshots.sol';
+import '../Standards/IClonedTokenParent.sol';
 import '../Snapshot/Snapshot.sol';
 import './Helpers/MTokenTransfer.sol';
 import './Helpers/MTokenTransferController.sol';
@@ -15,18 +15,18 @@ contract BasicSnapshotToken is
     MTokenTransfer,
     MTokenTransferController,
     IBasicToken,
-    ITokenSnapshots,
+    IClonedTokenParent,
     Snapshot
 {
     ////////////////////////
     // Immutable state
     ////////////////////////
 
-    // `parentToken` is the Token address that was cloned to produce this token;
+    // `PARENT_TOKEN` is the Token address that was cloned to produce this token;
     //  it will be 0x0 for a token that was not cloned
-    ITokenSnapshots private PARENT_TOKEN;
+    IClonedTokenParent private PARENT_TOKEN;
 
-    // `parentSnapShotBlock` is the block number from the Parent Token that was
+    // `PARENT_SNAPSHOT_ID` is the snapshot id from the Parent Token that was
     //  used to determine the initial distribution of the cloned token
     uint256 private PARENT_SNAPSHOT_ID;
 
@@ -49,16 +49,31 @@ contract BasicSnapshotToken is
     /// @notice Constructor to create snapshot token
     /// @param parentToken Address of the parent token, set to 0x0 if it is a
     ///  new token
-    /// @param parentSnapshotId at which snapshot id clone was created
+    /// @param parentSnapshotId at which snapshot id clone was created, set to 0 to clone at upper bound
+    /// @dev please not that as long as cloned token does not overwrite value at current snapshot id, it will refer
+    ///     to parent token at which this snapshot still may change until snapshot id increases. for that time tokens are coupled
+    ///     this is prevented by parentSnapshotId value of parentToken.currentSnapshotId() - 1 being the maxiumum
+    ///     see SnapshotToken.js test to learn consequences coupling has.
     function BasicSnapshotToken(
-        ITokenSnapshots parentToken,
+        IClonedTokenParent parentToken,
         uint256 parentSnapshotId
     )
         public
         Snapshot()
     {
         PARENT_TOKEN = parentToken;
-        PARENT_SNAPSHOT_ID = parentSnapshotId;
+        if (parentToken == address(0)) {
+            require(parentSnapshotId == 0);
+        } else {
+            if (parentSnapshotId == 0) {
+                require(parentToken.currentSnapshotId() > 0);
+                PARENT_SNAPSHOT_ID = parentToken.currentSnapshotId() - 1;
+            } else {
+                // make sure parentSnapshotId is not from the future
+                require(parentSnapshotId < parentToken.currentSnapshotId());
+                PARENT_SNAPSHOT_ID = parentSnapshotId;
+            }
+        }
     }
 
     ////////////////////////
