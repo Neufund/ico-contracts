@@ -30,8 +30,6 @@ contract StateMachine is MStateMachine {
     // Modifiers
     ////////////////////////
 
-    // AUDIT[CHF-10]: A suggestion for renaming modifiers:
-    //                inState, inAnyState, notInState.
     modifier onlyState(State state) {
         require(_state == state);
         _;
@@ -42,24 +40,11 @@ contract StateMachine is MStateMachine {
         _;
     }
 
-    // AUDIT[CHF-11]: This is unused. Remove.
-    modifier onlyStates3(State state0, State state1, State state2) {
-        require(_state == state0 || _state == state1 || _state == state2);
-        _;
-    }
-
     /// @dev Multiple states can be handled by adding more modifiers.
-    // AUDIT[CHF-11]: This is unused. Remove.
-    modifier notInState(State state) {
+    /* modifier notInState(State state) {
         require(_state != state);
         _;
-    }
-
-    // AUDIT[CHF-11]: This is unused. Remove.
-    modifier transitionsTo(State newState) {
-        _;
-        transitionTo(newState);
-    }
+    }*/
 
     ////////////////////////
     // Constructor
