@@ -38,7 +38,7 @@ contract Commitment is
 
         // The amount the investor committed. The investor can invest more or
         // less than this amount. In units of least precision of the token.
-        uint256 amountEur;
+        uint256 amountEurUlps;
 
         // The amount of Neumark reward for this commitment (computed by
         // contract). Investor can still invest more, but that would be at
@@ -74,10 +74,10 @@ contract Commitment is
 
     // maximum amount of EuroToken that can be committed to generate Neumark reward
     // indirectly this is cap for Neumark amount generated as it is checked against NEUMARK.totalEuroUlps()
-    uint256 private CAP_EUR;
+    uint256 private CAP_EUR_ULPS;
 
     // minimum amount of EuroToken that may be committed
-    uint256 private MIN_TICKET_EUR;
+    uint256 private MIN_TICKET_EUR_ULPS;
 
     // fixed ETH/EUR price during the commitment, used to convert ETH into EUR, see convertToEur
     uint256 private ETH_EUR_FRACTION;
@@ -171,8 +171,8 @@ contract Commitment is
         EURO_TOKEN = euroToken;
         ETHER_LOCK = etherLock;
         EURO_LOCK = euroLock;
-        CAP_EUR = capEurUlps;
-        MIN_TICKET_EUR = minTicketEurUlps;
+        CAP_EUR_ULPS = capEurUlps;
+        MIN_TICKET_EUR_ULPS = minTicketEurUlps;
         ETH_EUR_FRACTION = ethEurFraction;
     }
 
@@ -198,7 +198,7 @@ contract Commitment is
         }
 
         // We don't go over the cap
-        require(NEUMARK.totalEuroUlps() <= CAP_EUR);
+        require(NEUMARK.totalEuroUlps() <= CAP_EUR_ULPS);
     }
 
     /// @notice used by WHITELIST_ADMIN to kill commitment process before it starts
@@ -225,32 +225,32 @@ contract Commitment is
         acceptAgreement(msg.sender) // agreement accepted by act of reserving funds in this function
     {
         // Take with EtherToken allowance (if any)
-        uint256 allowedWei = ETHER_TOKEN.allowance(msg.sender, this);
-        uint256 committedWei = add(allowedWei, msg.value);
-        uint256 committedEurUlp = convertToEur(committedWei);
+        uint256 allowedAmount = ETHER_TOKEN.allowance(msg.sender, this);
+        uint256 committedAmount = add(allowedAmount, msg.value);
+        uint256 committedEurUlps = convertToEur(committedAmount);
         // check against minimum ticket before proceeding
-        require(committedEurUlp >= MIN_TICKET_EUR);
+        require(committedEurUlps >= MIN_TICKET_EUR_ULPS);
 
-        if (allowedWei > 0) {
-            assert(ETHER_TOKEN.transferFrom(msg.sender, this, allowedWei));
+        if (allowedAmount > 0) {
+            assert(ETHER_TOKEN.transferFrom(msg.sender, this, allowedAmount));
         }
         if (msg.value > 0) {
             ETHER_TOKEN.deposit.value(msg.value)();
         }
 
         // calculate Neumark reward and update Whitelist ticket
-        uint256 investorNmk = getInvestorNeumarkReward(committedEurUlp, Token.Ether);
+        uint256 investorNmk = getInvestorNeumarkReward(committedEurUlps, Token.Ether);
 
         // Lock EtherToken
-        ETHER_TOKEN.approve(ETHER_LOCK, committedWei);
-        ETHER_LOCK.lock(msg.sender, committedWei, investorNmk);
+        ETHER_TOKEN.approve(ETHER_LOCK, committedAmount);
+        ETHER_LOCK.lock(msg.sender, committedAmount, investorNmk);
 
         // Log successful commitment
         LogFundsCommitted(
             msg.sender,
             ETHER_TOKEN,
-            committedWei,
-            committedEurUlp,
+            committedAmount,
+            committedEurUlps,
             investorNmk,
             NEUMARK
         );
@@ -263,37 +263,37 @@ contract Commitment is
         acceptAgreement(msg.sender) // agreement accepted by act of reserving funds in this function
     {
         // receive Euro tokens
-        uint256 committedEurUlp = EURO_TOKEN.allowance(msg.sender, this);
+        uint256 committedEurUlps = EURO_TOKEN.allowance(msg.sender, this);
         // check against minimum ticket before proceeding
-        require(committedEurUlp >= MIN_TICKET_EUR);
+        require(committedEurUlps >= MIN_TICKET_EUR_ULPS);
 
-        assert(EURO_TOKEN.transferFrom(msg.sender, this, committedEurUlp));
+        assert(EURO_TOKEN.transferFrom(msg.sender, this, committedEurUlps));
 
         // calculate Neumark reward and update Whitelist ticket
-        uint256 investorNmk = getInvestorNeumarkReward(committedEurUlp, Token.Euro);
+        uint256 investorNmk = getInvestorNeumarkReward(committedEurUlps, Token.Euro);
 
         // Lock EuroToken
-        EURO_TOKEN.approve(EURO_LOCK, committedEurUlp);
-        EURO_LOCK.lock(msg.sender, committedEurUlp, investorNmk);
+        EURO_TOKEN.approve(EURO_LOCK, committedEurUlps);
+        EURO_LOCK.lock(msg.sender, committedEurUlps, investorNmk);
 
         // Log successful commitment
         LogFundsCommitted(
             msg.sender,
             EURO_TOKEN,
-            committedEurUlp,
-            committedEurUlp,
+            committedEurUlps,
+            committedEurUlps,
             investorNmk,
             NEUMARK
         );
     }
 
-    function estimateNeumarkReward(uint256 amountEth)
+    function estimateNeumarkReward(uint256 amount)
         external
         constant
         returns (uint256)
     {
-        uint256 amountEur = convertToEur(amountEth);
-        uint256 rewardNmk = NEUMARK.incremental(amountEur);
+        uint256 amountEurUlps = convertToEur(amount);
+        uint256 rewardNmk = NEUMARK.incremental(amountEurUlps);
         var (, investorNmk) = calculateNeumarkDistribtion(rewardNmk);
         return investorNmk;
     }
@@ -309,11 +309,6 @@ contract Commitment is
     /// Note: Considering the max possible ETH_EUR_FRACTION value, the max
     ///       amount of ETH (not wei) that is safe to be passed as the argument
     ///       is ~10**37 (~2**123).
-    // AUDIT[CHF-43] Consistent amount unit names.
-    //   Use suffix `Upls` whenever function/variable represents Euro units of
-    //   last precision (probably everywhere).
-    //   Also, consider consistent naming instead of mixture of
-    //   amount, amountEur, euro, euroUlps, amountEth, amountEthWeis, etc.
     function convertToEur(uint256 amount)
         public
         constant
@@ -360,7 +355,7 @@ contract Commitment is
         constant
         returns (uint256)
     {
-        return CAP_EUR;
+        return CAP_EUR_ULPS;
     }
 
     function minTicketEur()
@@ -368,7 +363,7 @@ contract Commitment is
         constant
         returns (uint256)
     {
-        return MIN_TICKET_EUR;
+        return MIN_TICKET_EUR_ULPS;
     }
 
     function platformOperatorNeumarkRewardShare()
@@ -392,11 +387,11 @@ contract Commitment is
     function whitelistTicket(address investor)
         public
         constant
-        returns (Token token, uint256 ticketEur, uint256 neumarkReward)
+        returns (Token token, uint256 ticketEurUlps, uint256 investorNmk)
     {
         WhitelistTicket storage ticket = _whitelist[investor];
-        var (, investorNmk) = calculateNeumarkDistribtion(ticket.rewardNmk);
-        return (ticket.token, ticket.amountEur, investorNmk);
+        (, investorNmk) = calculateNeumarkDistribtion(ticket.rewardNmk);
+        return (ticket.token, ticket.amountEurUlps, investorNmk);
     }
 
     ////////////////////////
@@ -450,8 +445,8 @@ contract Commitment is
         require(isEuro || isEther);
         // Note: amount can be zero, indicating no pre-allocated NMK,
         //       but still the ability to commit before the public.
-        uint256 amountEur = isEuro ? amount : convertToEur(amount);
-        require(amount == 0 || amountEur >= MIN_TICKET_EUR);
+        uint256 amountEurUlps = isEuro ? amount : convertToEur(amount);
+        require(amount == 0 || amountEurUlps >= MIN_TICKET_EUR_ULPS);
 
         // Register the investor on the list of investors to keep them
         // in order.
@@ -461,7 +456,7 @@ contract Commitment is
         // the pre-allocated tickets.
         _whitelist[investor] = WhitelistTicket({
             token: token,
-            amountEur: amountEur,
+            amountEurUlps: amountEurUlps,
             rewardNmk: 0
         });
 
@@ -469,7 +464,7 @@ contract Commitment is
         // Because `_whitelist[investor].token == Token.None` does not not hold
         // any more, this function is protected against reentrancy attack
         // conducted from NEUMARK.issueForEuro().
-        uint256 rewardNmk = NEUMARK.issueForEuro(amountEur);
+        uint256 rewardNmk = NEUMARK.issueForEuro(amountEurUlps);
 
         // Record the number of Neumarks for investor.
         _whitelist[investor].rewardNmk = rewardNmk;
@@ -483,15 +478,15 @@ contract Commitment is
     }
 
     /// @dev Token.None should not be passed to 'tokenType' parameter
-    function getInvestorNeumarkReward(uint256 committedEuroUlp, Token tokenType)
+    function getInvestorNeumarkReward(uint256 committedEurUlps, Token tokenType)
         private
         returns (uint256)
     {
         // We don't go over the cap
-        require(add(NEUMARK.totalEuroUlps(), committedEuroUlp) <= CAP_EUR);
+        require(add(NEUMARK.totalEuroUlps(), committedEurUlps) <= CAP_EUR_ULPS);
 
         // Compute committed funds
-        uint256 remainingEur = committedEuroUlp;
+        uint256 remainingEurUlps = committedEurUlps;
         uint256 rewardNmk = 0;
         uint256 ticketNmk = 0;
 
@@ -503,23 +498,23 @@ contract Commitment is
 
         bool whitelistActiveForToken = tokenType == Token.Euro || state() == State.Whitelist;
         if (whitelisted && whitelistActiveForToken) {
-            uint256 ticketEur = min(remainingEur, ticket.amountEur);
+            uint256 ticketEurUlps = min(remainingEurUlps, ticket.amountEurUlps);
             ticketNmk = proportion(
                 ticket.rewardNmk,
-                ticketEur,
-                ticket.amountEur
+                ticketEurUlps,
+                ticket.amountEurUlps
             );
-            ticket.amountEur = sub(ticket.amountEur, ticketEur);
+            ticket.amountEurUlps = sub(ticket.amountEurUlps, ticketEurUlps);
             ticket.rewardNmk = sub(ticket.rewardNmk, ticketNmk);
-            remainingEur = sub(remainingEur, ticketEur);
+            remainingEurUlps = sub(remainingEurUlps, ticketEurUlps);
 
             rewardNmk += ticketNmk;
         }
 
         // issue Neumarks against curve for amount left after pre-defined ticket was realized
-        if (remainingEur > 0) {
-            rewardNmk = add(rewardNmk, NEUMARK.issueForEuro(remainingEur));
-            remainingEur = 0; // not used later but we should keep variable semantics
+        if (remainingEurUlps > 0) {
+            rewardNmk = add(rewardNmk, NEUMARK.issueForEuro(remainingEurUlps));
+            remainingEurUlps = 0; // not used later but we should keep variable semantics
         }
 
         // Split the Neumarks
