@@ -14,10 +14,8 @@ contract StateMachine is MStateMachine {
     // Mutable state
     ////////////////////////
 
-    // AUDIT[CHF-07]: Change visibility from "internal" to "private".
-    //                Derived contracts does not need access to this variable.
-    //                Already fixed.
-    State private _state;
+    // current state
+    State private _state = State.Before;
 
     ////////////////////////
     // Events
@@ -67,20 +65,7 @@ contract StateMachine is MStateMachine {
     // Constructor
     ////////////////////////
 
-
-    // AUDIT[CHF-08]: Missing visibility specifier. Use `internal`.
-    //                The visibility specifiers should be explicit. This applies
-    //                also to constructors. Solidity 0.4.17 starts warn about
-    //                not using specifiers explicitly.
-    //                A constructor can have public or internal visibility.
-    //                In case of this "abstract" contract the internal
-    //                visibility should be good choice.
-    //                Already fixed.
     function StateMachine() internal {
-        // AUDIT[CHF-09]: This initialization can be moved to the declaration of
-        //                _state member. Having the init value next to the
-        //                variable declaration is always better.
-        _state = State.Before;
     }
 
     ////////////////////////

@@ -2,6 +2,7 @@ pragma solidity 0.4.15;
 
 import './StateMachine.sol';
 
+
 // AUDIT[CHF-17]: Please add a bit more documentation about this contract.
 //  ------ time ----->
 //  +--------+-----------+--------+------------
@@ -60,10 +61,6 @@ contract TimedStateMachine is StateMachine {
     ////////////////////////
 
     // @notice This function is public so that it can be called independently.
-    // AUDIT[CHF-33] This function has 10 possible behaviors (all combinations
-    //   of valid state transitions). There should be a dedicated unit test set
-    //   that covers all of the possible behaviors.
-    //   TimedStateMachine should have dedicated unit test suite.
     function handleTimedTransitions()
         public
     {
