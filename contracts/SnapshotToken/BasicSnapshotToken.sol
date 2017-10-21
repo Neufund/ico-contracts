@@ -174,14 +174,22 @@ contract BasicSnapshotToken is
     function allBalancesOf(address owner)
         external
         constant
-        returns (uint256[2][] balances)
+        returns (uint256[2][])
     {
+        /* very nice and working implementation below,
         // copy to memory
         Values[] memory values = _balances[owner];
-        // in memory structs have simple layout where every item occupies uint256
-        assembly {
+        do assembly {
+            // in memory structs have simple layout where every item occupies uint256
             balances := values
+        } while (false);*/
+
+        Values[] storage values = _balances[owner];
+        uint256[2][] memory balances = new uint256[2][](values.length);
+        for(uint256 ii = 0; ii < values.length; ++ii) {
+            balances[ii] = [values[ii].snapshotId, values[ii].value];
         }
+
         return balances;
     }
 
