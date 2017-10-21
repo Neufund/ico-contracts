@@ -548,32 +548,26 @@ contract Commitment is
         uint256 amountEur = isEuro ? amount : convertToEur(amount);
         require(amount == 0 || amountEur >= MIN_TICKET_EUR);
 
-        // AUDIT[CHF-42] Protect against reentrancy attack.
-        //   Although the NEUMARK.issueForEuro() is trusted code,
-        //   you should change the order of operations in this function.
-        //   The general rules are described in
-        //   "Order of operations within an external or public function"
-        //   in CodeStyle.md file.
-        //
-        //   At least `_whitelist[investor].token = token` should be set before
-        //   calling NEUMARK.issueForEuro().
-        //
-        //   The proposed code changes are in audit/CHF-42.patch.
-        //
-        //   Also, having a unit test case for reentracy attack on
-        //   Commitment.addWhitelisted() (by mocking NEUMARK contract)
-        //   would be nice.
+        // Register the investor on the list of investors to keep them
+        // in order.
+        _whitelistInvestors.push(investor);
 
-        // Allocate Neumarks (will be issued to `this`)
-        uint256 rewardNmk = NEUMARK.issueForEuro(amountEur);
-
-        // Add to pre-allocated tickets
+        // Create a ticket without NEUMARK reward information and add it to
+        // the pre-allocated tickets.
         _whitelist[investor] = WhitelistTicket({
             token: token,
             amountEur: amountEur,
-            rewardNmk: rewardNmk
+            rewardNmk: 0
         });
-        _whitelistInvestors.push(investor);
+
+        // Allocate Neumarks (will be issued to `this`).
+        // Because `_whitelist[investor].token == Token.None` does not not hold
+        // any more, this function is protected against reentrancy attack
+        // conducted from NEUMARK.issueForEuro().
+        uint256 rewardNmk = NEUMARK.issueForEuro(amountEur);
+
+        // Record the number of Neumarks for investor.
+        _whitelist[investor].rewardNmk = rewardNmk;
 
         // Add to totals
         // AUDIT[CHF-41] Use isEuro instead of isEther.
