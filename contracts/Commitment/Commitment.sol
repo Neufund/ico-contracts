@@ -11,7 +11,7 @@ import "../Agreement.sol";
 import "../Reclaimable.sol";
 
 
-// Consumes MCommitment
+/// @title processes capital commitments into Neufund ecosystem
 contract Commitment is
     AccessControlled,
     Agreement,
@@ -51,9 +51,9 @@ contract Commitment is
     ////////////////////////
 
     // share of Neumark reward platform operator gets
-    // AUDIT[CHF-48] Explain what the value actually means and that it cannot
-    //   be 0.
-    uint256 private constant PLATFORM_SHARE = 2;
+    // actually this is a divisor that splits Neumark reward in two parts
+    // the results of division belongs to platform operator, the remaining reward part belongs to investor
+    uint256 private constant PLATFORM_SHARE = 2; // 50:50 division
 
     ////////////////////////
     // Immutable state
@@ -72,11 +72,14 @@ contract Commitment is
 
     LockedAccount private EURO_LOCK;
 
-    // AUDIT[CHF-25] Commitment constants are not documented.
+    // maximum amount of EuroToken that can be committed to generate Neumark reward
+    // indirectly this is cap for Neumark amount generated as it is checked against NEUMARK.totalEuroUlps()
     uint256 private CAP_EUR;
 
+    // minimum amount of EuroToken that may be committed
     uint256 private MIN_TICKET_EUR;
 
+    // fixed ETH/EUR price during the commitment, used to convert ETH into EUR, see convertToEur
     uint256 private ETH_EUR_FRACTION;
 
     ////////////////////////
@@ -91,10 +94,10 @@ contract Commitment is
     address[] private _whitelistInvestors;
 
     // amount of Neumarks reserved for Ether whitelist investors
-    uint256 private _whitelistEtherNmk;
+    uint256 private _whitelistEtherNmk = 0;
 
     // amount of Neumarks reserved for Euro whitelist investors
-    uint256 private _whitelistEuroNmk;
+    uint256 private _whitelistEuroNmk = 0;
 
     ////////////////////////
     // Events
@@ -112,21 +115,10 @@ contract Commitment is
     //               a single find&replace pass.
     event LogFundsCommited(
         address indexed investor,
-        uint256 amount,
-
-        // AUDIT[CHF-28] Group indexed arguments.
-        //   On the Ethereum RPC level this value is going to be
-        //   passed as a LOG topic together with the first indexed argument
-        //   `investor`. This might be confusing that the order of values in RPC
-        //   is different that the oder of arguments in this declaration.
-        //   Consider putting indexed arguments before non-indexed ones.
         address indexed paymentToken,
+        uint256 amount,
         uint256 eurEquivalent,
         uint256 grantedAmount,
-
-        // AUDIT[CHF-29] Consider removing ofToken argument.
-        //   In every invoke of this event NEUMARK token address is always
-        //   passed as the value of this argument.
         address ofToken
     );
 
@@ -134,11 +126,18 @@ contract Commitment is
     // Constructor
     ////////////////////////
 
-    /// AUDIT[CHF-27] This comment is out-dated.
-    /// declare capital commitment into Neufund ecosystem
-    /// store funds in _ethToken and lock funds in _lockedAccount while issuing
-    /// Neumarks along _curve commitments can be chained via long lived
-    /// _lockedAccount and _nemark
+    /// @param accessPolicy access policy instance controlling access to admin public functions
+    /// @param forkArbiter indicates supported fork
+    /// @param startDate timestamp of Whitelist state beginning, see TimedStateMachine constructor
+    /// @param platformWallet address of wallet storing platform operator's Neumarks
+    /// @param neumark Neumark token contract
+    /// @param etherToken ether-encapsulating token contract
+    /// @param euroToken euro pegged stable coin
+    /// @param etherLock manages locking mechanism for ether investors
+    /// @param euroLock manages locking mechanism for euro token investors
+    /// @param capEurUlps maxium amount of euro tokens committed
+    /// @param minTicketEurUlps minimum ticket size
+    /// @param ethEurFraction Ether to Euro rate, fixed during commitment
     function Commitment(
         IAccessPolicy accessPolicy,
         IEthereumForkArbiter forkArbiter,
@@ -149,8 +148,8 @@ contract Commitment is
         EuroToken euroToken,
         LockedAccount etherLock,
         LockedAccount euroLock,
-        uint256 capEur,
-        uint256 minTicketEur,
+        uint256 capEurUlps,
+        uint256 minTicketEurUlps,
         uint256 ethEurFraction
     )
         AccessControlled(accessPolicy)
@@ -165,31 +164,22 @@ contract Commitment is
         require(etherLock.assetToken() == etherToken);
         require(address(euroLock) != 0x0);
         require(euroLock.assetToken() == euroToken);
-        // AUDIT[CHF-24] EUR token decimals not documented.
-        //   It is not documented here or in constants section than the EUR
-        //   amounts have 18 decimal places. The only comment about this is
-        //   in convertToEur().
-        require(capEur >= 10**24); // 1 M€
-        require(capEur <= 10**27); // 1 G€
-        require(minTicketEur >= 10**20); // 100 €
-        require(minTicketEur <= 10**23); // 100 k€
-        require(ethEurFraction >= 10**20); // 100 € / ETH
-        require(ethEurFraction <= 10**22); // 10 k€ / ETH
+        // Euro is represented internally with 18 decimals
+        require(capEurUlps >= 10**18*10**6); // 1 M€
+        require(capEurUlps <= 10**18*10**9); // 1 G€
+        require(minTicketEurUlps >= 10**18*10**2); // 100 €
+        require(minTicketEurUlps <= 10**18*10**5); // 100 k€
+        require(ethEurFraction >= 10**18*10**2); // 100 € / ETH
+        require(ethEurFraction <= 10**18*10**4); // 10 k€ / ETH
         PLATFORM_WALLET = platformWallet;
         NEUMARK = neumark;
         ETHER_TOKEN = etherToken;
         EURO_TOKEN = euroToken;
         ETHER_LOCK = etherLock;
         EURO_LOCK = euroLock;
-        CAP_EUR = capEur;
-        MIN_TICKET_EUR = minTicketEur;
+        CAP_EUR = capEurUlps;
+        MIN_TICKET_EUR = minTicketEurUlps;
         ETH_EUR_FRACTION = ethEurFraction;
-
-        // AUDIT[CHF-26] These initializations can be moved to declarations,
-        //   or ignored, because solidity initializes all storage variables
-        //   with 0 by default.
-        _whitelistEtherNmk = 0;
-        _whitelistEuroNmk = 0;
     }
 
     ////////////////////////
@@ -202,13 +192,6 @@ contract Commitment is
         uint256[] amounts
     )
         external
-
-        // AUDIT[CHF-32] Hidden time constraint on whitelist admin.
-        //   The whitelist admin has only 1 day (minimum) to fill the whitelist.
-        //   This adds dependency of the performance of an external entity
-        //   to the system.
-        //   Moreover, the information that this period last minimum 1 day
-        //   is kept in some other file.
         withTimedTransitions()
         onlyState(State.Before)
         only(ROLE_WHITELIST_ADMIN)
@@ -216,23 +199,7 @@ contract Commitment is
         require(investors.length == tokens.length);
         require(investors.length == amounts.length);
 
-        // Process tickets
-        // AUDIT[CHF-30] Use ++i instead of i++.
-        //   This will save 1 (literally one) unit of gas if
-        //   the investors array is not empty. Yupi!!
-        //   The same can be applied in RoleBasedAccessControl lines 164, 225.
-        for (uint256 i = 0; i < investors.length; i++) {
-
-            // Loop body is factored out to keep stack low
-            // AUDIT[CHF-31] Invalid assumption about EVM stack space.
-            //   This pattern will not save you any EVM stack space (probably
-            //   the opposite). Solidity does not use CALLs to execute private
-            //   functions. It will just JUMP to the referenced function
-            //   staying on the same call depth -- so the stack space is
-            //   shared.
-            //   To use a separated call for execution of this function you have
-            //   to use `this.addWhitelistInvestorPrivate()`, but
-            //   addWhitelistInvestorPrivate() has to be public.
+        for (uint256 i = 0; i < investors.length; ++i) {
             addWhitelistInvestorPrivate(investors[i], tokens[i], amounts[i]);
         }
 
@@ -240,7 +207,8 @@ contract Commitment is
         require(NEUMARK.totalEuroUlps() <= CAP_EUR);
     }
 
-    // AUDIT[CHF-44] Explain why Commitment.abort() function is needed.
+    /// @notice used by WHITELIST_ADMIN to kill commitment process before it starts
+    ///     @dev by selfdestruct we make all LockContracts controlled by this contract dysfunctional
     function abort()
         external
         withTimedTransitions()
@@ -262,13 +230,7 @@ contract Commitment is
         payable
         withTimedTransitions()
         onlyStates(State.Whitelist, State.Public)
-
-        // AUDIT[CHF-55] Accepting agreement confusion.
-        //   This will automatically put the msg.sender in the list of addresses
-        //   accepting the agreement. Shouldn't the order of actions be
-        //   different? Accepting the agreement being a precondition of commit()
-        //   action?
-        acceptAgreement(msg.sender)
+        acceptAgreement(msg.sender) // agreement accepted by act of reserving funds in this function
     {
         // Take with EtherToken allowance (if any)
         uint256 commitedWei = ETHER_TOKEN.allowance(msg.sender, this);
@@ -307,20 +269,14 @@ contract Commitment is
         _whitelistEtherNmk = sub(_whitelistEtherNmk, ticketNmk);
 
         // Lock EtherToken
-        // AUDIT[CHF-60] Consider using ERC223-like transfer pattern.
-        //   The onTokenTransfer() callback can be implemented in the
-        //   LockedAccount contract to lock tokens received by ERC223-like
-        //   transfers. Still we will have 2 calls to lock tokens, but
-        //   whole complexity would be encapsulated in the LockedAccount.
-        //   This also applies to Commitment.commitEuro().
         ETHER_TOKEN.approve(ETHER_LOCK, commitedWei);
         ETHER_LOCK.lock(msg.sender, commitedWei, investorNmk);
 
         // Log successful commitment
         LogFundsCommited(
             msg.sender,
-            commitedWei,
             ETHER_TOKEN,
+            commitedWei,
             commitedEur,
             investorNmk,
             NEUMARK
@@ -331,7 +287,7 @@ contract Commitment is
         external
         withTimedTransitions()
         onlyStates(State.Whitelist, State.Public)
-        acceptAgreement(msg.sender)
+        acceptAgreement(msg.sender) // agreement accepted by act of reserving funds in this function
     {
         // Receive Euro tokens
         uint256 euroUlp = EURO_TOKEN.allowance(msg.sender, this);
@@ -348,8 +304,8 @@ contract Commitment is
         // Log successful commitment
         LogFundsCommited(
             msg.sender,
-            euroUlp,
             EURO_TOKEN,
+            euroUlp,
             euroUlp,
             investorNmk,
             NEUMARK
@@ -458,6 +414,16 @@ contract Commitment is
         return PLATFORM_SHARE;
     }
 
+    // may be used to enumerate investors in whitelist
+    function whitelistInvestor(uint256 atWhitelistPosition)
+        public
+        constant
+        returns (address)
+    {
+        return _whitelistInvestors[atWhitelistPosition];
+    }
+
+    // ticket information for particular investors
     function whitelistTicket(address investor)
         public
         constant
@@ -469,21 +435,12 @@ contract Commitment is
         return (ticket.token, ticket.amountEur, investorNmk);
     }
 
-    // AUDIT[CHF-46] What is this function for?
-    function whitelistInvestor(uint256 atWhitelistPosition)
-        public
-        constant
-        returns (address)
-    {
-        return _whitelistInvestors[atWhitelistPosition];
-    }
-
     ////////////////////////
     // Internal functions
     ////////////////////////
 
     //
-    // MStateMachine
+    // Implements StateMachine
     //
 
     function mAfterTransition(State /* oldState */, State newState)
@@ -493,17 +450,13 @@ contract Commitment is
 
             // Rollback unfufilled Ether reservations.
             NEUMARK.burnNeumark(_whitelistEtherNmk);
-
-            // AUDIT[CHF-61] Zero NMK counters in Commitment.mAfterTransition()
-            //   For sanity zero _whitelistEtherNmk after burning tokens,
-            //   you will also get some gas back.
-            //   The same applies to _whitelistEuroNmk when
-            //   newState == State.Finished.
+            _whitelistEtherNmk = 0;
         }
         if (newState == State.Finished) {
 
             // Rollback unfulfilled Euro reservations.
             NEUMARK.burnNeumark(_whitelistEuroNmk);
+            _whitelistEuroNmk = 0;
 
             // Enable Neumark trading in token controller
             NEUMARK.enableTransfer(true);
@@ -527,18 +480,6 @@ contract Commitment is
     {
         // Validate
         require(investor != 0x0);
-
-        // AUDIT[CHF-34] Undocumented enum feature used.
-        //   In the following line you are relaying on the undocumented enum
-        //   feature that the first element of an enum is also the "zero"
-        //   element and storage variables of enum types are initialized to
-        //   "zero" elements.
-        //   This is correct: confirmed by solidity developers and community
-        //   (https://ethereum.stackexchange.com/questions/21775/what-is-the-zero-value-for-an-enum).
-        //   Moreover, considering EVM internals there is no
-        //   practical way for solidity to implement this differently.
-        //   A contribution to solidity documentation describing this behavior
-        //   would be a nice addition to this ICO project.
         require(_whitelist[investor].token == Token.None);
         bool isEuro = token == Token.Euro;
         bool isEther = token == Token.Ether;
@@ -570,17 +511,14 @@ contract Commitment is
         _whitelist[investor].rewardNmk = rewardNmk;
 
         // Add to totals
-        // AUDIT[CHF-41] Use isEuro instead of isEther.
-        //   For consistency, use only isEuro to make decision about conditional
-        //   code execution. This will make the code paths for EUR case always
-        //   the first branch and for ETH always the second.
-        if (isEther) {
-            _whitelistEtherNmk = add(_whitelistEtherNmk, rewardNmk);
-        } else {
+        if (isEuro) {
             _whitelistEuroNmk = add(_whitelistEuroNmk, rewardNmk);
+        } else {
+            _whitelistEtherNmk = add(_whitelistEtherNmk, rewardNmk);
         }
     }
 
+    /// @dev Token.None should not be passed to 'tokenType' parameter
     function commitToken(uint256 euroUlp, Token tokenType)
         private
         returns (uint256 investorNmk, uint256 ticketNmk)
@@ -593,10 +531,6 @@ contract Commitment is
         // Whitelist part
         WhitelistTicket storage ticket = _whitelist[msg.sender];
 
-        // AUDIT[CHF-50] Locally wrong "whitelisted" condition check.
-        //   This condition check is not valid for tokenType being Token.None.
-        //   Add assert(tokenType != Token.None) or add a comment stating
-        //   that passing Token.None is not allowed.
         bool whitelisted = ticket.token == tokenType;
         require(whitelisted || state() == State.Public);
 
@@ -612,11 +546,7 @@ contract Commitment is
             ticket.rewardNmk = sub(ticket.rewardNmk, ticketNmk);
             remainingEur = sub(remainingEur, ticketEur);
 
-            // AUDIT[CHF-62] Usage of "+=" instead of "=".
-            //  The totalNmk is always 0 in this place.
-            //  Use `totalNmk = tickerNmk;` or use totalNmk variable instead of
-            //  ticketNmk in this code block.
-            totalNmk = add(totalNmk, ticketNmk);
+            totalNmk += ticketNmk;
         }
 
         // issue Neumarks against curve for amount left after pre-defined ticket was realized
@@ -642,17 +572,7 @@ contract Commitment is
         //
         //   See also AUDIT[CHF-47].
         uint256 platformNmk = divRound(totalNmk, PLATFORM_SHARE);
-
-        // AUDIT[CHF-51] Start trusting in math.
-        //   If you don't trust that divRound() guarantees the following
-        //   post-condition, it's time to take a step back.
-        //   Please remove this assert.
-        assert(platformNmk <= totalNmk);
-
-        // AUDIT[CHF-49] Safe Math.sub() unnecessary below.
-        //   It is guaranteed that totalNmk >= platformNmk.
-        //   The same issue is in whitelistTicket().
-        investorNmk = sub(totalNmk, platformNmk);
+        investorNmk = totalNmk - platformNmk;
 
         // Issue Neumarks and distribute
         NEUMARK.distributeNeumark(msg.sender, investorNmk);
