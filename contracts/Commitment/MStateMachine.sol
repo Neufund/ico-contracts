@@ -38,11 +38,8 @@ contract MStateMachine {
     //                the method requirement, but probably describes the
     //                guarantees given by the StateMachine contract. The same in
     //                MStateMachine.mAfterTransition().
-    function mBeforeTransition(State oldState, State newState)
-        internal;
-
     /// @notice Get's called after every state transition.
-    ///     It's guaranteed that `oldState != newState` and
+    ///    It's guaranteed that `oldState != newState` and
     //      `state() == newState`.
     function mAfterTransition(State oldState, State newState)
         internal;

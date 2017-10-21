@@ -71,45 +71,18 @@ contract StateMachine is MStateMachine {
 
     // @dev Transitioning to the same state is silently ignored, no log events
     //  or handlers are called.
-    // AUDIT[CHF-12]: The returned old state is never used by any caller.
-    //                This function should return nothing.
     function transitionTo(State newState)
         internal
-        returns (State oldState)
     {
-        oldState = _state;
-        // AUDIT[CHF-13]: This defensive check can be removed. None of the
-        //                callers depends on this. Also remember to remove
-        //                the @dev node above.
-        if (oldState == newState) {
-            // AUDIT[CHF-14]: For consistency with the second return statement
-            //                change it to `return oldState`.
-            return;
-        }
+        State oldState = _state;
         require(validTransition(oldState, newState));
 
-        // AUDIT[CHF-15]: First of all, this is not used anywhere. Such features
-        //                should be introduced when needed for the first time,
-        //                not for hypothetical future uses.
-        //                Moreover, this can cause race conditions. Consider
-        //                case when we are in Before state and
-        //                mBeforeTransition() will execute transitionTo() twice:
-        //                for Before -> Whitelist and Whitelist -> Public
-        //                (assume infinite recursion is handled).
-        //                The final _state being Public will be overwrite
-        //                after mBeforeTransition returns.
-        //                Without any protection from mBeforeTransition
-        //                modifying the _state, this feature does not seem to
-        //                be a good idea.
-        mBeforeTransition(oldState, newState);
         _state = newState;
         LogStateTransition(oldState, newState);
 
-        // TODO: What if mOnAfterTransition wants to transition
-        // further?
-        // AUDIT[CHF-16]: Remove oldState argument. Never used.
+        // should not change state and it is required here.
         mAfterTransition(oldState, newState);
-        return oldState;
+        require(_state == newState);
     }
 
     function validTransition(State oldState, State newState)
@@ -122,19 +95,5 @@ contract StateMachine is MStateMachine {
             oldState == State.Whitelist && newState == State.Public) || (
             oldState == State.Public && newState == State.Finished
         );
-    }
-
-    //
-    // MStateMachine default implementations
-    //
-
-    function mBeforeTransition(State /* oldState */, State /* newState */)
-        internal
-    {
-    }
-
-    function mAfterTransition(State /* oldState */, State /* newState */)
-        internal
-    {
     }
 }

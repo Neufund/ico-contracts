@@ -50,4 +50,13 @@ contract TestTimedStateMachine is
         assert(int(State.Whitelist) + 1 == int(State.Public));
         assert(int(State.Public) + 1 == int(State.Finished));
     }
+
+    //
+    // MStateMachine default implementations
+    //
+
+    function mAfterTransition(State /* oldState */, State /* newState */)
+        internal
+    {
+    }
 }
