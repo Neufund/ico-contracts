@@ -35,7 +35,7 @@ const MIN_TICKET_EUR = web3.toBigNumber("300").mul(Q18);
 const ETH_EUR_FRACTION = web3.toBigNumber("300").mul(Q18);
 const ethToEur = eth => eth.mul(ETH_EUR_FRACTION).div(Q18);
 const eurToEth = eur => divRound(eur.mul(Q18), ETH_EUR_FRACTION);
-const platformShare = nmk => divRound(nmk, PLATFORM_SHARE);
+const platformShare = nmk => nmk.div(PLATFORM_SHARE).round(0, 1); // round down
 const investorShare = nmk => nmk.sub(platformShare(nmk));
 const MIN_TICKET_ETH = eurToEth(MIN_TICKET_EUR);
 
@@ -641,8 +641,8 @@ contract(
         const amountEth = MIN_TICKET_EUR.mul(11);
         const amountEur = amountEth.mul(ETH_EUR_FRACTION).divToInt(Q18);
         const totalNmk = await neumark.incremental(amountEur);
-        const platformNmk = totalNmk.divToInt(PLATFORM_SHARE);
-        const investorNmk = totalNmk.sub(platformNmk);
+        const platformNmk = platformShare(totalNmk);
+        const investorNmk = investorShare(totalNmk);
 
         const estimate = await commitment.estimateNeumarkReward(amountEth);
 
@@ -660,8 +660,8 @@ contract(
 
       beforeEach(async () => {
         expectedTotalNmk = await neumark.cumulative(amountEur);
-        expectedPlatformNmk = divRound(expectedTotalNmk, PLATFORM_SHARE);
-        expectedInvestorNmk = expectedTotalNmk.sub(expectedPlatformNmk);
+        expectedPlatformNmk = platformShare(expectedTotalNmk);
+        expectedInvestorNmk = investorShare(expectedTotalNmk);
       });
 
       it("should commit during Public", async () => {
@@ -883,8 +883,8 @@ contract(
 
       beforeEach(async () => {
         expectedTotalNmk = await neumark.cumulative(amountEur);
-        expectedPlatformNmk = divRound(expectedTotalNmk, PLATFORM_SHARE);
-        expectedInvestorNmk = expectedTotalNmk.sub(expectedPlatformNmk);
+        expectedPlatformNmk = platformShare(expectedTotalNmk);
+        expectedInvestorNmk = investorShare(expectedTotalNmk);
         await commitment.addWhitelisted(
           [investor],
           [Token.Ether],
@@ -1101,8 +1101,8 @@ contract(
 
       beforeEach(async () => {
         expectedTotalNmk = await neumark.cumulative(amountEur);
-        expectedPlatformNmk = divRound(expectedTotalNmk, PLATFORM_SHARE);
-        expectedInvestorNmk = expectedTotalNmk.sub(expectedPlatformNmk);
+        expectedPlatformNmk = platformShare(expectedTotalNmk);
+        expectedInvestorNmk = investorShare(expectedTotalNmk);
 
         await euroToken.deposit(investor, CAP_EUR.mul(2), {
           from: eurtDepositManager
@@ -1266,8 +1266,8 @@ contract(
 
       beforeEach(async () => {
         expectedTotalNmk = await neumark.cumulative(amountEur);
-        expectedPlatformNmk = divRound(expectedTotalNmk, PLATFORM_SHARE);
-        expectedInvestorNmk = expectedTotalNmk.sub(expectedPlatformNmk);
+        expectedPlatformNmk = platformShare(expectedTotalNmk);
+        expectedInvestorNmk = investorShare(expectedTotalNmk);
 
         await euroToken.deposit(investor, CAP_EUR.mul(2), {
           from: eurtDepositManager

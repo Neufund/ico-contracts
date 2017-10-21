@@ -53,7 +53,7 @@ contract Commitment is
     // share of Neumark reward platform operator gets
     // actually this is a divisor that splits Neumark reward in two parts
     // the results of division belongs to platform operator, the remaining reward part belongs to investor
-    uint256 private constant PLATFORM_SHARE = 2; // 50:50 division
+    uint256 private constant PLATFORM_NEUMARK_SHARE = 2; // 50:50 division
 
     ////////////////////////
     // Immutable state
@@ -241,7 +241,7 @@ contract Commitment is
         }
 
         // calculate Neumark reward and update Whitelist ticket
-        uint256 investorNmk = commitToken(committedEurUlp, Token.Ether);
+        uint256 investorNmk = getInvestorNeumarkReward(committedEurUlp, Token.Ether);
 
         // Lock EtherToken
         ETHER_TOKEN.approve(ETHER_LOCK, committedWei);
@@ -272,7 +272,7 @@ contract Commitment is
         assert(EURO_TOKEN.transferFrom(msg.sender, this, committedEurUlp));
 
         // calculate Neumark reward and update Whitelist ticket
-        uint256 investorNmk = commitToken(committedEurUlp, Token.Euro);
+        uint256 investorNmk = getInvestorNeumarkReward(committedEurUlp, Token.Euro);
 
         // Lock EuroToken
         EURO_TOKEN.approve(EURO_LOCK, committedEurUlp);
@@ -296,18 +296,7 @@ contract Commitment is
     {
         uint256 amountEur = convertToEur(amountEth);
         uint256 rewardNmk = NEUMARK.incremental(amountEur);
-        // AUDIT[CHF-47] Investor's share calculation inconsistency.
-        //   Here the investor's share is calculated first,
-        //   in whitelistTicket() and commitToken() the platform's share is
-        //   calculated first and investor's share is the remaining.
-        //   Example:
-        //     rewardNmk = 101
-        //   In estimateNeumarkReward():
-        //     investorNmk = divRound(101, 2) = 51
-        //   In whitelistTicket(), commitToken():
-        //     platformNmk = divRound(101, 2) = 51
-        //     investorNmk = 101 - 51 = 50
-        uint256 investorNmk = divRound(rewardNmk, PLATFORM_SHARE);
+        var (, investorNmk) = calculateNeumarkDistribtion(rewardNmk);
         return investorNmk;
     }
 
@@ -389,10 +378,10 @@ contract Commitment is
         constant
         returns (uint256)
     {
-        return PLATFORM_SHARE;
+        return PLATFORM_NEUMARK_SHARE;
     }
 
-    // may be used to enumerate investors in whitelist
+    // used to enumerate investors in whitelist
     function whitelistInvestor(uint256 atWhitelistPosition)
         public
         constant
@@ -408,8 +397,7 @@ contract Commitment is
         returns (Token token, uint256 ticketEur, uint256 neumarkReward)
     {
         WhitelistTicket storage ticket = _whitelist[investor];
-        uint256 platformNmk = divRound(ticket.rewardNmk, PLATFORM_SHARE);
-        uint256 investorNmk = sub(ticket.rewardNmk, platformNmk);
+        var (, investorNmk) = calculateNeumarkDistribtion(ticket.rewardNmk);
         return (ticket.token, ticket.amountEur, investorNmk);
     }
 
@@ -497,16 +485,16 @@ contract Commitment is
     }
 
     /// @dev Token.None should not be passed to 'tokenType' parameter
-    function commitToken(uint256 committedEuroUlp, Token tokenType)
+    function getInvestorNeumarkReward(uint256 committedEuroUlp, Token tokenType)
         private
-        returns (uint256 investorNmk)
+        returns (uint256)
     {
         // We don't go over the cap
         require(add(NEUMARK.totalEuroUlps(), committedEuroUlp) <= CAP_EUR);
 
         // Compute committed funds
         uint256 remainingEur = committedEuroUlp;
-        uint256 totalNmk = 0;
+        uint256 rewardNmk = 0;
         uint256 ticketNmk = 0;
 
         // Whitelist part
@@ -527,30 +515,17 @@ contract Commitment is
             ticket.rewardNmk = sub(ticket.rewardNmk, ticketNmk);
             remainingEur = sub(remainingEur, ticketEur);
 
-            totalNmk += ticketNmk;
+            rewardNmk += ticketNmk;
         }
 
         // issue Neumarks against curve for amount left after pre-defined ticket was realized
         if (remainingEur > 0) {
-            totalNmk = add(totalNmk, NEUMARK.issueForEuro(remainingEur));
+            rewardNmk = add(rewardNmk, NEUMARK.issueForEuro(remainingEur));
             remainingEur = 0; // not used later but we should keep variable semantics
         }
 
         // Split the Neumarks
-        // AUDIT[CHF-52] Simplify calculating the platform share.
-        //   1. In this case where PLATFORM_SHARE is 2, divRound actually means
-        //      "div round up".
-        //   2. Considering 18 decimals of Neumark token, using divRound()
-        //      increases complexity without measurable benefits.
-        //      Use DIV with rounding towards 0 for computing the platform
-        //      share as this:
-        //
-        //          uint256 platformNmk = totalNmk / PLATFORM_SHARE;
-        //          investorNmk = totalNmk - platformNmk;
-        //
-        //   See also AUDIT[CHF-47].
-        uint256 platformNmk = divRound(totalNmk, PLATFORM_SHARE);
-        investorNmk = totalNmk - platformNmk;
+        var (platformNmk, investorNmk) = calculateNeumarkDistribtion(rewardNmk);
 
         // Issue Neumarks and distribute
         NEUMARK.distributeNeumark(msg.sender, investorNmk);
@@ -564,5 +539,16 @@ contract Commitment is
             }
         }
         return investorNmk;
+    }
+
+    // calculates investor's and platform operator's neumarks from total reward
+    function calculateNeumarkDistribtion(uint256 rewardNmk)
+        private
+        returns (uint256 platformNmk, uint256 investorNmk)
+    {
+        // round down - platform may get 1 wei less than investor
+        platformNmk = rewardNmk / PLATFORM_NEUMARK_SHARE;
+        // rewardNmk > platformNmk always
+        return (platformNmk, rewardNmk - platformNmk);
     }
 }
