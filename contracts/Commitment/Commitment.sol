@@ -342,6 +342,14 @@ contract Commitment is
         return MIN_TICKET_EUR;
     }
 
+    function ethEurFraction()
+        public
+        constant
+        returns (uint256)
+    {
+        return ETH_EUR_FRACTION;
+    }
+
     function platformOperatorNeumarkRewardShare()
         public
         constant
