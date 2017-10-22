@@ -24,6 +24,7 @@
     "eslint-plugin-prettier": "^2.2.0",
     "eslint-plugin-react": "^7.0.1",
     "ethereumjs-testrpc": "^4.1.1",
+    "git-rev-sync": "^1.9.1",
     "invariant": "^2.2.2",
     "istanbul": "next",
     "lodash": "^4.17.4",
@@ -44,11 +45,13 @@
     "test:coverage": "SKIP_GAS_CHECKS=true solidity-coverage && codecov",
     "build": "rm -rf ./build && truffle compile --all",
     "deploy": "truffle migrate --reset --compile-all --network localhost",
+    "deploy:fast": "truffle migrate --reset --network localhost",
     "solctruffle": "./scripts/solctruffle.sh"
   },
   "devDependencies": {
     "eslint-plugin-mocha": "^4.11.0",
     "prettier": "^1.5.3",
+    "replace-string": "^1.1.0",
     "solidity-coverage": "Neufund/solidity-coverage#neufund"
   }
 }
