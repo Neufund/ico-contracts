@@ -3,11 +3,16 @@ pragma solidity 0.4.15;
 import './StateMachine.sol';
 
 
-// AUDIT[CHF-17]: Please add a bit more documentation about this contract.
-//  ------ time ----->
-//  +--------+-----------+--------+------------
-//  | Before | Whitelist | Public | Finished …
-//  +--------+-----------+--------+------------
+/// @title time induced state machine
+/// @notice ------ time ----->
+///
+///  +--------+-----------+--------+------------
+///  | Before | Whitelist | Public | Finished …
+///  +--------+-----------+--------+------------
+/// @dev intended usage via 'withTimedTransitions' modifier which makes sure that state machine transitions into
+///     correct state before executing function body. note that this is contract state changing modifier so use with care
+/// @dev state change request is publicly accessible via 'handleTimedTransitions'
+/// @dev time is based on block.timestamp
 contract TimedStateMachine is StateMachine {
 
     ////////////////////////

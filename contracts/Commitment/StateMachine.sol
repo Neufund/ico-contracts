@@ -1,11 +1,10 @@
 pragma solidity 0.4.15;
 
 
-// AUDIT[CHF-06]: Missing documenting comment, but the contract name
-//                tells a lot what this is about.
-//
-// Before --> Whitelist --> Public --> Finished
-//
+/// @title state machine for Commitment contract
+/// @notice implements following state progression Before --> Whitelist --> Public --> Finished
+/// @dev state switching via 'transitionTo' function
+/// @dev inherited contract must implement mAfterTransition which will be called just after state transition happened
 contract StateMachine {
 
     ////////////////////////
