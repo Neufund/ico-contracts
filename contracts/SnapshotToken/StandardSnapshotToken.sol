@@ -83,7 +83,7 @@ contract StandardSnapshotToken is
 
         // Notify the receiving contract.
         if (isContract(to)) {
-            IERC223Callback(to).tokenFallback(msg.sender, amount, data);
+            IERC223Callback(to).onTokenTransfer(msg.sender, amount, data);
         }
         return true;
     }
