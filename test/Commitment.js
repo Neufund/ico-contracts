@@ -148,14 +148,16 @@ contract(
       expect(event.args.ofToken).to.be.bignumber.eq(neumark.address);
     }
 
-    it("should deploy", async() => {
+    it("should deploy", async () => {
       await prettyPrintGasCost("Commitment deploy", commitment);
       expect(await commitment.platformWalletAddress.call()).to.eq(platform);
       expect(await commitment.neumark.call()).to.eq(neumark.address);
       expect(await commitment.etherLock.call()).to.eq(etherLock.address);
       expect(await commitment.euroLock.call()).to.eq(euroLock.address);
       expect(await commitment.maxCapEur.call()).to.be.bignumber.eq(CAP_EUR);
-      expect(await commitment.minTicketEur.call()).to.be.bignumber.eq(MIN_TICKET_EUR);
+      expect(await commitment.minTicketEur.call()).to.be.bignumber.eq(
+        MIN_TICKET_EUR
+      );
       expect(
         await commitment.platformOperatorNeumarkRewardShare.call()
       ).to.be.bignumber.eq(PLATFORM_SHARE);
@@ -650,7 +652,6 @@ contract(
         const amountEth = MIN_TICKET_EUR.mul(11);
         const amountEur = amountEth.mul(ETH_EUR_FRACTION).divToInt(Q18);
         const totalNmk = await neumark.incremental(amountEur);
-        const platformNmk = platformShare(totalNmk);
         const investorNmk = investorShare(totalNmk);
 
         const estimate = await commitment.estimateNeumarkReward(amountEth);
@@ -1106,11 +1107,9 @@ contract(
       const amountEur = MIN_TICKET_EUR.mul(10);
       let expectedTotalNmk;
       let expectedInvestorNmk;
-      let expectedPlatformNmk;
 
       beforeEach(async () => {
         expectedTotalNmk = await neumark.cumulative(amountEur);
-        expectedPlatformNmk = platformShare(expectedTotalNmk);
         expectedInvestorNmk = investorShare(expectedTotalNmk);
 
         await euroToken.deposit(investor, CAP_EUR.mul(2), {

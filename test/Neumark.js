@@ -51,12 +51,12 @@ contract(
     });
 
     function expectNeumarksBurnedEvent(tx, owner, euroUlps, neumarkUlps) {
-        const event = eventValue(tx, "LogNeumarksBurned");
-        expect(event).to.exist;
-        expect(event.args.owner).to.equal(owner);
-        expect(event.args.euroUlps).to.be.bignumber.equal(euroUlps);
-        expect(event.args.neumarkUlps).to.be.bignumber.equal(neumarkUlps);
-      }
+      const event = eventValue(tx, "LogNeumarksBurned");
+      expect(event).to.exist;
+      expect(event.args.owner).to.equal(owner);
+      expect(event.args.euroUlps).to.be.bignumber.equal(euroUlps);
+      expect(event.args.neumarkUlps).to.be.bignumber.equal(neumarkUlps);
+    }
 
     function expectNeumarksIssuedEvent(tx, owner, euroUlps, neumarkUlps) {
       const event = eventValue(tx, "LogNeumarksIssued");
@@ -155,9 +155,18 @@ contract(
       expect(
         (await neumark.balanceOf.call(accounts[1])).div(NMK_DECIMALS).floor()
       ).to.be.bignumber.eq(neumarks.sub(toBurn));
-      const rollbackedEurUlps = eventValue(burned, "LogNeumarksBurned", "euroUlps");
+      const rollbackedEurUlps = eventValue(
+        burned,
+        "LogNeumarksBurned",
+        "euroUlps"
+      );
       expectTransferEvent(burned, accounts[1], ZERO_ADDRESS, toBurnUlps);
-      expectNeumarksBurnedEvent(burned, accounts[1], rollbackedEurUlps, toBurnUlps);
+      expectNeumarksBurnedEvent(
+        burned,
+        accounts[1],
+        rollbackedEurUlps,
+        toBurnUlps
+      );
     });
 
     it("should issue same amount in multiple issuances", async () => {
