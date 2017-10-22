@@ -121,11 +121,6 @@ contract EtherToken is
 
         // Notify the receiving contract.
         if (isContract(to)) {
-            // AUDIT[CHF-53] Rename "token transfer callback" function.
-            //   There is ongoing discussion how to name the token transfer
-            //   callback function in ERC223 proposal, but many pointed out
-            //   that the "tokenFallback" is very bad name.
-            //   The most reasonable name seems to be "onTokenTransfer".
             IERC223Callback(to).tokenFallback(msg.sender, amount, data);
         }
         return true;
