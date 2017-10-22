@@ -13,14 +13,20 @@ import {
 } from "./helpers/tokenTestCases";
 import { eventValue } from "./helpers/events";
 import { etherToWei } from "./helpers/unitConverter";
+import forceEther from "./helpers/forceEther";
+import roles from "./helpers/roles";
+import EvmError from "./helpers/EVMThrow";
 
 const EtherToken = artifacts.require("EtherToken");
 
-contract("EtherToken", ([broker, ...investors]) => {
+contract("EtherToken", ([broker, reclaimer, ...investors]) => {
   let etherToken;
+  const RECLAIM_ETHER = "0x0";
 
   beforeEach(async () => {
-    const rbap = await createAccessPolicy([]);
+    const rbap = await createAccessPolicy([
+      { subject: reclaimer, role: roles.reclaimer }
+    ]);
     etherToken = await EtherToken.new(rbap.address);
   });
 
@@ -50,7 +56,13 @@ contract("EtherToken", ([broker, ...investors]) => {
       expect(balance).to.be.bignumber.eq(initialBalance);
     });
 
-    it("should reject to reclaim ether");
+    it("should reject to reclaim ether", async () => {
+      const amount = web3.toWei(1, "ether");
+      await forceEther(etherToken.address, amount, reclaimer);
+      await expect(
+        etherToken.reclaim(RECLAIM_ETHER, { from: reclaimer })
+      ).to.be.rejectedWith(EvmError);
+    });
   });
 
   describe("IBasicToken tests", () => {
