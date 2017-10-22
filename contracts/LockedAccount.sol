@@ -57,7 +57,7 @@ contract LockedAccount is
     // longstop period in seconds
     uint256 private LOCK_PERIOD;
 
-    // penalty: fraction of stored amount on escape hatch
+    // penalty: decimalFraction of stored amount on escape hatch
     uint256 private PENALTY_FRACTION;
 
     ////////////////////////
@@ -164,33 +164,24 @@ contract LockedAccount is
     // deposits 'amount' of tokens on assetToken contract
     // locks 'amount' for 'investor' address
     // callable only from ICO contract that gets currency directly (ETH/EUR)
-    function lock(address investor, uint256 amount, uint256 neumarks)
+    function lock(address investor, uint256 amount, uint256 neumarkUlps)
         public
         onlyState(LockState.AcceptingLocks)
         onlyController()
     {
         require(amount > 0);
-
-        // check if controller made allowance
-        // AUDIT[CHF-59] Redundant require() in LockedAccount.lock().
-        //   This check is not needed because ASSET_TOKEN.transferFrom() will
-        //   check the same precondition.
-        require(ASSET_TOKEN.allowance(msg.sender, address(this)) >= amount);
-
-        // transfer to self yourself
+        // transfer allowance to self yourself
         require(ASSET_TOKEN.transferFrom(msg.sender, address(this), amount));
         Account storage a = _accounts[investor];
         a.balance = addBalance(a.balance, amount);
-        a.neumarksDue += neumarks;
-        assert(isSafeMultiplier(a.neumarksDue));
+        a.neumarksDue = add(a.neumarksDue, neumarkUlps);
         if (a.unlockDate == 0) {
-
             // this is new account - unlockDate always > 0
             _totalInvestors += 1;
             a.unlockDate = currentTime() + LOCK_PERIOD;
         }
         _accounts[investor] = a;
-        LogFundsLocked(investor, amount, neumarks);
+        LogFundsLocked(investor, amount, neumarkUlps);
     }
 
     // unlocks msg.sender tokens by making them withdrawable in assetToken
@@ -421,7 +412,6 @@ contract LockedAccount is
     {
         _totalLockedAmount = add(_totalLockedAmount, amount);
         uint256 newBalance = add(balance, amount);
-        assert(isSafeMultiplier(newBalance));
         return newBalance;
     }
 
@@ -479,7 +469,7 @@ contract LockedAccount is
                 // take the penalty if before unlockDate
                 if (currentTime() < a.unlockDate) {
                     require(_penaltyDisbursalAddress != address(0));
-                    uint256 penalty = fraction(a.balance, PENALTY_FRACTION);
+                    uint256 penalty = decimalFraction(a.balance, PENALTY_FRACTION);
 
                     // distribute penalty
                     if (isContract(_penaltyDisbursalAddress)) {

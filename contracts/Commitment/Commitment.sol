@@ -315,7 +315,7 @@ contract Commitment is
         returns (uint256)
     {
         require(amount < 2**123);
-        return fraction(amount, ETH_EUR_FRACTION);
+        return decimalFraction(amount, ETH_EUR_FRACTION);
     }
 
     function platformWalletAddress()
@@ -387,10 +387,11 @@ contract Commitment is
     function whitelistTicket(address investor)
         public
         constant
-        returns (Token token, uint256 ticketEurUlps, uint256 investorNmk)
+        returns (Token token, uint256 ticketEurUlps, uint256 /*investorNmk*/)
     {
         WhitelistTicket storage ticket = _whitelist[investor];
-        (, investorNmk) = calculateNeumarkDistribtion(ticket.rewardNmk);
+        //  could also use ( , investorNmk) but parser has problems in solium TODO fix solium
+        var (, investorNmk) = calculateNeumarkDistribtion(ticket.rewardNmk);
         return (ticket.token, ticket.amountEurUlps, investorNmk);
     }
 
