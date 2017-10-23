@@ -115,7 +115,7 @@ module.exports = {
     nf_private: {
       host: "localhost",
       port: 8545,
-      network_id: "11",
+      network_id: "16",
       gas: 4600000,
       // gasPrice: 11904761856
       gasPrice: 21000000000
@@ -123,7 +123,7 @@ module.exports = {
     nf_private_test: {
       host: "localhost",
       port: 8545,
-      network_id: "11",
+      network_id: "16",
       gas: 4600000,
       // gasPrice: 11904761856
       gasPrice: 21000000000
