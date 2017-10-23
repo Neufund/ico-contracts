@@ -221,6 +221,9 @@ contract(
           from: admin
         });
         expectMigrationEnabledEvent(tx, migrationTarget.address);
+        expect(await lockedAccount.currentMigrationTarget()).to.be.eq(
+          migrationTarget.address
+        );
         // migrate investor
         tx = await lockedAccount.migrate({ from: investorAddress });
         expectInvestorMigratedEvent(
@@ -293,25 +296,6 @@ contract(
           migrationTarget.migrateInvestor(investor, ticket, 1, startTimestamp, {
             from: admin
           })
-        ).to.be.rejectedWith(EvmError);
-      });
-
-      it("target that returns false on migration should throw", async () => {
-        const ticket = etherToWei(1);
-        const neumarks = ticket.mul(6.5);
-        // lock investor
-        await makeDeposit(investor, controller.address, ticket);
-        await controller.investToken(neumarks, { from: investor });
-        await migrationTarget.setMigrationSource(lockedAccount.address, {
-          from: admin
-        });
-        await lockedAccount.enableMigration(migrationTarget.address, {
-          from: admin
-        });
-        // comment line below for this test to fail
-        await migrationTarget.setShouldMigrationFail(true, { from: admin });
-        await expect(
-          lockedAccount.migrate({ from: investor })
         ).to.be.rejectedWith(EvmError);
       });
 
