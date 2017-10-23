@@ -69,7 +69,7 @@ For personal phase, block number at which user signed agreement may be obtained 
 |Tag|Description|Value|
 |---|-----------|-----|
 |{investor-address}|Address of investor for which Agreement is generated|*input parameter*|
-|{current-block-hash}|Hash of current block|*input parameter*|
+|{current-block-hash}|Hash of the block from which all other values were taken. Please pay attention to take all values from that block really (not just use "latest" which will just take current block) to avoid inconsistency.|*input parameter*|
 |{amount}|Total amount investor commited|LockedAccount::balanceOf({investor-address})[0]|
 |{release-date}|Date at which lock expires|LockedAccount::balanceOf({investor-address})[2] (timestamp)|
 |{reservation-date}|Date at which funds were reserved|{release-date} - {reservation-period}|
@@ -109,4 +109,4 @@ For personal phase, block number at which user signed agreement may be obtained 
 |Tag|Description|Value|
 |---|-----------|-----|
 |{token-holder-address}|Address of token holder for which Agreement is generated|*input parameter*|
-|{current-block-hash}|Hash of current block|*input parameter*|
+|{current-block-hash}|Hash of the block from which all other values were taken. Please pay attention to take all values from that block really (not just use "latest" which will just take current block) to avoid inconsistency.|*input parameter*|

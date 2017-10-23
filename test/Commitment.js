@@ -169,6 +169,10 @@ contract(
 
     it("should deploy", async () => {
       await prettyPrintGasCost("Commitment deploy", commitment);
+
+      expect(await commitment.ethEurFraction()).to.be.bignumber.eq(
+        ETH_EUR_FRACTION
+      );
     });
 
     describe("Whitelist", async () => {
