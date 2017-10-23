@@ -306,9 +306,9 @@ contract Commitment is
     /// Neufund public commitment uses fixed EUR rate during commitment to level playing field and
     /// prevent strategic behavior around ETH/EUR volatility. equity TOs will use oracles as they need spot prices
     ///
-    /// Note: Considering the max possible ETH_EUR_FRACTION value, the max
+    /// @notice Considering the max possible ETH_EUR_FRACTION value (10**18*10**4 == ~2**73), the max
     ///       amount of ETH (not wei) that is safe to be passed as the argument
-    ///       is ~10**37 (~2**123).
+    ///       is ~10**(54 - 18) (~2**123).
     function convertToEur(uint256 amount)
         public
         constant
