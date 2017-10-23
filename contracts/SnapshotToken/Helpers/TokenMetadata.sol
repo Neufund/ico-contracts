@@ -3,6 +3,8 @@ pragma solidity 0.4.15;
 import '../../Standards/ITokenMetadata.sol';
 
 
+/// @title adds token metadata to token contract
+/// @dev see Neumark for example implementation
 contract TokenMetadata is ITokenMetadata {
 
     ////////////////////////
@@ -25,10 +27,11 @@ contract TokenMetadata is ITokenMetadata {
     // Constructor
     ////////////////////////
 
-    /// @notice Constructor to create a MiniMeToken
+    /// @notice Constructor to set metadata
     /// @param tokenName Name of the new token
     /// @param decimalUnits Number of decimals of the new token
     /// @param tokenSymbol Token Symbol for the new token
+    /// @param version Token version ie. when cloning is used
     function TokenMetadata(
         string tokenName,
         uint8 decimalUnits,

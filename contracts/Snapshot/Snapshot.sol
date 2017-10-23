@@ -6,6 +6,7 @@ import './MSnapshotPolicy.sol';
 /// @title Reads and writes snapshots
 /// @dev Manages reading and writing a series of values, where each value has assigned a snapshot id for access to historical data
 /// @dev may be added to any contract to provide snapshotting mechanism. should be mixed in with any of MSnapshotPolicy implementations to customize snapshot creation mechanics
+///     observes MSnapshotPolicy
 /// based on MiniMe token
 contract Snapshot is MSnapshotPolicy {
 

@@ -1,26 +1,13 @@
 pragma solidity 0.4.15;
 
 
-/// @dev The token controller contract must implement these functions
-contract MTokenController {
+/// @title controls spending approvals
+/// @dev TokenAllowance observes this interface, Neumark contract implements it
+contract MTokenAllowanceController {
 
     ////////////////////////
     // Internal functions
     ////////////////////////
-
-    /// @notice Notifies the controller about a token transfer allowing the
-    ///  controller to react if desired
-    /// @param from The origin of the transfer
-    /// @param to The destination of the transfer
-    /// @param amount The amount of the transfer
-    /// @return False if the controller does not authorize the transfer
-    function mOnTransfer(
-        address from,
-        address to,
-        uint256 amount
-    )
-        internal
-        returns (bool allow);
 
     /// @notice Notifies the controller about an approval allowing the
     ///  controller to react if desired
@@ -35,4 +22,5 @@ contract MTokenController {
     )
         internal
         returns (bool allow);
+
 }

@@ -26,17 +26,13 @@ contract BasicToken is IBasicToken, Math {
     /**
     * @dev transfer token for a specified address
     * @param to The address to transfer to.
-    * @param value The amount to be transferred.
+    * @param amount The amount to be transferred.
     */
-    function transfer(address to, uint256 value)
+    function transfer(address to, uint256 amount)
         public
         returns (bool)
     {
-        require(to != address(0));
-
-        _balances[msg.sender] = sub(_balances[msg.sender], value);
-        _balances[to] = add(_balances[to], value);
-        Transfer(msg.sender, to, value);
+        transferInternal(msg.sender, to, amount);
         return true;
     }
 
@@ -61,5 +57,20 @@ contract BasicToken is IBasicToken, Math {
         returns (uint256 balance)
     {
         return _balances[owner];
+    }
+
+    ////////////////////////
+    // Internal functions
+    ////////////////////////
+
+    // actual transfer function called by all public variants
+    function transferInternal(address from, address to, uint256 amount)
+        internal
+    {
+        require(to != address(0));
+
+        _balances[from] = sub(_balances[from], amount);
+        _balances[to] = add(_balances[to], amount);
+        Transfer(from, to, amount);
     }
 }

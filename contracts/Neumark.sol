@@ -3,7 +3,8 @@ pragma solidity 0.4.15;
 import './AccessControl/AccessControlled.sol';
 import './AccessRoles.sol';
 import './Agreement.sol';
-import './SnapshotToken/SnapshotToken.sol';
+import './Snapshot/DailyAndSnapshotable.sol';
+import './SnapshotToken/StandardSnapshotToken.sol';
 import './NeumarkIssuanceCurve.sol';
 import './Reclaimable.sol';
 
@@ -12,7 +13,9 @@ contract Neumark is
     AccessControlled,
     AccessRoles,
     Agreement,
-    SnapshotToken,
+    DailyAndSnapshotable,
+    StandardSnapshotToken,
+    TokenMetadata,
     NeumarkIssuanceCurve,
     Reclaimable
 {
@@ -26,6 +29,8 @@ contract Neumark is
     uint8  private constant TOKEN_DECIMALS = 18;
 
     string private constant TOKEN_SYMBOL = "NMK";
+
+    string private constant VERSION = "NMK_1.0";
 
     ////////////////////////
     // Mutable state
@@ -62,11 +67,17 @@ contract Neumark is
         AccessControlled(accessPolicy)
         AccessRoles()
         Agreement(accessPolicy, forkArbiter)
-        SnapshotToken(
+        StandardSnapshotToken(
+            IClonedTokenParent(0x0),
+            0
+        )
+        TokenMetadata(
             TOKEN_NAME,
             TOKEN_DECIMALS,
-            TOKEN_SYMBOL
+            TOKEN_SYMBOL,
+            VERSION
         )
+        DailyAndSnapshotable(0)
         NeumarkIssuanceCurve()
         Reclaimable()
     {

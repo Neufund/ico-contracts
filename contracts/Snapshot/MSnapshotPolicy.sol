@@ -3,7 +3,7 @@ pragma solidity 0.4.15;
 
 /// @title Abstracts snapshot id creation logics
 /// @dev Mixin (internal interface) of the snapshot policy which abstracts snapshot id creation logics from Snapshot contract
-/// @dev to be implemented and such implementation should be mixed with Snapshot-derived contract, see EveryBlock for simplest example of implementation and SnapshotToken
+/// @dev to be implemented and such implementation should be mixed with Snapshot-derived contract, see EveryBlock for simplest example of implementation and StandardSnapshotToken
 contract MSnapshotPolicy {
 
     ////////////////////////

@@ -1,10 +1,7 @@
 pragma solidity 0.4.15;
 
 import './AccessControl/AccessControlled.sol';
-import './Math.sol';
 import './Reclaimable.sol';
-import './Standards/IERC677Token.sol';
-import './Standards/IERC677Callback.sol';
 import './SnapshotToken/Helpers/TokenMetadata.sol';
 import './Zeppelin/StandardToken.sol';
 import './MigrationSource.sol';
@@ -212,26 +209,5 @@ contract EuroToken is
         require(success);
         // set event
         LogOwnerMigrated(msg.sender, amount);
-    }
-
-    //
-    // Implements IERC677Token
-    //
-
-    function approveAndCall(address spender, uint256 amount, bytes extraData)
-        public
-        returns (bool)
-    {
-        require(approve(spender, amount));
-
-        bool success = IERC677Callback(spender).receiveApproval(
-            msg.sender,
-            amount,
-            this,
-            extraData
-        );
-        require(success);
-
-        return true;
     }
 }

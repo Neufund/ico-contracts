@@ -1,20 +1,14 @@
 pragma solidity 0.4.15;
 
 import './AccessControl/AccessControlled.sol';
-import './Math.sol';
 import './Reclaimable.sol';
-import './IsContract.sol';
-import './Standards/IERC677Token.sol';
-import './Standards/IERC677Callback.sol';
+import "./IsContract.sol";
 import './Standards/IERC223Token.sol';
 import './Standards/IERC223Callback.sol';
 import './SnapshotToken/Helpers/TokenMetadata.sol';
 import './Zeppelin/StandardToken.sol';
 
-
 contract EtherToken is
-    IERC677Token,
-    IERC223Token,
     IsContract,
     AccessControlled,
     StandardToken,
@@ -85,30 +79,6 @@ contract EtherToken is
     }
 
     //
-    // Implements IERC677Token
-    //
-
-    function approveAndCall(
-        address spender,
-        uint256 amount,
-        bytes extraData
-    )
-        returns (bool)
-    {
-        require(approve(spender, amount));
-
-        bool success = IERC677Callback(spender).receiveApproval(
-            msg.sender,
-            amount,
-            this,
-            extraData
-        );
-        require(success);
-
-        return true;
-    }
-
-    //
     // Implements IERC223Token
     //
 
@@ -116,12 +86,12 @@ contract EtherToken is
         public
         returns (bool)
     {
-        bool success = BasicToken.transfer(to, amount);
-        require(success);
+        transferInternal(msg.sender, to, amount);
 
         // Notify the receiving contract.
         if (isContract(to)) {
-            IERC223Callback(to).tokenFallback(msg.sender, amount, data);
+            // in case of re-entry (1) transfer is done (2) msg.sender is different
+            IERC223Callback(to).onTokenTransfer(msg.sender, amount, data);
         }
         return true;
     }

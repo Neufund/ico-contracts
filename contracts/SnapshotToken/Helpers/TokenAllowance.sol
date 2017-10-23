@@ -1,28 +1,36 @@
 pragma solidity 0.4.15;
 
+import './MTokenTransfer.sol';
+import './MTokenAllowanceController.sol';
+import '../../Standards/IERC20Token.sol';
 import '../../Standards/IERC677Token.sol';
 import '../../Standards/IERC677Callback.sol';
-import './MAllowance.sol';
 
 
-// Consumes the MAllowance mixin
-contract Allowance is
-    IERC677Token,
-    MAllowance
+/// @title token spending approval and transfer
+/// @dev implements token approval and transfers and exposes relevant part of ERC20 and ERC677 approveAndCall
+///     may be mixed in with any basic token (implementing mTransfer) like BasicSnapshotToken or MintableSnapshotToken to add approval mechanism
+///     observes MTokenAllowanceController interface
+///     observes MTokenTransfer
+contract TokenAllowance is
+    MTokenTransfer,
+    MTokenAllowanceController,
+    IERC20Token,
+    IERC677Token
 {
 
     ////////////////////////
     // Mutable state
     ////////////////////////
 
-    // `allowed` tracks any extra transfer rights as in all ERC20 tokens
+    // `allowed` tracks rights to spends others tokens as per ERC20
     mapping (address => mapping (address => uint256)) private _allowed;
 
     ////////////////////////
     // Constructor
     ////////////////////////
 
-    function Allowance()
+    function TokenAllowance()
         internal
     {
     }
@@ -30,6 +38,10 @@ contract Allowance is
     ////////////////////////
     // Public functions
     ////////////////////////
+
+    //
+    // Implements IERC20Token
+    //
 
     /// @dev This function makes it easy to read the `allowed[]` map
     /// @param owner The address of the account that owns the token
@@ -46,14 +58,17 @@ contract Allowance is
 
     /// @notice `msg.sender` approves `_spender` to spend `_amount` tokens on
     ///  its behalf. This is a modified version of the ERC20 approve function
-    ///  to be a little bit safer
+    ///  where allowance per spender must be 0 to allow change of such allowance
     /// @param spender The address of the account able to transfer the tokens
     /// @param amount The amount of tokens to be approved for transfer
-    /// @return True if the approve was successful, reverts in any other case
+    /// @return True or reverts, False is never returned
     function approve(address spender, uint256 amount)
         public
         returns (bool success)
     {
+        // Alerts the token controller of the approve function call
+        require(mOnApprove(msg.sender, spender, amount));
+
         // To change the approve amount you first have to reduce the addresses`
         //  allowance to zero by calling `approve(_spender,0)` if it is not
         //  already 0 to mitigate the race condition described here:
@@ -63,33 +78,6 @@ contract Allowance is
         _allowed[msg.sender][spender] = amount;
         Approval(msg.sender, spender, amount);
         return true;
-    }
-
-    /// @notice `msg.sender` approves `_spender` to send `_amount` tokens on
-    ///  its behalf, and then a function is triggered in the contract that is
-    ///  being approved, `_spender`. This allows users to use their tokens to
-    ///  interact with contracts in one function call instead of two
-    /// @param spender The address of the contract able to transfer the tokens
-    /// @param amount The amount of tokens to be approved for transfer
-    /// @return True if the function call was successful
-    function approveAndCall(
-        address spender,
-        uint256 amount,
-        bytes extraData
-    )
-        public
-        returns (bool success)
-    {
-        require(approve(spender, amount));
-
-        success = IERC677Callback(spender).receiveApproval(
-            msg.sender,
-            amount,
-            this,
-            extraData
-        );
-
-        return success;
     }
 
     /// @notice Send `_amount` tokens to `_to` from `_from` on the condition it
@@ -107,9 +95,40 @@ contract Allowance is
         require(amountApproved);
 
         _allowed[from][msg.sender] -= amount;
-        mAllowanceTransfer(from, to, amount);
+        mTransfer(from, to, amount);
 
         return true;
     }
 
+    //
+    // Implements IERC677Token
+    //
+
+    /// @notice `msg.sender` approves `_spender` to send `_amount` tokens on
+    ///  its behalf, and then a function is triggered in the contract that is
+    ///  being approved, `_spender`. This allows users to use their tokens to
+    ///  interact with contracts in one function call instead of two
+    /// @param spender The address of the contract able to transfer the tokens
+    /// @param amount The amount of tokens to be approved for transfer
+    /// @return True or reverts, False is never returned
+    function approveAndCall(
+        address spender,
+        uint256 amount,
+        bytes extraData
+    )
+        public
+        returns (bool success)
+    {
+        require(approve(spender, amount));
+
+        success = IERC677Callback(spender).receiveApproval(
+            msg.sender,
+            amount,
+            this,
+            extraData
+        );
+        require(success);
+
+        return true;
+    }
 }
