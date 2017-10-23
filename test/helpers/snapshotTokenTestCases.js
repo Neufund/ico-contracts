@@ -94,7 +94,7 @@ export function snapshotTokenTests(
         [supply.sub(18281 + 98128), 18281 + 98128 - 8712, supply.sub(8712)]
       ]);
 
-      expectTokenBalances(token, snapshots);
+      await expectTokenBalances(token, snapshots);
     });
 
     it("should reject on future totalSupplyAt", async () => {
