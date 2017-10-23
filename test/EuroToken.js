@@ -16,6 +16,9 @@ import roles from "./helpers/roles";
 import EvmError from "./helpers/EVMThrow";
 
 const EuroToken = artifacts.require("EuroToken");
+const TestEuroTokenMigrationTarget = artifacts.require(
+  "TestEuroTokenMigrationTarget"
+);
 
 contract(
   "EuroToken",
@@ -272,6 +275,140 @@ contract(
       });
 
       testWithdrawal(getToken, investors[0], initialBalance);
+    });
+
+    describe("migration tests", () => {
+      let testEuroTokenMigrationTarget;
+      beforeEach(async () => {
+        testEuroTokenMigrationTarget = await TestEuroTokenMigrationTarget.new(
+          euroToken.address
+        );
+      });
+
+      function expectMigrationEnabledEvent(tx, target) {
+        const event = eventValue(tx, "LogMigrationEnabled");
+        expect(event).to.exist;
+        expect(event.args.target).to.be.equal(target);
+      }
+
+      function expectEuroTokenOwnerMigratedEvent(tx, owner, amount) {
+        const event = eventValue(tx, "LogEuroTokenOwnerMigrated");
+        expect(event).to.exist;
+        expect(event.args.owner).to.be.equal(owner);
+        expect(event.args.amount).to.be.bignumber.eq(amount);
+      }
+
+      it("should migrate", async () => {
+        const initialBalance = etherToWei(98172.1899182);
+        await euroToken.deposit(investors[1], initialBalance, {
+          from: depositManager
+        });
+        // allow to transfer from to check if migration clears all rights
+        await euroToken.setAllowedTransferFrom(investors[1], true, {
+          from: depositManager
+        });
+        const tx = await euroToken.enableMigration(
+          testEuroTokenMigrationTarget.address,
+          { from: depositManager }
+        );
+        expectMigrationEnabledEvent(tx, testEuroTokenMigrationTarget.address);
+        expect(await euroToken.currentMigrationTarget()).to.be.eq(
+          testEuroTokenMigrationTarget.address
+        );
+        const migrateTx = await euroToken.migrate({ from: investors[1] });
+        expectEuroTokenOwnerMigratedEvent(
+          migrateTx,
+          investors[1],
+          initialBalance
+        );
+        // check if transfer permissions disabled
+        expect(await euroToken.allowedTransferTo(investors[1])).to.be.false;
+        expect(await euroToken.allowedTransferFrom(investors[1])).to.be.false;
+        // check balances
+        const euroTokenBalance = await euroToken.balanceOf(investors[1]);
+        expect(euroTokenBalance).to.be.bignumber.eq(0);
+        expect(await euroToken.totalSupply()).to.be.bignumber.eq(0);
+        const migratedBalance = await testEuroTokenMigrationTarget.balanceOf(
+          investors[1]
+        );
+        expect(migratedBalance).to.be.bignumber.eq(initialBalance);
+        // check if EURT are at investor's disposal
+        await testEuroTokenMigrationTarget.transfer(
+          investors[2],
+          initialBalance,
+          { from: investors[1] }
+        );
+      });
+
+      it("should reject migration without 'to' permission", async () => {
+        const initialBalance = etherToWei(98172.1899182);
+        await euroToken.deposit(investors[1], initialBalance, {
+          from: depositManager
+        });
+        await euroToken.enableMigration(testEuroTokenMigrationTarget.address, {
+          from: depositManager
+        });
+        // then admin decided to ban the owner
+        await euroToken.setAllowedTransferTo(investors[1], false, {
+          from: depositManager
+        });
+        await expect(
+          euroToken.migrate({ from: investors[1] })
+        ).to.be.rejectedWith(EvmError);
+      });
+
+      it("should migrate investor with 0 balance", async () => {
+        const initialBalance = etherToWei(98172.1899182);
+        await euroToken.deposit(investors[1], initialBalance, {
+          from: depositManager
+        });
+        await euroToken.enableMigration(testEuroTokenMigrationTarget.address, {
+          from: depositManager
+        });
+        // empty account
+        await euroToken.withdraw(initialBalance, { from: investors[1] });
+        const migrateTx = await euroToken.migrate({ from: investors[1] });
+        expectEuroTokenOwnerMigratedEvent(migrateTx, investors[1], 0);
+      });
+
+      it("should reject migration for a second time due to permissions autodrop", async () => {
+        const initialBalance = etherToWei(98172.1899182);
+        await euroToken.deposit(investors[1], initialBalance, {
+          from: depositManager
+        });
+        await euroToken.enableMigration(testEuroTokenMigrationTarget.address, {
+          from: depositManager
+        });
+        const migrateTx = await euroToken.migrate({ from: investors[1] });
+        expectEuroTokenOwnerMigratedEvent(
+          migrateTx,
+          investors[1],
+          initialBalance
+        );
+        // 'to' permission was dropped, second migration will fail
+        await expect(
+          euroToken.migrate({ from: investors[1] })
+        ).to.be.rejectedWith(EvmError);
+      });
+
+      it("should reject enableMigration not from depositManager", async () => {
+        await expect(
+          euroToken.enableMigration(testEuroTokenMigrationTarget.address, {
+            from: investors[0]
+          })
+        ).to.be.rejectedWith(EvmError);
+      });
+
+      it("should reject enableMigration twice", async () => {
+        await euroToken.enableMigration(testEuroTokenMigrationTarget.address, {
+          from: depositManager
+        });
+        await expect(
+          euroToken.enableMigration(testEuroTokenMigrationTarget.address, {
+            from: depositManager
+          })
+        ).to.be.rejectedWith(EvmError);
+      });
     });
   }
 );
