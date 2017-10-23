@@ -406,16 +406,17 @@ contract Commitment is
     function mAfterTransition(State /* oldState */, State newState)
         internal
     {
+        uint256 nmkToBurn;
         if (newState == State.Public) {
 
-            // Rollback unfufilled Ether reservations.
-            NEUMARK.burn(_whitelistEtherNmk);
+            // mark unfufilled Ether reservations for burning
+            nmkToBurn = _whitelistEtherNmk;
             _whitelistEtherNmk = 0;
         }
         if (newState == State.Finished) {
 
-            // Rollback unfulfilled Euro reservations.
-            NEUMARK.burn(_whitelistEuroNmk);
+            // mark unfufilled Euro reservations for burning
+            nmkToBurn = _whitelistEuroNmk;
             _whitelistEuroNmk = 0;
 
             // Enable Neumark trading in token controller
@@ -425,6 +426,8 @@ contract Commitment is
             ETHER_LOCK.controllerSucceeded();
             EURO_LOCK.controllerSucceeded();
         }
+        // burn Neumarks after state change to prevent theoretical re-entry
+        NEUMARK.burn(nmkToBurn);
     }
 
     ////////////////////////
