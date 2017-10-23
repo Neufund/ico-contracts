@@ -406,7 +406,12 @@ contract Commitment is
     function mAfterTransition(State /* oldState */, State newState)
         internal
     {
-        uint256 nmkToBurn;
+        // nothing to do after entering Whitelist
+        if (newState == State.Whitelist) {
+            return;
+        }
+
+        uint256 nmkToBurn = 0;
         if (newState == State.Public) {
 
             // mark unfufilled Ether reservations for burning
@@ -536,9 +541,6 @@ contract Commitment is
         NEUMARK.distribute(msg.sender, investorNmk);
         NEUMARK.distribute(PLATFORM_WALLET, platformNmk);
 
-        if (ticketNmk > 0) {
-
-        }
         return investorNmk;
     }
 
