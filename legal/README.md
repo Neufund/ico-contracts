@@ -44,7 +44,6 @@ For personal phase, block number at which user signed agreement may be obtained 
 |{commit-id}|Commit-id for which deployed byte code (referenced by this agreement) may be reproduced|
 |{website}|Commitment website|https://commit.neufund.org|
 |{acquisition-sc-address}|Commitment contract address|*input parameter*|
-|{signed-by-company-date}|Timestamp (UTC) at which agreement was signed by company|Commitment::currentAgreement[1]|
 |{company-address}|Ethereum address that signed agreement|Commitment::currentAgreement[0]|
 |{neumark-sc-address}|Neumark contract address|Commitment::neumark|
 |{icbm-start-date}|When public ICBM starts|Commitment::startOf(State.Public) (timestamp)|
@@ -57,6 +56,7 @@ For personal phase, block number at which user signed agreement may be obtained 
 |Tag|Description|Value|
 |---|-----------|-----|
 |{lockin-sc-address}|Particular LockedAccount address|*input parameter*|
+|{signed-by-company-date}|Timestamp (UTC) at which agreement was signed by company|Commitment::currentAgreement[1]|
 |{payment-token}|Token which investor uses to commit|LockedAccount::assetToken()::name|
 |{max-cap}|Maximum cap in Euro, must be converted to Ether for etherLock|Commitment:maxCapEur|
 |{min-ticket}|Minimum ticket size, must be converted to Ether for etherLock|Commitment:minTicketEur|
@@ -94,7 +94,6 @@ For personal phase, block number at which user signed agreement may be obtained 
 |{repo-url}|Link to ico-contracts repo where source code of backed smart contract is stored|git@github.com:Neufund/ico-contracts.git
 |{commit-id}|Commit-id for which deployed byte code (referenced by this agreement) may be reproduced|
 |{neumark-sc-address}|Neumark contract address||
-|{signed-by-company-date}|Timestamp (UTC) at which agreement was signed by company|Neumark::currentAgreement[1]|
 |{company-address}|Ethereum address that signed agreement|Neumark::currentAgreement[0]|
 |{neumark-cap}|Maximum amount of Neumarks to be created|Neumark::neumarkCap|
 |{initial-reward}|Initial Neumark reward, governs curve steepness|Neumark::initialRewardFraction (fraction)|
@@ -102,7 +101,9 @@ For personal phase, block number at which user signed agreement may be obtained 
 
 **General phase**
 
--
+|Tag|Description|Value|
+|---|-----------|-----|
+|{signed-by-company-date}|Timestamp (UTC) at which agreement was signed by company|Neumark::currentAgreement[1]|
 
 **Personal phase**
 

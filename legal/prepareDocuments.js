@@ -21,7 +21,6 @@ async function prepareNeumarkTokenHolderAgreement({
     "repo-url": DOCUMENT_CONSTANTS.repoUrl,
     "commit-id": gitRev.long(),
     "neumark-sc-address": neumarkContract.address,
-    "signed-by-company-date": formatMomentDate(moment.utc()),
     "company-address": companyAddress,
     "neumark-cap": formatMoney(neuDecimals, await neumarkContract.neumarkCap()),
     "initial-reward": formatMoney(
@@ -50,7 +49,6 @@ async function prepareReservationAgreement({
     website: DOCUMENT_CONSTANTS.website,
     "acquisition-sc-address": commitmentContract.address,
     "lockin-sc-address": lockedAccountContract.address,
-    "signed-by-company-date": formatMomentDate(moment.utc()),
     "company-address": companyAddress,
     "neumark-sc-address": neumarkContract.address,
     "icbm-start-date": formatDate(
