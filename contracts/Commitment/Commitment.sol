@@ -512,7 +512,7 @@ contract Commitment is
             ticket.rewardNmk = sub(ticket.rewardNmk, ticketNmk);
             remainingEurUlps = sub(remainingEurUlps, ticketEurUlps);
 
-            rewardNmk += ticketNmk;
+            rewardNmk = ticketNmk;
         }
 
         // issue Neumarks against curve for amount left after pre-defined ticket was realized
