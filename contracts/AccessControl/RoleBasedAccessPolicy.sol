@@ -91,6 +91,9 @@ contract RoleBasedAccessPolicy is
         // Issue the local and global AccessContoler role to creator
         _access[msg.sender][ROLE_ACCESS_CONTROLLER][this] = TriState.Allow;
         _access[msg.sender][ROLE_ACCESS_CONTROLLER][GLOBAL] = TriState.Allow;
+        // Update enumerator accordingly so those permissions are visible as any other
+        updatePermissionEnumerator(msg.sender, ROLE_ACCESS_CONTROLLER, this, TriState.Unset, TriState.Allow);
+        updatePermissionEnumerator(msg.sender, ROLE_ACCESS_CONTROLLER, GLOBAL, TriState.Unset, TriState.Allow);
     }
 
     ////////////////////////
@@ -233,6 +236,22 @@ contract RoleBasedAccessPolicy is
         // Update the mapping
         _access[subject][role][object] = newValue;
 
+        // Update permission in enumerator
+        updatePermissionEnumerator(subject, role, object, oldValue, newValue);
+
+        // Log
+        LogAccessChanged(msg.sender, subject, role, object, oldValue, newValue);
+    }
+
+    function updatePermissionEnumerator(
+        address subject,
+        bytes32 role,
+        IAccessControlled object,
+        TriState oldValue,
+        TriState newValue
+    )
+        private
+    {
         // Update the list on add / remove
         address[] storage list = _accessList[object][role];
         // Add new subject only when going form Unset to Allow/Deny
@@ -252,8 +271,5 @@ contract RoleBasedAccessPolicy is
                 }
             }
         }
-
-        // Log
-        LogAccessChanged(msg.sender, subject, role, object, oldValue, newValue);
     }
 }
