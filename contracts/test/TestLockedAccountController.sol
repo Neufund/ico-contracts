@@ -40,12 +40,6 @@ contract TestLockedAccountController {
         LOCKED_ACCOUNT.controllerSucceeded();
     }
 
-    function succWithLockRelease()
-        public
-    {
-        // do not call lockedAccount just finalize
-    }
-
     function fail()
         public
     {
