@@ -14,12 +14,14 @@ async function increaseTime(duration) {
         ],
         id
       },
-      err1 => {
+      (err1, result) => {
         if (err1) {
           reject(err1);
           return;
         }
-
+        if (result.error) {
+          reject(`increaseTime not supported, test will fail ${result.error}`);
+        }
         web3.currentProvider.sendAsync(
           {
             jsonrpc: "2.0",

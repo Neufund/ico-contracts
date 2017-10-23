@@ -8,7 +8,7 @@ const Commitment = artifacts.require("Commitment");
 
 module.exports = function deployContracts(deployer, network, accounts) {
   // do not deploy testing network
-  if (network === "inprocess_test" || network === "coverage") return;
+  if (network.endsWith("_test") || network === "coverage") return;
 
   const CONFIG = getConfig(web3, network, accounts);
   const DEPLOYER = accounts[0];

@@ -32,6 +32,18 @@ You should consider replacing javascript compiler with `solc`, this will increas
 yarn lint:fix
 ```
 
+### Byzantium and pre-byzantium error handling for calls and transaction
+
+**Calling constant method that reverts**
+* pre-byzantium and post byzantium parity will return `result: 0x` (0x in result field of JSON-RPC response). Clearly it does not look as the error code ;> and if you are using web3, it will try to decode and fail specific expection per expected data type returned (like invalid BigNumber or address), some types will just succeed so **BEWARE**
+* `testrpc` will return exception string `invalid opcode` and stack trace in `error` field of JSON-RPC response
+
+**Executing transactions that revert**
+* pre-byzantium parity - normal transaction object and transaction receipt are returned (just with all gas used). there is no other way to detect revert besides generating and checking events in case of success (so lack of event is error situation). this is very weak
+* post-byzantium parity and other nodes - there is `status` field in transaction receipt! use this. use Neufund modified truffle that recognize this situation (https://github.com/Neufund/truffle), `neufund` branch.
+* `testrpc` will return exception string `invalid opcode` and stack trace in `error` field of JSON-RPC response
+
+
 ### Test coverage
 ```
 yarn test:coverage
@@ -89,11 +101,16 @@ Snapshotting has other problems that also makes it useless for state management 
 https://github.com/trufflesuite/ganache-core/issues/7
 Hopefully PRs solving this are pending.
 
+*Remarks on non-testrpc testing*
+You are able to run test on parity nodes, evm_increaseTime is not supported so those tests will fail. Here is dockerized node that works.
+https://github.com/Neufund/parity-instant-seal-byzantium-enabled
+
 ### Neufund modified Truffle
 
 Modified version of truffle is referenced for running test cases.
 1. Revert and snapshot are removed from `truffle-core` (https://github.com/Neufund/truffle-core/commit/83404a758a684e8d3d4806f24bc40a25c0817b79)
 2. https://github.com/trufflesuite/truffle/issues/569 is fixed as testing overloaded `transfer` is impossible (https://github.com/Neufund/truffle-contract/commit/ecae09942db60039f2dc4768ceeb88776226f0ca)
+3. Works with byzantium enabled Parity nodes
 
 ## Deployment
 
