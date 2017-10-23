@@ -1,10 +1,9 @@
 require("babel-register");
-const moment = require("moment");
 const fs = require("fs");
 const { join } = require("path");
 const replaceString = require("replace-string");
 const gitRev = require("git-rev-sync");
-const { formatMoney, formatDate, formatMomentDate } = require("./formatters");
+const { formatMoney, formatDate } = require("./formatters");
 
 const DOCUMENT_CONSTANTS = {
   repoUrl: "git@github.com:Neufund/ico-contracts.git",
