@@ -508,11 +508,19 @@ contract Commitment is
                 ticketEurUlps,
                 ticket.amountEurUlps
             );
+            // update investor ticket
             ticket.amountEurUlps = sub(ticket.amountEurUlps, ticketEurUlps);
             ticket.rewardNmk = sub(ticket.rewardNmk, ticketNmk);
+            // mark ticketEurUlps as spent
             remainingEurUlps = sub(remainingEurUlps, ticketEurUlps);
-
+            // set neumark reward
             rewardNmk = ticketNmk;
+            // decrease reserved Neumark pool accordingly
+            if (tokenType == Token.Euro) {
+                _whitelistEuroNmk = sub(_whitelistEuroNmk, ticketNmk);
+            } else {
+                _whitelistEtherNmk = sub(_whitelistEtherNmk, ticketNmk);
+            }
         }
 
         // issue Neumarks against curve for amount left after pre-defined ticket was realized
@@ -529,11 +537,7 @@ contract Commitment is
         NEUMARK.distribute(PLATFORM_WALLET, platformNmk);
 
         if (ticketNmk > 0) {
-            if (tokenType == Token.Euro) {
-                _whitelistEuroNmk = sub(_whitelistEuroNmk, ticketNmk);
-            } else {
-                _whitelistEtherNmk = sub(_whitelistEtherNmk, ticketNmk);
-            }
+
         }
         return investorNmk;
     }
