@@ -522,8 +522,8 @@ contract Commitment is
         var (platformNmk, investorNmk) = calculateNeumarkDistribtion(rewardNmk);
 
         // Issue Neumarks and distribute
-        NEUMARK.distributeNeumark(msg.sender, investorNmk);
-        NEUMARK.distributeNeumark(PLATFORM_WALLET, platformNmk);
+        NEUMARK.distribute(msg.sender, investorNmk);
+        NEUMARK.distribute(PLATFORM_WALLET, platformNmk);
 
         if (ticketNmk > 0) {
             if (tokenType == Token.Euro) {

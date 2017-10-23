@@ -92,7 +92,7 @@ contract Neumark is
         return neumarkUlps;
     }
 
-    function distributeNeumark(address to, uint256 neumarkUlps)
+    function distribute(address to, uint256 neumarkUlps)
         public
         only(ROLE_NEUMARK_ISSUER)
         acceptAgreement(to)

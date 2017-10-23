@@ -202,7 +202,7 @@ contract(
       await neumark.transfer(other, totNMK, { from: accounts[1] });
       // and replace 'other' with 'accounts[1]' for this test to fail
       await expect(
-        neumark.distributeNeumark(accounts[2], totNMK, { from: other })
+        neumark.distribute(accounts[2], totNMK, { from: other })
       ).to.be.rejectedWith(EvmError);
     });
 
@@ -264,7 +264,7 @@ contract(
       const amount = await neumark.balanceOf.call(issuer);
 
       // 'from' address should be signed up here, this is how distribute differs from transfer
-      const tx = await neumark.distributeNeumark(from, amount, {
+      const tx = await neumark.distribute(from, amount, {
         from: issuer
       });
       const agreements = tx.logs
@@ -312,7 +312,7 @@ contract(
       // comment line below for this test to fail
       await neumark.enableTransfer(false, { from: transferAdmin });
 
-      const tx = neumark.distributeNeumark(accounts[3], amount, { from });
+      const tx = neumark.distribute(accounts[3], amount, { from });
       await expect(tx).to.be.rejectedWith(EvmError);
     });
 
