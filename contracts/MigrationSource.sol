@@ -70,7 +70,7 @@ contract MigrationSource is
         onlyMigrationEnabledOnce()
         only(MIGRATION_ADMIN)
     {
-        // we must be the source
+        // this must be the source
         require(migration.currentMigrationSource() == address(this));
         _migration = migration;
         LogMigrationEnabled(_migration);
