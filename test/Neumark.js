@@ -62,6 +62,22 @@ contract(
       }
     }
 
+    function expectNeumarksBurnedEvent(tx, owner, euroUlps, neumarkUlps) {
+      const event = eventValue(tx, "LogNeumarksBurned");
+      expect(event).to.exist;
+      expect(event.args.owner).to.equal(owner);
+      expect(event.args.euroUlps).to.be.bignumber.equal(euroUlps);
+      expect(event.args.neumarkUlps).to.be.bignumber.equal(neumarkUlps);
+    }
+
+    function expectNeumarksIssuedEvent(tx, owner, euroUlps, neumarkUlps) {
+      const event = eventValue(tx, "LogNeumarksIssued");
+      expect(event).to.exist;
+      expect(event.args.owner).to.equal(owner);
+      expect(event.args.euroUlps).to.be.bignumber.equal(euroUlps);
+      expect(event.args.neumarkUlps).to.be.bignumber.equal(neumarkUlps);
+    }
+
     it("should deploy", async () => {
       await prettyPrintGasCost("Neumark deploy", neumark);
     });
@@ -108,9 +124,10 @@ contract(
       });
       await prettyPrintGasCost("Issue", r1);
       const expectedr1NMK = new web3.BigNumber("649999859166687009257");
-      const r1NMK = eventValue(r1, "LogNeumarksIssued", "neumarkUlp");
+      const r1NMK = eventValue(r1, "LogNeumarksIssued", "neumarkUlps");
       expect(r1NMK.sub(expectedr1NMK).abs()).to.be.bignumber.lessThan(2);
       expectTransferEvent(r1, ZERO_ADDRESS, accounts[1], r1NMK);
+      expectNeumarksIssuedEvent(r1, accounts[1], expectedr1EUR, r1NMK);
       expect(await neumark.totalEuroUlps.call()).to.be.bignumber.eq(
         expectedr1EUR
       );
@@ -125,9 +142,10 @@ contract(
       });
       const expectedr2NMK = new web3.BigNumber("5849986057520322227964");
       const expectedTotalNMK = new web3.BigNumber("6499985916687009237221");
-      const r2NMK = eventValue(r2, "LogNeumarksIssued", "neumarkUlp");
+      const r2NMK = eventValue(r2, "LogNeumarksIssued", "neumarkUlps");
       expect(r2NMK.sub(expectedr2NMK).abs()).to.be.bignumber.lessThan(2);
       expectTransferEvent(r2, ZERO_ADDRESS, accounts[2], r2NMK);
+      expectNeumarksIssuedEvent(r2, accounts[2], expectedr2EUR, r2NMK);
       expect(await neumark.totalEuroUlps.call()).to.be.bignumber.eq(
         expectedr2EUR.add(expectedr1EUR)
       );
@@ -146,19 +164,30 @@ contract(
       await prettyPrintGasCost("Issue", r);
       const neumarkUlps = await neumark.balanceOf.call(accounts[1]);
       const neumarks = neumarkUlps.div(NMK_DECIMALS).floor();
+      expectNeumarksIssuedEvent(r, accounts[1], euroUlps, neumarkUlps);
 
       // Burn a third the Neumarks
       const toBurn = neumarks.div(3).round();
       const toBurnUlps = NMK_DECIMALS.mul(toBurn);
-      const burned = await neumark.burnNeumark(toBurnUlps, {
+      const burned = await neumark.burn(toBurnUlps, {
         from: accounts[1]
       });
       await prettyPrintGasCost("Burn", burned);
       expect(
         (await neumark.balanceOf.call(accounts[1])).div(NMK_DECIMALS).floor()
       ).to.be.bignumber.eq(neumarks.sub(toBurn));
-      const burnedNMK = eventValue(burned, "LogNeumarksBurned", "neumarkUlp");
-      expectTransferEvent(burned, accounts[1], ZERO_ADDRESS, burnedNMK);
+      const rollbackedEurUlps = eventValue(
+        burned,
+        "LogNeumarksBurned",
+        "euroUlps"
+      );
+      expectTransferEvent(burned, accounts[1], ZERO_ADDRESS, toBurnUlps);
+      expectNeumarksBurnedEvent(
+        burned,
+        accounts[1],
+        rollbackedEurUlps,
+        toBurnUlps
+      );
     });
 
     it("should issue same amount in multiple issuances", async () => {
@@ -171,12 +200,12 @@ contract(
       // issue for 1 ether
       const euro1EthUlps = EUR_DECIMALS.mul(1).mul(eurRate);
       let tx = await neumark.issueForEuro(euro1EthUlps, { from: accounts[1] });
-      const p1NMK = eventValue(tx, "LogNeumarksIssued", "neumarkUlp");
+      const p1NMK = eventValue(tx, "LogNeumarksIssued", "neumarkUlps");
       // issue for 100 wei
       tx = await neumark.issueForEuro(new BigNumber(100).mul(eurRate), {
         from: accounts[1]
       });
-      const p2NMK = eventValue(tx, "LogNeumarksIssued", "neumarkUlp");
+      const p2NMK = eventValue(tx, "LogNeumarksIssued", "neumarkUlps");
       expect(totNMK).to.be.bignumber.equal(p1NMK.plus(p2NMK));
     });
 
@@ -196,7 +225,7 @@ contract(
       await neumark.transfer(other, totNMK, { from: accounts[1] });
       // and replace 'other' with 'accounts[1]' for this test to fail
       await expect(
-        neumark.distributeNeumark(accounts[2], totNMK, { from: other })
+        neumark.distribute(accounts[2], totNMK, { from: other })
       ).to.be.rejectedWith(EvmError);
     });
 
@@ -256,7 +285,7 @@ contract(
       const amount = await neumark.balanceOf.call(issuer);
 
       // 'from' address should be signed up here, this is how distribute differs from transfer
-      const tx = await neumark.distributeNeumark(from, amount, {
+      const tx = await neumark.distribute(from, amount, {
         from: issuer
       });
       const agreements = tx.logs
@@ -302,7 +331,7 @@ contract(
       // comment line below for this test to fail
       await neumark.enableTransfer(false, { from: transferAdmin });
 
-      const tx = neumark.distributeNeumark(accounts[3], amount, { from });
+      const tx = neumark.distribute(accounts[3], amount, { from });
       await expect(tx).to.be.rejectedWith(EvmError);
     });
 
@@ -312,7 +341,7 @@ contract(
         from: accounts[1]
       });
       const balance = await neumark.balanceOf.call(accounts[1]);
-      await neumark.burnNeumark(balance.sub(initialBalanceNmk), {
+      await neumark.burn(balance.sub(initialBalanceNmk), {
         from: accounts[1]
       });
       // every ulp counts

@@ -38,7 +38,7 @@ contract Neumark is
 
     bool private _transferEnabled;
 
-    uint256 private _totalEuroUlps;
+    uint256 private _totalEurUlps;
 
     ////////////////////////
     // Events
@@ -46,14 +46,14 @@ contract Neumark is
 
     event LogNeumarksIssued(
         address indexed owner,
-        uint256 euroUlp,
-        uint256 neumarkUlp
+        uint256 euroUlps,
+        uint256 neumarkUlps
     );
 
     event LogNeumarksBurned(
         address indexed owner,
-        uint256 euroUlp,
-        uint256 neumarkUlp
+        uint256 euroUlps,
+        uint256 neumarkUlps
     );
 
     ////////////////////////
@@ -82,7 +82,7 @@ contract Neumark is
         Reclaimable()
     {
         _transferEnabled = true;
-        _totalEuroUlps = 0;
+        _totalEurUlps = 0;
     }
 
     ////////////////////////
@@ -95,17 +95,15 @@ contract Neumark is
         acceptAgreement(msg.sender)
         returns (uint256)
     {
-        // AUDIT[CHF-40] Why require() is used for checking overflow instead of
-        //   Math.add()?
-        require(_totalEuroUlps + euroUlps >= _totalEuroUlps);
+        require(_totalEurUlps + euroUlps >= _totalEurUlps);
         uint256 neumarkUlps = incremental(euroUlps);
-        _totalEuroUlps += euroUlps;
+        _totalEurUlps += euroUlps;
         mGenerateTokens(msg.sender, neumarkUlps);
         LogNeumarksIssued(msg.sender, euroUlps, neumarkUlps);
         return neumarkUlps;
     }
 
-    function distributeNeumark(address to, uint256 neumarkUlps)
+    function distribute(address to, uint256 neumarkUlps)
         public
         only(ROLE_NEUMARK_ISSUER)
         acceptAgreement(to)
@@ -114,13 +112,13 @@ contract Neumark is
         require(success);
     }
 
-    function burnNeumark(uint256 neumarkUlps)
+    function burn(uint256 neumarkUlps)
         public
         only(ROLE_NEUMARK_BURNER)
         returns (uint256)
     {
         uint256 euroUlps = incrementalInverse(neumarkUlps);
-        _totalEuroUlps -= euroUlps;
+        _totalEurUlps -= euroUlps;
         mDestroyTokens(msg.sender, neumarkUlps);
         LogNeumarksBurned(msg.sender, euroUlps, neumarkUlps);
         return euroUlps;
@@ -154,7 +152,7 @@ contract Neumark is
         constant
         returns (uint256)
     {
-        return _totalEuroUlps;
+        return _totalEurUlps;
     }
 
     function incremental(uint256 euroUlps)
@@ -162,7 +160,7 @@ contract Neumark is
         constant
         returns (uint256 neumarkUlps)
     {
-        return incremental(_totalEuroUlps, euroUlps);
+        return incremental(_totalEurUlps, euroUlps);
     }
 
     /// @dev The result is rounded down.
@@ -171,7 +169,7 @@ contract Neumark is
         constant
         returns (uint256 euroUlps)
     {
-        return incrementalInverse(_totalEuroUlps, neumarkUlps);
+        return incrementalInverse(_totalEurUlps, neumarkUlps);
     }
 
     ////////////////////////

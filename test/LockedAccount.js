@@ -427,12 +427,12 @@ contract(
         expect(event.args.neumarks).to.be.bignumber.equal(neumarks);
       }
 
-      function expectNeumarksBurnedEvent(tx, owner, euroUlp, neumarkUlp) {
+      function expectNeumarksBurnedEvent(tx, owner, euroUlps, neumarkUlps) {
         const event = eventValue(tx, "LogNeumarksBurned");
         expect(event).to.exist;
         expect(event.args.owner).to.equal(owner);
-        expect(event.args.euroUlp).to.be.bignumber.equal(euroUlp);
-        expect(event.args.neumarkUlp).to.be.bignumber.equal(neumarkUlp);
+        expect(event.args.euroUlps).to.be.bignumber.equal(euroUlps);
+        expect(event.args.neumarkUlps).to.be.bignumber.equal(neumarkUlps);
       }
 
       function expectUnlockEvent(tx, investorAddress, amount) {
@@ -470,7 +470,7 @@ contract(
         let tx = await neumark.issueForEuro(ticket, {
           from: investorAddress
         });
-        const neumarks = eventValue(tx, "LogNeumarksIssued", "neumarkUlp");
+        const neumarks = eventValue(tx, "LogNeumarksIssued", "neumarkUlps");
         expect(await neumark.balanceOf(investorAddress)).to.be.bignumber.equal(
           neumarks.add(initialNeumarksBalance)
         );

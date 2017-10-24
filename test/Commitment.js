@@ -39,7 +39,7 @@ const MIN_TICKET_EUR = web3.toBigNumber("300").mul(Q18);
 const ETH_EUR_FRACTION = web3.toBigNumber("300").mul(Q18);
 const ethToEur = eth => eth.mul(ETH_EUR_FRACTION).div(Q18);
 const eurToEth = eur => divRound(eur.mul(Q18), ETH_EUR_FRACTION);
-const platformShare = nmk => divRound(nmk, PLATFORM_SHARE);
+const platformShare = nmk => nmk.div(PLATFORM_SHARE).round(0, 1); // round down
 const investorShare = nmk => nmk.sub(platformShare(nmk));
 const MIN_TICKET_ETH = eurToEth(MIN_TICKET_EUR);
 
@@ -149,7 +149,7 @@ contract(
       });
     });
 
-    function expectFundsCommitedEvent(
+    function expectFundsCommittedEvent(
       tx,
       investor,
       amount,
@@ -157,7 +157,7 @@ contract(
       amountEur,
       grantedAmount
     ) {
-      const event = eventValue(tx, "LogFundsCommited");
+      const event = eventValue(tx, "LogFundsCommitted");
       expect(event).to.exist;
       expect(event.args.investor).to.be.eq(investor);
       expect(event.args.amount).to.be.bignumber.eq(amount);
@@ -169,10 +169,20 @@ contract(
 
     it("should deploy", async () => {
       await prettyPrintGasCost("Commitment deploy", commitment);
-
       expect(await commitment.ethEurFraction()).to.be.bignumber.eq(
         ETH_EUR_FRACTION
       );
+      expect(await commitment.platformWalletAddress.call()).to.eq(platform);
+      expect(await commitment.neumark.call()).to.eq(neumark.address);
+      expect(await commitment.etherLock.call()).to.eq(etherLock.address);
+      expect(await commitment.euroLock.call()).to.eq(euroLock.address);
+      expect(await commitment.maxCapEur.call()).to.be.bignumber.eq(CAP_EUR);
+      expect(await commitment.minTicketEur.call()).to.be.bignumber.eq(
+        MIN_TICKET_EUR
+      );
+      expect(
+        await commitment.platformOperatorNeumarkRewardShare.call()
+      ).to.be.bignumber.eq(PLATFORM_SHARE);
     });
 
     describe("Whitelist", async () => {
@@ -664,18 +674,26 @@ contract(
     });
 
     describe("Estimate neumark reward", async () => {
-      it("should compute from current curve", async () => {
-        await commitment.addWhitelisted(
-          [investors[0]],
-          [Token.Euro],
-          [MIN_TICKET_EUR.mul(5)],
-          { from: whitelistAdmin }
-        );
-        const amountEth = MIN_TICKET_EUR.mul(11);
-        const amountEur = amountEth.mul(ETH_EUR_FRACTION).divToInt(Q18);
+      it("should compute from current curve with equal split", async () => {
+        const amountEth = Q18.mul(6.62);
+        const amountEur = await commitment.convertToEur(amountEth);
         const totalNmk = await neumark.incremental(amountEur);
-        const platformNmk = totalNmk.divToInt(PLATFORM_SHARE);
-        const investorNmk = totalNmk.sub(platformNmk);
+        expect(totalNmk.modulo(2)).to.be.bignumber.eq(0);
+        const investorNmk = investorShare(totalNmk);
+
+        const estimate = await commitment.estimateNeumarkReward(amountEth);
+
+        expect(estimate).to.be.bignumber.eq(investorNmk);
+      });
+
+      it("should compute from current curve investor 1 wei more", async () => {
+        const amountEth = Q18.mul(1);
+        const amountEur = await commitment.convertToEur(amountEth);
+        const totalNmk = await neumark.incremental(amountEur);
+        expect(totalNmk.modulo(2)).to.be.bignumber.eq(1);
+        const investorNmk = investorShare(totalNmk);
+        const platformNmk = platformShare(totalNmk);
+        expect(investorNmk.sub(platformNmk)).to.be.bignumber.eq(1);
 
         const estimate = await commitment.estimateNeumarkReward(amountEth);
 
@@ -693,8 +711,8 @@ contract(
 
       beforeEach(async () => {
         expectedTotalNmk = await neumark.cumulative(amountEur);
-        expectedPlatformNmk = divRound(expectedTotalNmk, PLATFORM_SHARE);
-        expectedInvestorNmk = expectedTotalNmk.sub(expectedPlatformNmk);
+        expectedPlatformNmk = platformShare(expectedTotalNmk);
+        expectedInvestorNmk = investorShare(expectedTotalNmk);
       });
 
       it("should commit during Public", async () => {
@@ -706,7 +724,7 @@ contract(
         });
 
         await prettyPrintGasCost("commit", tx);
-        expectFundsCommitedEvent(
+        expectFundsCommittedEvent(
           tx,
           investor,
           amountEth,
@@ -728,7 +746,7 @@ contract(
           from: investor,
           value: part2
         });
-        expectFundsCommitedEvent(
+        expectFundsCommittedEvent(
           tx,
           investor,
           amountEth,
@@ -749,7 +767,7 @@ contract(
           from: investor,
           value: 0
         });
-        expectFundsCommitedEvent(
+        expectFundsCommittedEvent(
           tx,
           investor,
           amountEth,
@@ -916,8 +934,8 @@ contract(
 
       beforeEach(async () => {
         expectedTotalNmk = await neumark.cumulative(amountEur);
-        expectedPlatformNmk = divRound(expectedTotalNmk, PLATFORM_SHARE);
-        expectedInvestorNmk = expectedTotalNmk.sub(expectedPlatformNmk);
+        expectedPlatformNmk = platformShare(expectedTotalNmk);
+        expectedInvestorNmk = investorShare(expectedTotalNmk);
         await commitment.addWhitelisted(
           [investor],
           [Token.Ether],
@@ -935,7 +953,7 @@ contract(
         });
 
         await prettyPrintGasCost("commit", tx);
-        expectFundsCommitedEvent(
+        expectFundsCommittedEvent(
           tx,
           investor,
           amountEth,
@@ -1130,12 +1148,10 @@ contract(
       const amountEur = MIN_TICKET_EUR.mul(10);
       let expectedTotalNmk;
       let expectedInvestorNmk;
-      let expectedPlatformNmk;
 
       beforeEach(async () => {
         expectedTotalNmk = await neumark.cumulative(amountEur);
-        expectedPlatformNmk = divRound(expectedTotalNmk, PLATFORM_SHARE);
-        expectedInvestorNmk = expectedTotalNmk.sub(expectedPlatformNmk);
+        expectedInvestorNmk = investorShare(expectedTotalNmk);
 
         await euroToken.deposit(investor, CAP_EUR.mul(2), {
           from: eurtDepositManager
@@ -1153,7 +1169,7 @@ contract(
         });
 
         await prettyPrintGasCost("commit", tx);
-        expectFundsCommitedEvent(
+        expectFundsCommittedEvent(
           tx,
           investor,
           amountEur,
@@ -1299,8 +1315,8 @@ contract(
 
       beforeEach(async () => {
         expectedTotalNmk = await neumark.cumulative(amountEur);
-        expectedPlatformNmk = divRound(expectedTotalNmk, PLATFORM_SHARE);
-        expectedInvestorNmk = expectedTotalNmk.sub(expectedPlatformNmk);
+        expectedPlatformNmk = platformShare(expectedTotalNmk);
+        expectedInvestorNmk = investorShare(expectedTotalNmk);
 
         await euroToken.deposit(investor, CAP_EUR.mul(2), {
           from: eurtDepositManager
@@ -1321,7 +1337,7 @@ contract(
         });
 
         await prettyPrintGasCost("commit", tx);
-        expectFundsCommitedEvent(
+        expectFundsCommittedEvent(
           tx,
           investor,
           amountEur,
