@@ -1,6 +1,6 @@
 pragma solidity 0.4.15;
 
-
+// AUDIT[CHF-37] The Math contract should have a dedicated unit test suite.
 contract Math {
 
     ////////////////////////
@@ -15,15 +15,19 @@ contract Math {
         return v1 > v2 ? v1 - v2 : v2 - v1;
     }
 
+    // AUDIT[CHF-36] Move the documentation of this function here.
     function divRound(uint256 v, uint256 d)
         internal
         constant
         returns(uint256)
     {
         // round up if % is half or more
+        // AUDIT[CHF-39] The addition in Math.divRound can overflow.
+        //   See TestMath.testDivRound() for a test case showing the problem.
         return (v + (d/2)) / d;
     }
 
+    // AUDIT[CHF-35] Please document how this function works.
     function fraction(uint256 amount, uint256 frac)
         internal
         constant
@@ -58,6 +62,7 @@ contract Math {
         return c;
     }
 
+    // AUDIT[CHF-38] The Math.div() function does not do anything useful.
     function div(uint256 a, uint256 b)
         internal
         constant

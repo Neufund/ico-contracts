@@ -2,7 +2,7 @@ pragma solidity 0.4.15;
 
 import './StateMachine.sol';
 
-
+// AUDIT[CHF-17]: Please add a bit more documentation about this contract.
 //  ------ time ----->
 //  +--------+-----------+--------+------------
 //  | Before | Whitelist | Public | Finished …
@@ -13,6 +13,12 @@ contract TimedStateMachine is StateMachine {
     // Constants
     ////////////////////////
 
+    // AUDIT[CHF-19]: The following constants require comments explaining what
+    //                they are for. If the numeric values are described in any
+    //                external document, the reference to this document would
+    //                be also helpful.
+    // AUDIT[CHF-21]: The visibility of the following constants should be
+    //                `private`.
     int256 internal constant MIN_BEFORE_DURATION = 1 days;
 
     int256 internal constant WHITELIST_DURATION = 5 days;
@@ -45,7 +51,11 @@ contract TimedStateMachine is StateMachine {
     // Constructor
     ////////////////////////
 
-    function TimedStateMachine(int256 whitelistStart) {
+    // AUDIT[CHF-18]: Missing visibility specifier. Use `internal`.
+    //                See also AUDIT[CHF-08]. Already fixed.
+    function TimedStateMachine(int256 whitelistStart)
+        internal
+    {
         int256 beforeDuration = whitelistStart - int256(block.timestamp);
         require(beforeDuration >= MIN_BEFORE_DURATION);
         WHITELIST_START = whitelistStart;
@@ -56,6 +66,10 @@ contract TimedStateMachine is StateMachine {
     ////////////////////////
 
     // @notice This function is public so that it can be called independently.
+    // AUDIT[CHF-33] This function has 10 possible behaviors (all combinations
+    //   of valid state transitions). There should be a dedicated unit test set
+    //   that covers all of the possible behaviors.
+    //   TimedStateMachine should have dedicated unit test suite.
     function handleTimedTransitions()
         public
     {
@@ -65,6 +79,13 @@ contract TimedStateMachine is StateMachine {
         // Time induced state transitions.
         // @dev Don't use `else if` and keep sorted by time and call `state()`
         //     or else multiple transitions won't cascade properly.
+        // AUDIT[CHF-20]: Here and in the following conditions the helper
+        //                method startOf can be reused in this way:
+        //    `if (state() == State.Before && now >= startOf(State.Whitelist))`.
+        //                This will increase the gas cost in the worst case by
+        //                1.32% (based on "Timed transtitions" test suite).
+        //                The full proposed change is attached as
+        //                audit/CHF-20.patch.
         if (state() == State.Before && t >= 0) {
             transitionTo(State.Whitelist);
         }
@@ -88,6 +109,17 @@ contract TimedStateMachine is StateMachine {
             return WHITELIST_START;
         }
         if (state == State.Public) {
+            // AUDIT[CHF-22]: If AUDIT[CHF-20] to be applied the aliases
+            //                PUBLIC_FROM_START and FINISH_FROM_START are not
+            //                going to be very useful. I recommend to remove
+            //                them in this case.
+            //
+            // `WHITELIST_START + PUBLIC_FROM_START` =>
+            // `WHITELIST_START + WHITELIST_DURATION`
+            //
+            // `WHITELIST_START + FINISH_FROM_START` =>
+            // `WHITELIST_START + WHITELIST_DURATION + PUBLIC_DURATION`
+            //
             return WHITELIST_START + PUBLIC_FROM_START;
         }
         if (state == State.Finished) {

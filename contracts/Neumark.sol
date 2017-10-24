@@ -95,6 +95,8 @@ contract Neumark is
         acceptAgreement(msg.sender)
         returns (uint256)
     {
+        // AUDIT[CHF-40] Why require() is used for checking overflow instead of
+        //   Math.add()?
         require(_totalEuroUlps + euroUlps >= _totalEuroUlps);
         uint256 neumarkUlps = incremental(euroUlps);
         _totalEuroUlps += euroUlps;
