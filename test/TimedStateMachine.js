@@ -4,7 +4,10 @@ import EvmError from "./helpers/EVMThrow";
 import increaseTime from "./helpers/increaseTime";
 import { latestTimestamp } from "./helpers/latestTime";
 
-const BEFORE_DURATION = 1 * 24 * 60 * 60;
+// always give one minute more to let testRPC settle
+const START_DATE_GAP = 60;
+// add this gap to Before state
+const BEFORE_DURATION = 1 * 24 * 60 * 60 + START_DATE_GAP;
 const WHITELIST_DURATION = 5 * 24 * 60 * 60;
 const PUBLIC_DURATION = 30 * 24 * 60 * 60;
 
@@ -15,8 +18,7 @@ contract("TimedStateMachine", () => {
 
   beforeEach(async () => {
     const now = await latestTimestamp();
-    // always give one sec more to let testRPC settle
-    const startDate = now + BEFORE_DURATION + 1;
+    const startDate = now + BEFORE_DURATION;
     timedStateMachine = await TestTimedStateMachine.new(startDate);
   });
 
@@ -30,9 +32,9 @@ contract("TimedStateMachine", () => {
     await timedStateMachine.testStateOrdering();
   });
 
-  it("should reject too short Before", async () => {
+  it("should reject when created too short before startDate", async () => {
     const now = await latestTimestamp();
-    const startDate = now + BEFORE_DURATION - 1;
+    const startDate = now + BEFORE_DURATION - START_DATE_GAP - 1;
     await expect(TestTimedStateMachine.new(startDate)).to.be.rejectedWith(
       EvmError
     );
