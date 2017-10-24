@@ -28,6 +28,7 @@
     "invariant": "^2.2.2",
     "ipfs-api": "https://github.com/Neufund/js-ipfs-api",
     "istanbul": "next",
+    "ledger-wallet-provider": "https://github.com/Neufund/ledger-wallet-provider.git#moe/admintool",
     "lodash": "^4.17.4",
     "mocha": "^3.3.0",
     "moment": "^2.18.1",
