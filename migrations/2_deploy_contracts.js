@@ -19,14 +19,6 @@ module.exports = function deployContracts(deployer, network, accounts) {
   console.log("----------------------------------");
 
   deployer.then(async () => {
-    // check deployment date
-    if (CONFIG.START_DATE - new Date().getTime() / 1000 < 24 * 60 * 60) {
-      console.log(
-        `Commitment will not deploy due to START DATE ${CONFIG.START_DATE}`
-      );
-      throw new Error();
-    }
-
     console.log("AccessPolicy deployment...");
     await deployer.deploy(RoleBasedAccessPolicy);
     const accessPolicy = await RoleBasedAccessPolicy.deployed();
