@@ -8,6 +8,7 @@ import './Standards/IERC223Callback.sol';
 import './SnapshotToken/Helpers/TokenMetadata.sol';
 import './Zeppelin/StandardToken.sol';
 
+
 contract EtherToken is
     IsContract,
     AccessControlled,

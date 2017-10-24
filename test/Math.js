@@ -88,14 +88,20 @@ contract("Math", () => {
     // below is a result of calculation on decimal digits
     const expectedEur = new web3.BigNumber("26341141571932080000000000");
     const resultEur = await math._decimalFraction(etherAmount, ethRate);
-    let diff = expectedEur.sub(resultEur).abs().div(Q18);
+    let diff = expectedEur
+      .sub(resultEur)
+      .abs()
+      .div(Q18);
     expect(diff.e).to.be.lte(acceptedPrecissionLoss);
 
     // 1/3
     const oneThirdFactor = Q18.div(3).round(0, 1);
     const resultOneThird = await math._decimalFraction(amount, oneThirdFactor);
     const expectedOneThird = amount.div(3); // this will provide nice long expansion
-    diff = resultOneThird.sub(expectedOneThird).abs().div(Q18);
+    diff = resultOneThird
+      .sub(expectedOneThird)
+      .abs()
+      .div(Q18);
     expect(diff.e).to.be.lte(acceptedPrecissionLoss);
 
     // do not lose precision on binary expansions
@@ -127,7 +133,10 @@ contract("Math", () => {
     const lockedNeumark = Q18.mul(39889217377);
     const result = await math._proportion(lockedNeumark, spent, total);
     const expectedResult = new web3.BigNumber("3051352990280604000000000000");
-    const diff = result.sub(expectedResult).abs().div(Q18);
+    const diff = result
+      .sub(expectedResult)
+      .abs()
+      .div(Q18);
     expect(diff.e).to.be.lte(-7);
   });
 });
