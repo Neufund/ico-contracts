@@ -1,11 +1,11 @@
 pragma solidity 0.4.15;
 
+import '../Standards/IERC20Token.sol';
 import '../Standards/IERC223Token.sol';
 import '../Standards/IERC223Callback.sol';
 import '../IsContract.sol';
 import './Helpers/TokenAllowance.sol';
 import './MintableSnapshotToken.sol';
-import './Helpers/TokenMetadata.sol';
 import './Helpers/MTokenController.sol';
 import './Helpers/MTokenTransfer.sol';
 
@@ -44,8 +44,10 @@ import './Helpers/MTokenTransfer.sol';
 ///     see Neumark as an example
 /// @dev implements ERC223 token transfer
 contract StandardSnapshotToken is
+    IERC20Token,
     MintableSnapshotToken,
     TokenAllowance,
+    IERC223Token,
     IsContract
 {
     ////////////////////////
