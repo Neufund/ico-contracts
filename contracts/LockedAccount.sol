@@ -190,6 +190,9 @@ contract LockedAccount is
         //   But this assumption is never confirmed here.
         //   Use add() here as well.
         a.neumarksDue += neumarks;
+
+        // AUDIT[CHF-107] Unnecessary assert() in LockedAccount.lock().
+        //   Assert similar to the one in addBalance() with unknown reason.
         assert(isSafeMultiplier(a.neumarksDue));
         if (a.unlockDate == 0) {
 
