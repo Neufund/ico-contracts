@@ -1,5 +1,13 @@
 # ICO contracts
 
+## Neumark contract structure
+Please read [here](/contracts/SnapshotToken/README.md).
+
+## Neumark issuance algorithm.
+Please read on the issuance curve in our [whitepaper](https://neufund.org/whitepaper)
+
+
+
 ## Running locally
 ```
 yarn          # installs all dependencies

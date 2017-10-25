@@ -4,6 +4,7 @@ import './AccessControl/AccessControlled.sol';
 import './AccessRoles.sol';
 import './Agreement.sol';
 import './Snapshot/DailyAndSnapshotable.sol';
+import './SnapshotToken/Helpers/TokenMetadata.sol';
 import './SnapshotToken/StandardSnapshotToken.sol';
 import './NeumarkIssuanceCurve.sol';
 import './Reclaimable.sol';

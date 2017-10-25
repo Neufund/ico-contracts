@@ -2,7 +2,7 @@ pragma solidity 0.4.15;
 
 import './MTokenTransfer.sol';
 import './MTokenAllowanceController.sol';
-import '../../Standards/IERC20Token.sol';
+import '../../Standards/IERC20Allowance.sol';
 import '../../Standards/IERC677Token.sol';
 import '../../Standards/IERC677Callback.sol';
 
@@ -15,7 +15,7 @@ import '../../Standards/IERC677Callback.sol';
 contract TokenAllowance is
     MTokenTransfer,
     MTokenAllowanceController,
-    IERC20Token,
+    IERC20Allowance,
     IERC677Token
 {
 
