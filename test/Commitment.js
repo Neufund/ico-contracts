@@ -7,6 +7,7 @@ import createAccessPolicy from "./helpers/createAccessPolicy";
 import roles from "./helpers/roles";
 import { prettyPrintGasCost } from "./helpers/gasUtils";
 import { LockState } from "./helpers/lockState";
+import { CommitmentState } from "./helpers/commitmentState";
 
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const Neumark = artifacts.require("./Neumark.sol");
@@ -108,6 +109,11 @@ contract(
           subject: whitelistAdmin,
           role: roles.whitelistAdmin,
           object: commitment.address
+        },
+        {
+          subject: commitment.address,
+          role: roles.transferAdmin, // enable trading when Finish state
+          object: neumark.address
         },
         { subject: lockedAccountAdmin, role: roles.lockedAccountAdmin },
         {
@@ -660,6 +666,9 @@ contract(
         await commitment.handleTimedTransitions();
         const enabled = await neumark.transferEnabled();
 
+        expect(await commitment.state()).to.be.bignumber.eq(
+          CommitmentState.Finished
+        );
         expect(enabled).to.be.true;
       });
 
@@ -841,6 +850,17 @@ contract(
         const investorNmk = await neumark.balanceOf(investor);
 
         expect(investorNmk).to.be.bignumber.eq(curveNmk);
+      });
+
+      it("should commit cap and verify Neumarks cap", async () => {
+        const capEth = CAP_EUR.mul(Q18).divToInt(ETH_EUR_FRACTION);
+        await increaseTime(PUBLIC_START);
+
+        commitment.commit({ from: other, value: capEth });
+        const supply = await neumark.totalSupply();
+
+        const neumarkCap = new web3.BigNumber(869474423);
+        expect(supply.div(Q18).round(0, 1)).to.be.bignumber.eq(neumarkCap);
       });
 
       it("should not commit over cap", async () => {
