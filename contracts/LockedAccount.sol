@@ -183,6 +183,12 @@ contract LockedAccount is
         require(ASSET_TOKEN.transferFrom(msg.sender, address(this), amount));
         Account storage a = _accounts[investor];
         a.balance = addBalance(a.balance, amount);
+
+        // AUDIT[CHF-106] Unsafe math in LockedAccount.lock().
+        //   I think this assumes that amount of neumarks is never bigger
+        //   than amount of tokens, because this is the way Commitment works.
+        //   But this assumption is never confirmed here.
+        //   Use add() here as well.
         a.neumarksDue += neumarks;
         assert(isSafeMultiplier(a.neumarksDue));
         if (a.unlockDate == 0) {
