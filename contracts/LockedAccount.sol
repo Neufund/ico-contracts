@@ -422,6 +422,10 @@ contract LockedAccount is
         returns (uint256)
     {
         _totalLockedAmount = add(_totalLockedAmount, amount);
+
+        // AUDIT[CHF-104] Safe addition not needed in addBalance().
+        //   Because always balance <= _totalLockedAmount, the second use
+        //   of add() is not required.
         uint256 newBalance = add(balance, amount);
         assert(isSafeMultiplier(newBalance));
         return newBalance;
