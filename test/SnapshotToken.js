@@ -48,6 +48,26 @@ contract("TestSnapshotToken", ([owner, owner2, broker]) => {
         ).to.be.rejectedWith(EvmError);
       });
 
+      it("should ERC223 transfer when transfer enabled", async () => {
+        const supply = new web3.BigNumber(88172891);
+        await token.deposit(supply, { from: owner });
+        await token.enableTransfers(true);
+        await token.transfer["address,uint256,bytes"](owner2, 18281, "", {
+          from: owner
+        });
+      });
+
+      it("should ERC223 reject transfer when transfer disabled", async () => {
+        const supply = new web3.BigNumber(88172891);
+        await token.deposit(supply, { from: owner });
+        await token.enableTransfers(false);
+        await expect(
+          token.transfer["address,uint256,bytes"](owner2, 18281, "", {
+            from: owner
+          })
+        ).to.be.rejectedWith(EvmError);
+      });
+
       it("should approve when approve enabled", async () => {
         await token.enableApprovals(true);
         await token.approve(broker, 18281, { from: owner });
@@ -59,13 +79,14 @@ contract("TestSnapshotToken", ([owner, owner2, broker]) => {
           token.approve(broker, 18281, { from: owner })
         ).to.be.rejectedWith(EvmError);
       });
+    });
 
-      it("should call currentSnapshotId without transaction", async () => {
-        const initialSnapshotId = await token.currentSnapshotId.call();
-        await token.createSnapshot.call();
-        const snapshotId = await token.currentSnapshotId.call();
-        expect(snapshotId).to.be.bignumber.eq(initialSnapshotId);
-      });
+    it("should call currentSnapshotId without transaction", async () => {
+      const token = getToken();
+      const initialSnapshotId = await token.currentSnapshotId.call();
+      await token.createSnapshot.call();
+      const snapshotId = await token.currentSnapshotId.call();
+      expect(snapshotId).to.be.bignumber.eq(initialSnapshotId);
     });
 
     snapshotTokenTests(
