@@ -195,7 +195,8 @@ contract Neumark is
         acceptAgreement(from)
         returns (bool allow)
     {
-        return _transferEnabled;
+        // must have transfer enabled or msg.sender is Neumark issuer
+        return _transferEnabled || accessPolicy().allowed(msg.sender, ROLE_NEUMARK_ISSUER, this, msg.sig);
     }
 
     function mOnApprove(
