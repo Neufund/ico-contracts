@@ -37,8 +37,10 @@ contract Neumark is
     // Mutable state
     ////////////////////////
 
-    bool private _transferEnabled;
+    // disable transfers when Neumark is created
+    bool private _transferEnabled = false;
 
+    // at which point on curve new Neumarks will be created, see NeumarkIssuanceCurve contract
     uint256 private _totalEurUlps;
 
     ////////////////////////
