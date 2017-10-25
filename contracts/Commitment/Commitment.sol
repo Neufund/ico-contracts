@@ -435,6 +435,9 @@ contract Commitment is
             // enable escape hatch and end locking funds phase
             ETHER_LOCK.controllerSucceeded();
             EURO_LOCK.controllerSucceeded();
+
+            // enable Neumark transfers
+            NEUMARK.enableTransfer(true);
         }
         // burn Neumarks after state change to prevent theoretical re-entry
         NEUMARK.burn(nmkToBurn);
