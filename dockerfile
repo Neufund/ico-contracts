@@ -12,4 +12,6 @@ ADD . .
 
 RUN yarn build
 
+EXPOSE 8545
+
 CMD ["./scripts/docker-exec.sh"]
