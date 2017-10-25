@@ -198,6 +198,10 @@ contract LockedAccount is
 
             // this is new account - unlockDate always > 0
             _totalInvestors += 1;
+            // AUDIT[CHF-108] Possible incorrect lock period.
+            //   If the amount of tokens locked can be increased by an investor
+            //   multiple times, should not the lock period be bumped
+            //   in each lock() call?
             a.unlockDate = currentTime() + LOCK_PERIOD;
         }
         _accounts[investor] = a;
