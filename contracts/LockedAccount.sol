@@ -204,6 +204,12 @@ contract LockedAccount is
             //   in each lock() call?
             a.unlockDate = currentTime() + LOCK_PERIOD;
         }
+
+        // AUDIT[CHF-108] Unnecessary storage update in LockedAccount.lock().
+        //   The following line is not needed because `a` is already the
+        //   reference to the storage location.
+        //   Please observer gas cost changes. I noticed that the cost of
+        //   Commitment.commit() increased after removing the following line.
         _accounts[investor] = a;
         LogFundsLocked(investor, amount, neumarks);
     }
