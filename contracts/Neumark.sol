@@ -83,15 +83,15 @@ contract Neumark is
         DailyAndSnapshotable(0)
         NeumarkIssuanceCurve()
         Reclaimable()
-    {
-        _transferEnabled = true;
-        _totalEurUlps = 0;
-    }
+    {}
 
     ////////////////////////
     // Public functions
     ////////////////////////
 
+    /// @notice issues new Neumarks to msg.sender with cost at current curve position
+    ///     moves curve position by euroUlps
+    ///     callable only by ROLE_NEUMARK_ISSUER
     function issueForEuro(uint256 euroUlps)
         public
         only(ROLE_NEUMARK_ISSUER)
@@ -106,15 +106,18 @@ contract Neumark is
         return neumarkUlps;
     }
 
+    /// @notice used by ROLE_NEUMARK_ISSUER to transer newly issued neumarks
+    ///     typically to the investor and platform operator
     function distribute(address to, uint256 neumarkUlps)
         public
         only(ROLE_NEUMARK_ISSUER)
         acceptAgreement(to)
     {
-        bool success = transfer(to, neumarkUlps);
-        require(success);
+        mTransfer(msg.sender, to, neumarkUlps);
     }
 
+    /// @notice msg.sender can burn their Neumarks, curve is rolled back using inverse
+    ///     curve. as a result cost of Neumark gets lower (reward is higher)
     function burn(uint256 neumarkUlps)
         public
         only(ROLE_NEUMARK_BURNER)
