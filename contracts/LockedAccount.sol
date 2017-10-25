@@ -31,6 +31,9 @@ contract LockedAccount is
     ////////////////////////
 
     // lock state
+    // AUDIT[CHF-101] Consider using StateMachine.
+    //   This contract controls internal state similarly to StateMachine
+    //   contract. Consider using StateMachine abstract contract here.
     enum LockState {
         Uncontrolled,
         AcceptingLocks,
