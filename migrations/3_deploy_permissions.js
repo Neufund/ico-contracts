@@ -23,18 +23,28 @@ module.exports = function deployContracts(deployer, network, accounts) {
     const commitment = await Commitment.deployed();
 
     console.log("Seting permissions");
+    // allow commitment contract to issue Neumarks
     await accessPolicy.setUserRole(
       commitment.address,
       web3.sha3("NeumarkIssuer"),
       neumark.address,
       TriState.Allow
     );
+    // allow commitment contract to enable Neumark trading after ICBM
+    await accessPolicy.setUserRole(
+      commitment.address,
+      web3.sha3("TransferAdmin"),
+      neumark.address,
+      TriState.Allow
+    );
+    // allow anyone to burn their neumarks
     await accessPolicy.setUserRole(
       EVERYONE,
       web3.sha3("NeumarkBurner"),
       neumark.address,
       TriState.Allow
     );
+
     await accessPolicy.setUserRole(
       CONFIG.addresses.LOCKED_ACCOUNT_ADMIN,
       web3.sha3("LockedAccountAdmin"),
