@@ -178,6 +178,8 @@ contract LockedAccount is
         require(ASSET_TOKEN.allowance(msg.sender, address(this)) >= amount);
 
         // transfer to self yourself
+        // AUDIT[CHF-103] transferFrom() SHOULD always return true.
+        //   Use assert() instead of require() as in other places.
         require(ASSET_TOKEN.transferFrom(msg.sender, address(this), amount));
         Account storage a = _accounts[investor];
         a.balance = addBalance(a.balance, amount);
