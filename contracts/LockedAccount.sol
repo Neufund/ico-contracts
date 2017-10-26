@@ -428,6 +428,7 @@ contract LockedAccount is
                 a.neumarksDue,
                 a.unlockDate
             );
+            // AUDIT[CHF-138] Use require() to check migration status.
             assert(migrated);
             LogInvestorMigrated(msg.sender, a.balance, a.neumarksDue, a.unlockDate);
         }
