@@ -5,6 +5,7 @@ import './AccessControl/AccessControlled.sol';
 import './AccessRoles.sol';
 
 
+// AUDIT[CHF-134] Consider removing reclaim() mechanism completely.
 contract Reclaimable is AccessControlled, AccessRoles {
 
     ////////////////////////
