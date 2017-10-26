@@ -432,7 +432,7 @@ contract LockedAccount is
     }
 
     //
-    // Overides Reclaimable
+    // Overrides Reclaimable
     //
 
     function reclaim(IBasicToken token)
