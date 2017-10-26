@@ -487,7 +487,9 @@ contract LockedAccount is
         // if there is anything to unlock
         if (a.balance > 0) {
 
-            // in ReleaseAll just give money back by transfering to investor
+            // AUDIT[CHF-110] Misplaced comment in LockedAccount.unlockFor().
+            //   This comment describes the code after the if ().
+            // in ReleaseAll just give money back by transferring to investor
             if (_lockState == LockState.AcceptingUnlocks) {
 
                 // before burn happens, investor must make allowance to locked account
