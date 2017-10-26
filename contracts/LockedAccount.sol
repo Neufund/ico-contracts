@@ -419,6 +419,8 @@ contract LockedAccount is
             removeInvestor(msg.sender, a.balance);
 
             // let migration target to own asset balance that belongs to investor
+            // AUDIT[CHF-137] Use assert() to check Token.approve().
+            //   Token.approve SHOULD never return false.
             require(ASSET_TOKEN.approve(address(_migration), a.balance));
             bool migrated = LockedAccountMigration(_migration).migrateInvestor(
                 msg.sender,
