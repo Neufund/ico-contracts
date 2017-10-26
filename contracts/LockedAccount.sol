@@ -563,6 +563,9 @@ contract LockedAccount is
 
             // remove balance, investor and
             LogFundsUnlocked(investor, a.balance);
+
+            // AUDIT[CHF-122] Update state before sending logs.
+            //   See CodeStyle.md.
             removeInvestor(investor, a.balance);
         }
         return Status.SUCCESS;
