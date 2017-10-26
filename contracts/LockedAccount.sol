@@ -483,6 +483,9 @@ contract LockedAccount is
     function changeState(LockState newState)
         internal
     {
+        // AUDIT[CHF-128] Unnecessary condition in changeState().
+        //   Make the function private and remove the `newState != _lockState`
+        //   check.
         if (newState != _lockState) {
             LogLockStateTransition(_lockState, newState);
             _lockState = newState;
