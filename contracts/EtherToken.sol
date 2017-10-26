@@ -133,6 +133,9 @@ contract EtherToken is
     function reclaim(IBasicToken token)
         public
     {
+        // AUDIT[CHF-136] Improve comment in EtherToken.reclaim().
+        //   It should be something like:
+        //   "Forbid reclaiming ETH hold in this contract."
         // This contract holds Ether
         require(token != RECLAIM_ETHER);
         Reclaimable.reclaim(token);
