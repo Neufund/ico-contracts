@@ -214,6 +214,7 @@ contract LockedAccount is
         LogFundsLocked(investor, amount, neumarks);
     }
 
+    // AUDIT[CHF-109] Update comment of LockedAccount.unlock().
     // unlocks msg.sender tokens by making them withdrawable in assetToken
     // expects number of neumarks that is due to be available to be burned on
     // msg.sender balance - see comments
