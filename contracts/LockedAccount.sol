@@ -461,6 +461,7 @@ contract LockedAccount is
         return newBalance;
     }
 
+    // AUDIT[CHF-131] Make function subBalance() private.
     function subBalance(uint256 balance, uint256 amount)
         internal
         returns (uint256)
