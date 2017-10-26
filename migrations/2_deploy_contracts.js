@@ -1,5 +1,6 @@
 require("babel-register");
 const getConfig = require("./config").default;
+const confirm = require("node-ask").confirm;
 
 const RoleBasedAccessPolicy = artifacts.require("RoleBasedAccessPolicy");
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
@@ -21,10 +22,10 @@ module.exports = function deployContracts(deployer, network, accounts) {
   deployer.then(async () => {
     // check deployment date
     if (CONFIG.START_DATE - new Date().getTime() / 1000 < 24 * 60 * 60) {
-      console.log(
-        `Commitment will not deploy due to START DATE ${CONFIG.START_DATE}`
-      );
-      throw new Error();
+      console.log(`Commitment will start in less then 24h. `);
+      if (!await confirm("Are you sure you want to deploy? [y/n] ")) {
+        throw new Error("Aborting!");
+      }
     }
 
     console.log("AccessPolicy deployment...");

@@ -19,9 +19,6 @@ contract TimedStateMachine is StateMachine {
     // Constants
     ////////////////////////
 
-    // minimum allowed duration of Before state, enforced in constructor
-    int256 private constant MIN_BEFORE_DURATION = 1 days;
-
     // duration of Whitelist state
     int256 private constant WHITELIST_DURATION = 5 days;
 
@@ -56,8 +53,6 @@ contract TimedStateMachine is StateMachine {
     function TimedStateMachine(int256 whitelistStart)
         internal
     {
-        int256 beforeDuration = whitelistStart - int256(block.timestamp);
-        require(beforeDuration >= MIN_BEFORE_DURATION);
         WHITELIST_START = whitelistStart;
     }
 

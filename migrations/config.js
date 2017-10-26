@@ -1,13 +1,17 @@
+const moment = require("moment");
+
 export default function getConfig(web3, network, accounts) {
   const Q18 = web3.toBigNumber("10").pow(18);
 
   // specifies smart contracts parameters and addresses to be deployed on live network
+  // DO NOT EDIT THESE VALUES
+  // EDIT BELOW
   const config = {
     // LockedAccount
     LOCK_DURATION: 18 * 30 * 24 * 60 * 60,
     PENALTY_FRACTION: web3.toBigNumber("0.1").mul(Q18),
     // Commitment
-    START_DATE: Date.UTC(2017, 10, 15) / 1000,
+    START_DATE: moment("2017-10-26T15:00:00.005Z").valueOf() / 1000,
     CAP_EUR: web3.toBigNumber("200000000").mul(Q18),
     MIN_TICKET_EUR: web3.toBigNumber("300").mul(Q18),
     ETH_EUR_FRACTION: web3.toBigNumber("300").mul(Q18),
