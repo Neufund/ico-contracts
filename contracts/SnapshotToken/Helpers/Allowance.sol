@@ -92,6 +92,10 @@ contract Allowance is
             extraData
         );
 
+        // AUDIT[CHF-117] Zero the approval if receiveApproval() fails.
+        //   Should not the approval be zerod in case the receiveApproval()
+        //   returns false?
+
         return success;
     }
 
