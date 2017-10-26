@@ -335,6 +335,8 @@ contract LockedAccount is
         return PENALTY_FRACTION;
     }
 
+    // AUDIT[CHF-132] Rename LockedAccount.balanceOf().
+    //   This function returns more data than balance only.
     function balanceOf(address investor)
         public
         constant
