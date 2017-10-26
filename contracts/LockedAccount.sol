@@ -533,6 +533,8 @@ contract LockedAccount is
             }
 
             // transfer amount back to investor - now it can withdraw
+            // AUDIT[CHF-111] Replace require() with assert() in unlockFor().
+            //   Use assert() for Token.transfer() check.
             require(ASSET_TOKEN.transfer(investor, a.balance));
 
             // remove balance, investor and
