@@ -21,6 +21,9 @@ contract Reclaimable is AccessControlled, AccessRoles {
         public
         only(ROLE_RECLAIMER)
     {
+        // AUDIT[CHF-133] Simplify implementation of reclaim().
+        //   Remove `success` variable.
+        //   Move `balance` to where it is first assigned.
         uint256 balance;
         bool success;
         address receiver = msg.sender;
