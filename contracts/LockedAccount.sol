@@ -541,6 +541,8 @@ contract LockedAccount is
                     } else {
 
                         // transfer to address
+                        // AUDIT[CHF-119] transfer() SHOULD always return true.
+                        //   Use assert() instead of require().
                         require(ASSET_TOKEN.transfer(_penaltyDisbursalAddress, penalty));
                     }
                     LogPenaltyDisbursed(investor, penalty, _penaltyDisbursalAddress);
