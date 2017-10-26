@@ -492,6 +492,7 @@ contract LockedAccount is
         }
     }
 
+    // AUDIT[CHF-129] Make function unlockFor() private.
     function unlockFor(address investor)
         internal
         returns (Status)
