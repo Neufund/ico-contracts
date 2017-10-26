@@ -230,6 +230,9 @@ contract LockedAccount is
         onlyStates(LockState.AcceptingUnlocks, LockState.ReleaseAll)
         returns (Status)
     {
+        // AUDIT[CHF-127] LockedAccount.unlock() should properly fail.
+        //   This function will return false on failure, what is hard to
+        //   recognize by external users from successful transactions.
         return unlockFor(msg.sender);
     }
 
