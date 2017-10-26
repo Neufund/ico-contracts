@@ -514,6 +514,11 @@ contract LockedAccount is
 
                 // take the penalty if before unlockDate
                 if (currentTime() < a.unlockDate) {
+                    // AUDIT[CHF-115] Unlocking may be blocked by admin.
+                    //   The unlocking before the unlock date may be blocked
+                    //   by the contract admin (and it blocked by default)
+                    //   because the admin may not set the "penalty disbursal
+                    //   address".
                     require(_penaltyDisbursalAddress != address(0));
                     uint256 penalty = fraction(a.balance, PENALTY_FRACTION);
 
