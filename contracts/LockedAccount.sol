@@ -465,6 +465,9 @@ contract LockedAccount is
     function removeInvestor(address investor, uint256 balance)
         internal
     {
+        // AUDIT[CHF-121] Reuse subBalance() in removeInvestor().
+        //   Use subBalance() function instead of
+        //   `_totalLockedAmount -= balance` expression.
         _totalLockedAmount -= balance;
         _totalInvestors -= 1;
         delete _accounts[investor];
