@@ -526,6 +526,11 @@ contract LockedAccount is
                     if (isContract(_penaltyDisbursalAddress)) {
 
                         // transfer to contract
+                        // AUDIT[CHF-118] Unlocking may be blocked by admin (2).
+                        //   The admin can create a contract that always returns
+                        //   false in receiveApproval() callback. This way
+                        //   unlocking before unlock date may be blocked by
+                        //   admin.
                         require(
                             ASSET_TOKEN.approveAndCall(
                                 _penaltyDisbursalAddress,
