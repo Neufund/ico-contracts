@@ -548,6 +548,10 @@ contract LockedAccount is
                         //   Use assert() instead of require().
                         require(ASSET_TOKEN.transfer(_penaltyDisbursalAddress, penalty));
                     }
+                    // AUDIT[CHF-124] Combine events in unlockFor().
+                    //   The information from this event can be added to
+                    //   LogFundsUnlocked event. Then this event can be
+                    //   removed.
                     LogPenaltyDisbursed(investor, penalty, _penaltyDisbursalAddress);
 
                     // AUDIT[CHF-120] Do not use storage for local values.
