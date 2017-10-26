@@ -68,7 +68,7 @@ contract RoleBasedAccessPolicy is
         address controller,
         address indexed subject,
         bytes32 role,
-        IAccessControlled indexed object,
+        address indexed object,
         TriState oldValue,
         TriState newValue
     );
@@ -76,7 +76,7 @@ contract RoleBasedAccessPolicy is
     event LogAccess(
         address indexed subject,
         bytes32 role,
-        IAccessControlled indexed object,
+        address indexed object,
         bytes4 verb,
         bool granted
     );
@@ -111,11 +111,11 @@ contract RoleBasedAccessPolicy is
         revert();
     }
 
-    // Implements `IAccessPolicy.allowed(IAccessControlled, bytes32, address, bytes4)`
+    // Implements `IAccessPolicy.allowed(address, bytes32, address, bytes4)`
     function allowed(
         address subject,
         bytes32 role,
-        IAccessControlled object,
+        address object,
         bytes4 verb
     )
         public
