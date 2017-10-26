@@ -499,6 +499,11 @@ contract LockedAccount is
                 if (NEUMARK.balanceOf(investor) < a.neumarksDue) {
                     return logError(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
                 }
+                // AUDIT[CHF-112] transferFrom() never returns false.
+                //   This check has not effect. Replace it with
+                //
+                //       assert(NEUMARK.transferFrom(...));
+                //
                 if (!NEUMARK.transferFrom(investor, address(this), a.neumarksDue)) {
                     return logError(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
                 }
