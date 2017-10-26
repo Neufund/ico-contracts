@@ -562,6 +562,9 @@ contract LockedAccount is
             require(ASSET_TOKEN.transfer(investor, a.balance));
 
             // remove balance, investor and
+            // AUDIT[CHF-123] Missing information in LogFundsUnlocked.
+            //   For consistency with LogFundsLocked, you should add information
+            //   about amount of burnt Neumark tokens to LogFundsUnlocked event.
             LogFundsUnlocked(investor, a.balance);
 
             // AUDIT[CHF-122] Update state before sending logs.
