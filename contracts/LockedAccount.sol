@@ -469,6 +469,7 @@ contract LockedAccount is
         return balance - amount;
     }
 
+    // AUDIT[CHF-130] Make function removeInvestor() private.
     function removeInvestor(address investor, uint256 balance)
         internal
     {
