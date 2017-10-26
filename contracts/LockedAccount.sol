@@ -500,6 +500,11 @@ contract LockedAccount is
             // in ReleaseAll just give money back by transferring to investor
             if (_lockState == LockState.AcceptingUnlocks) {
 
+                // AUDIT[CHF-126] Unnecessary allowance checks.
+                //   The 2 following allowance checks are not required for
+                //   correctness. They only affect the final result of
+                //   unlock() function. If removed the code will be simpler
+                //   and more consistent.
                 // before burn happens, investor must make allowance to locked account
                 if (NEUMARK.allowance(investor, address(this)) < a.neumarksDue) {
                     return logError(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
