@@ -438,6 +438,8 @@ contract LockedAccount is
     function reclaim(IBasicToken token)
         public
     {
+        // AUDIT[CHF-135] Improve comment in LockedAccount.reclaim().
+        //   It should be something like: "Forbid reclaiming locked tokens."
         // This contract holds the asset token
         require(token != ASSET_TOKEN);
         Reclaimable.reclaim(token);
