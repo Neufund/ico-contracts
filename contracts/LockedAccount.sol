@@ -546,6 +546,9 @@ contract LockedAccount is
                         require(ASSET_TOKEN.transfer(_penaltyDisbursalAddress, penalty));
                     }
                     LogPenaltyDisbursed(investor, penalty, _penaltyDisbursalAddress);
+
+                    // AUDIT[CHF-120] Do not use storage for local values.
+                    //   Use local variable to track investor's balance.
                     a.balance = subBalance(a.balance, penalty);
                 }
             }
