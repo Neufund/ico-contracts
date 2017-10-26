@@ -89,6 +89,7 @@ contract LockedAccount is
     // Events
     ////////////////////////
 
+    // AUDIT[CHF-113] Add comments documenting events' parameters.
     event LogFundsLocked(
         address indexed investor,
         uint256 amount,
