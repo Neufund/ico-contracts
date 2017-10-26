@@ -18,6 +18,10 @@ contract LockedAccount is
     AccessControlled,
     AccessRoles,
     TimeSource,
+
+    // AUDIT[CHF-125] Drop ReturnsErrors from LockedAccount.
+    //   The Status enum has only 2 used values. Use true/false in unlockFor()
+    //   instead of confusing status codes.
     ReturnsErrors,
     Math,
     IsContract,
