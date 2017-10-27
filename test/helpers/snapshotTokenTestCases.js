@@ -261,29 +261,67 @@ export function snapshotTokenTests(
       await expectTokenBalances(clonedToken, snapshots);
     });
 
-    it("should reject to clone on current snapshot id", async () => {
+    async function attemptToDesyncClone(clonedToken) {
+      // note - following procedure will desync cloned token if we allow to change its state before state of parent
+      // it points to is sealed due to snapshot id advance
+      // state change before sealing is now blocked and operations below will throw
+      // decouple total supply of clone and owner2
+      await clonedToken.deposit(1, { from: owner2 });
+      await clonedToken.withdraw(2, { from: owner2 });
+      // transfer to owner which is still coupled in parent
+      await token.transfer(owner, 100, { from: owner2 });
+      // notice totalSupply in the clone does not hold: it sees owner from the parent and owner2 from the clone
+      // 100 wei is lost
+      const clonedOwnedBalance = await clonedToken.balanceOf(owner);
+      const clonedOwned2Balance = await clonedToken.balanceOf(owner2);
+
+      // expect(await clonedToken.totalSupply()).to.be.bignumber.eq(clonedOwnedBalance.add(clonedOwned2Balance).sub(100));
+      expect(await clonedToken.totalSupply()).to.be.bignumber.eq(
+        clonedOwnedBalance.add(clonedOwned2Balance)
+      );
+    }
+
+    async function expectCloneFreeze(snapshotId, futureDelta) {
+      // create clone at current snapshotId
+      const clonedToken = await createClone(token, snapshotId.add(futureDelta));
+      await token.transfer(owner2, 98128, { from: owner });
+      expect(
+        await clonedToken.balanceOfAt(owner2, snapshotId)
+      ).to.be.bignumber.eq(18281 + 98128);
+      expect(await token.balanceOfAt(owner2, snapshotId)).to.be.bignumber.eq(
+        18281 + 98128
+      );
+      // all state changes to clone must be blocked until parent is sealed
+      await expect(
+        clonedToken.withdraw(1, { from: owner2 })
+      ).to.be.rejectedWith(EvmError);
+      await expect(clonedToken.deposit(1, { from: owner2 })).to.be.rejectedWith(
+        EvmError
+      );
+      await expect(
+        clonedToken.transfer(owner2, 1, { from: owner })
+      ).to.be.rejectedWith(EvmError);
+      await expect(attemptToDesyncClone(clonedToken)).to.be.rejectedWith(
+        EvmError
+      );
+      let advancedBy = futureDelta + 1;
+      while (advancedBy > 0) {
+        await advanceSnapshotId(token);
+        advancedBy -= 1;
+      }
+      await clonedToken.withdraw(1, { from: owner2 });
+      await clonedToken.deposit(1, { from: owner2 });
+      await clonedToken.transfer(owner2, 1, { from: owner });
+      await attemptToDesyncClone(clonedToken);
+    }
+
+    it("should freeze clone on current snapshot id", async () => {
       const supply = new web3.BigNumber(8172891);
 
       await token.deposit(supply, { from: owner });
       await token.transfer(owner2, 18281, { from: owner });
       const snapshotId = await advanceSnapshotId(token);
-      await expect(createClone(token, snapshotId)).to.be.rejectedWith(EvmError);
-      // please do not delete test below, it explains consequences of allowing such coupling between tokens
-      // create clone at current snapshotId
-      // const clonedToken = await createClone(token, snapshotId);
-      // what happens to parent happens to clone until they decouple
-      /* await token.transfer(owner2, 98128, {from: owner});
-       expect(await clonedToken.balanceOfAt(owner2, snapshotId)).to.be.bignumber.eq(18281+98128);
-       expect(await token.balanceOfAt(owner2, snapshotId)).to.be.bignumber.eq(18281+98128);
-       // decouple total supply of clone and owner2
-       await clonedToken.withdraw(1, {from: owner2});
-       // transfer to owner which is still coupled in parent
-       await token.transfer(owner, 100, {from: owner2});
-       // notice totalSupply in the clone does not hold: it sees owner from the parent and owner2 from the clone
-       // 100 wei is lost
-       const clonedOwnedBalance = await clonedToken.balanceOf(owner);
-       const clonedOwned2Balance = await clonedToken.balanceOf(owner2);
-       expect(await clonedToken.totalSupply()).to.be.bignumber.eq(clonedOwnedBalance.add(clonedOwned2Balance).sub(100)); */
+      await expectCloneFreeze(snapshotId, 0);
     });
 
     it("should reject to clone on future snapshot id", async () => {
@@ -292,9 +330,8 @@ export function snapshotTokenTests(
       await token.deposit(supply, { from: owner });
       await token.transfer(owner2, 18281, { from: owner });
       const snapshotId = await advanceSnapshotId(token);
-      await expect(createClone(token, snapshotId.add(1))).to.be.rejectedWith(
-        EvmError
-      );
+
+      await expectCloneFreeze(snapshotId, 1);
     });
 
     it("should decouple cloned token", async () => {
