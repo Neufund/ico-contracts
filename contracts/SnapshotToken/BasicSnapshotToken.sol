@@ -69,8 +69,6 @@ contract BasicSnapshotToken is
                 require(parentToken.currentSnapshotId() > 0);
                 PARENT_SNAPSHOT_ID = parentToken.currentSnapshotId() - 1;
             } else {
-                // make sure parentSnapshotId is not from the future
-                require(parentSnapshotId < parentToken.currentSnapshotId());
                 PARENT_SNAPSHOT_ID = parentSnapshotId;
             }
         }
@@ -259,7 +257,10 @@ contract BasicSnapshotToken is
     )
         internal
     {
+        // never send to address 0
         require(to != address(0));
+        // block transfers in clone that points to future/current snapshots of patent token
+        require(parentToken() == address(0) || parentSnapshotId() < parentToken().currentSnapshotId());
         // Alerts the token controller of the transfer
         require(mOnTransfer(from, to, amount));
 
