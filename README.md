@@ -163,7 +163,7 @@ Several accounts are required to deploy on `mainnet` due to many roles with spec
 |LOCKED ACCOUNT ADMIN|May attach controller, set fee disbursal pool and migration in Locked Account contract| PO Admin | LockedAccount |
 |WHITELIST ADMIN|May setup whitelist and abort Commitment contract with curve rollback| PO Admin | Commitment |
 |NEUMARK ISSUER|May issue (generate) Neumarks (only Commitment or ETOs contract may have this right)| N/A| Commitment |
-|TRANSFER ADMIN|May enable/disable transfers on Neumark| PO Admin | Neumark |
+|TRANSFER ADMIN|May enable/disable transfers on Neumark| (**Commitment** contract to enable trading after ICBM) | Neumark |
 |RECLAIMER|may reclaim tokens/ether from contracts| PO Admin | global role |
 |PLATFORM OPERATOR REPRESENTATIVE|Represents legally platform operator in case of forks and contracts with legal agreement attached| PO Management | global role |
 |EURT DEPOSIT MANAGER|Allows to deposit EUR-T and allow addresses to send and receive EUR-T | PO Admin | EuroToken |

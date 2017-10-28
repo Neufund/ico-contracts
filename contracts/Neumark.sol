@@ -37,8 +37,10 @@ contract Neumark is
     // Mutable state
     ////////////////////////
 
-    bool private _transferEnabled;
+    // disable transfers when Neumark is created
+    bool private _transferEnabled = false;
 
+    // at which point on curve new Neumarks will be created, see NeumarkIssuanceCurve contract
     uint256 private _totalEurUlps;
 
     ////////////////////////
@@ -81,15 +83,15 @@ contract Neumark is
         DailyAndSnapshotable(0)
         NeumarkIssuanceCurve()
         Reclaimable()
-    {
-        _transferEnabled = true;
-        _totalEurUlps = 0;
-    }
+    {}
 
     ////////////////////////
     // Public functions
     ////////////////////////
 
+    /// @notice issues new Neumarks to msg.sender with cost at current curve position
+    ///     moves curve position by euroUlps
+    ///     callable only by ROLE_NEUMARK_ISSUER
     function issueForEuro(uint256 euroUlps)
         public
         only(ROLE_NEUMARK_ISSUER)
@@ -104,15 +106,18 @@ contract Neumark is
         return neumarkUlps;
     }
 
+    /// @notice used by ROLE_NEUMARK_ISSUER to transer newly issued neumarks
+    ///     typically to the investor and platform operator
     function distribute(address to, uint256 neumarkUlps)
         public
         only(ROLE_NEUMARK_ISSUER)
         acceptAgreement(to)
     {
-        bool success = transfer(to, neumarkUlps);
-        require(success);
+        mTransfer(msg.sender, to, neumarkUlps);
     }
 
+    /// @notice msg.sender can burn their Neumarks, curve is rolled back using inverse
+    ///     curve. as a result cost of Neumark gets lower (reward is higher)
     function burn(uint256 neumarkUlps)
         public
         only(ROLE_NEUMARK_BURNER)
@@ -190,7 +195,8 @@ contract Neumark is
         acceptAgreement(from)
         returns (bool allow)
     {
-        return _transferEnabled;
+        // must have transfer enabled or msg.sender is Neumark issuer
+        return _transferEnabled || accessPolicy().allowed(msg.sender, ROLE_NEUMARK_ISSUER, this, msg.sig);
     }
 
     function mOnApprove(
