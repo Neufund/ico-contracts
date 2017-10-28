@@ -427,7 +427,7 @@ contract LockedAccount is
     // Overrides Reclaimable
     //
 
-    /// @notice allows locked account to reclaim tokens wrongly sent to its address
+    /// @notice allows LockedAccount to reclaim tokens wrongly sent to its address
     /// @dev as LockedAccount by design has balance of assetToken (in the name of investors)
     ///     such reclamation is not allowed
     function reclaim(IBasicToken token)

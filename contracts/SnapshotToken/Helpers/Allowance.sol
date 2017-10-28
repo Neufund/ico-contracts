@@ -80,9 +80,6 @@ contract Allowance is
         public
         returns (bool success)
     {
-        // AUDIT[CHF-116] Unnecessary require() in Allowance.approveAndCall()
-        //   The following condition is aways true, because approve() never
-        //   returns false.
         require(approve(spender, amount));
 
         success = IERC677Callback(spender).receiveApproval(
@@ -91,10 +88,6 @@ contract Allowance is
             this,
             extraData
         );
-
-        // AUDIT[CHF-117] Zero the approval if receiveApproval() fails.
-        //   Should not the approval be zerod in case the receiveApproval()
-        //   returns false?
 
         return success;
     }
