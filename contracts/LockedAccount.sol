@@ -165,6 +165,7 @@ contract LockedAccount is
     /// @param policy governs execution permissions to admin functions
     /// @param assetToken token contract representing funds locked
     /// @param neumark Neumark token contract
+    /// @param penaltyDisbursalAddress address of disbursal contract for penalty fees
     /// @param lockPeriod period for which funds are locked, in seconds
     /// @param penaltyFraction decimal fraction of unlocked amount paid as penalty,
     ///     if unlocked before lockPeriod is over
@@ -174,6 +175,7 @@ contract LockedAccount is
         IAccessPolicy policy,
         IERC677Token assetToken,
         Neumark neumark,
+        address penaltyDisbursalAddress,
         uint256 lockPeriod,
         uint256 penaltyFraction
     )
@@ -185,6 +187,7 @@ contract LockedAccount is
         NEUMARK = neumark;
         LOCK_PERIOD = lockPeriod;
         PENALTY_FRACTION = penaltyFraction;
+        _penaltyDisbursalAddress = penaltyDisbursalAddress;
     }
 
     ////////////////////////
@@ -477,7 +480,6 @@ contract LockedAccount is
         LogLockStateTransition(_lockState, newState);
         _lockState = newState;
     }
-
 
     /// @notice unlocks 'investor' tokens by making them withdrawable from assetToken
     /// @dev expects number of neumarks that is due on investor's account to be approved for LockedAccount for transfer

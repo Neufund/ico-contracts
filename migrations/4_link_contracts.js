@@ -1,5 +1,4 @@
 require("babel-register");
-const getConfig = require("./config").default;
 const { TriState, GLOBAL } = require("../test/helpers/triState");
 
 const RoleBasedAccessPolicy = artifacts.require("RoleBasedAccessPolicy");
@@ -10,7 +9,6 @@ module.exports = function deployContracts(deployer, network, accounts) {
   // do not deploy testing network
   if (network.endsWith("_test") || network === "coverage") return;
 
-  const CONFIG = getConfig(web3, network, accounts);
   const DEPLOYER = accounts[0];
 
   deployer.then(async () => {
@@ -34,18 +32,5 @@ module.exports = function deployContracts(deployer, network, accounts) {
     await etherLock.setController(commitment.address, {
       from: DEPLOYER
     });
-    console.log("Setting fee disbursal address");
-    await euroLock.setPenaltyDisbursal(
-      CONFIG.addresses.PLATFORM_OPERATOR_WALLET,
-      {
-        from: DEPLOYER
-      }
-    );
-    await etherLock.setPenaltyDisbursal(
-      CONFIG.addresses.PLATFORM_OPERATOR_WALLET,
-      {
-        from: DEPLOYER
-      }
-    );
   });
 };

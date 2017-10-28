@@ -58,6 +58,7 @@ module.exports = function deployContracts(deployer, network, accounts) {
       accessPolicy.address,
       etherToken.address,
       neumark.address,
+      CONFIG.addresses.PLATFORM_OPERATOR_WALLET,
       CONFIG.LOCK_DURATION,
       CONFIG.PENALTY_FRACTION
     );
@@ -69,6 +70,7 @@ module.exports = function deployContracts(deployer, network, accounts) {
       accessPolicy.address,
       euroToken.address,
       neumark.address,
+      CONFIG.addresses.PLATFORM_OPERATOR_WALLET,
       CONFIG.LOCK_DURATION,
       CONFIG.PENALTY_FRACTION
     );
