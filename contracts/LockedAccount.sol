@@ -197,20 +197,17 @@ contract LockedAccount is
         onlyController()
     {
         require(amount > 0);
-
-        // check if controller made allowance
-        require(ASSET_TOKEN.allowance(msg.sender, address(this)) >= amount);
-
-        // transfer to self yourself
+        // transfer to itself from Commitment contract allowance
         assert(ASSET_TOKEN.transferFrom(msg.sender, address(this), amount));
-        Account storage a = _accounts[investor];
-        a.balance = addBalance(a.balance, amount);
-        a.neumarksDue = add(a.neumarksDue, neumarks);
 
-        if (a.unlockDate == 0) {
+        Account storage account = _accounts[investor];
+        account.balance = addBalance(account.balance, amount);
+        account.neumarksDue = add(account.neumarksDue, neumarks);
+
+        if (account.unlockDate == 0) {
             // this is new account - unlockDate always > 0
             _totalInvestors += 1;
-            a.unlockDate = currentTime() + LOCK_PERIOD;
+            account.unlockDate = currentTime() + LOCK_PERIOD;
         }
         LogFundsLocked(investor, amount, neumarks);
     }
@@ -331,8 +328,8 @@ contract LockedAccount is
         constant
         returns (uint256, uint256, uint256)
     {
-        Account storage a = _accounts[investor];
-        return (a.balance, a.neumarksDue, a.unlockDate);
+        Account storage account = _accounts[investor];
+        return (account.balance, account.neumarksDue, account.unlockDate);
     }
 
     function controller()
@@ -399,26 +396,26 @@ contract LockedAccount is
         onlyMigrationEnabled()
     {
         // migrates
-        Account memory a = _accounts[msg.sender];
+        Account memory account = _accounts[msg.sender];
 
         // return on non existing accounts silentl
-        if (a.balance == 0) {
+        if (account.balance == 0) {
             return;
         }
 
         // this will clear investor storage
-        removeInvestor(msg.sender, a.balance);
+        removeInvestor(msg.sender, account.balance);
 
         // let migration target to own asset balance that belongs to investor
-        assert(ASSET_TOKEN.approve(address(_migration), a.balance));
+        assert(ASSET_TOKEN.approve(address(_migration), account.balance));
         bool migrated = LockedAccountMigration(_migration).migrateInvestor(
             msg.sender,
-            a.balance,
-            a.neumarksDue,
-            a.unlockDate
+            account.balance,
+            account.neumarksDue,
+            account.unlockDate
         );
         assert(migrated);
-        LogInvestorMigrated(msg.sender, a.balance, a.neumarksDue, a.unlockDate);
+        LogInvestorMigrated(msg.sender, account.balance, account.neumarksDue, account.unlockDate);
     }
 
     //
@@ -487,33 +484,34 @@ contract LockedAccount is
     function unlockInvestor(address investor)
         private
     {
-        Account storage a = _accounts[investor];
+        // use memory storage to obtain copy and be able to erase storage
+        Account memory accountInMem = _accounts[investor];
 
         // silently return on non-existing accounts
-        if (a.balance == 0) {
+        if (accountInMem.balance == 0) {
             return;
         }
+        // remove investor account before external calls
+        removeInvestor(investor, accountInMem.balance);
 
-        uint256 burnedNeumarkUlps = 0;
         // Neumark burning and penalty processing only in AcceptingUnlocks state
         if (_lockState == LockState.AcceptingUnlocks) {
             // transfer Neumarks to be burned to itself via allowance mechanism
             //  not enough allowance results in revert which is acceptable state so 'require' is used
-            burnedNeumarkUlps = a.neumarksDue;
-            require(NEUMARK.transferFrom(investor, address(this), burnedNeumarkUlps));
+            require(NEUMARK.transferFrom(investor, address(this), accountInMem.neumarksDue));
 
             // burn neumarks corresponding to unspent funds
-            NEUMARK.burnNeumark(burnedNeumarkUlps);
+            NEUMARK.burnNeumark(accountInMem.neumarksDue);
 
             // take the penalty if before unlockDate
-            if (currentTime() < a.unlockDate) {
+            if (currentTime() < accountInMem.unlockDate) {
                 // AUDIT[CHF-115] Unlocking may be blocked by admin.
                 //   The unlocking before the unlock date may be blocked
                 //   by the contract admin (and it blocked by default)
                 //   because the admin may not set the "penalty disbursal
                 //   address".
                 require(_penaltyDisbursalAddress != address(0));
-                uint256 penalty = fraction(a.balance, PENALTY_FRACTION);
+                uint256 penalty = fraction(accountInMem.balance, PENALTY_FRACTION);
 
                 // distribute penalty
                 if (isContract(_penaltyDisbursalAddress)) {
@@ -533,19 +531,14 @@ contract LockedAccount is
                     assert(ASSET_TOKEN.transfer(_penaltyDisbursalAddress, penalty));
                 }
                 LogPenaltyDisbursed(_penaltyDisbursalAddress, penalty, ASSET_TOKEN, investor);
-
-                // AUDIT[CHF-120] Do not use storage for local values.
-                //   Use local variable to track investor's balance.
-                a.balance = subBalance(a.balance, penalty);
+                accountInMem.balance -= penalty;
             }
         }
-
+        if (_lockState == LockState.ReleaseAll) {
+            accountInMem.neumarksDue = 0;
+        }
         // transfer amount back to investor - now it can withdraw
-        assert(ASSET_TOKEN.transfer(investor, a.balance));
-        LogFundsUnlocked(investor, a.balance, burnedNeumarkUlps);
-
-        // AUDIT[CHF-122] Update state before sending logs.
-        //   See CodeStyle.md.
-        removeInvestor(investor, a.balance);
+        assert(ASSET_TOKEN.transfer(investor, accountInMem.balance));
+        LogFundsUnlocked(investor, accountInMem.balance, accountInMem.neumarksDue);
     }
 }
