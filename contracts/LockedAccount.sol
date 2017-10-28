@@ -163,6 +163,8 @@ contract LockedAccount is
     /// @param lockPeriod period for which funds are locked, in seconds
     /// @param penaltyFraction decimal fraction of unlocked amount paid as penalty,
     ///     if unlocked before lockPeriod is over
+    /// @dev this implementation does not allow spending funds on ICOs but provides
+    ///     a migration mechanism to final LockedAccount with such functionality
     function LockedAccount(
         IAccessPolicy policy,
         IERC677Token assetToken,
@@ -184,9 +186,11 @@ contract LockedAccount is
     // Public functions
     ////////////////////////
 
-    // deposits 'amount' of tokens on assetToken contract
-    // locks 'amount' for 'investor' address
-    // callable only from controller (Commitment) contract that gets currency directly (ETH/EUR)
+    /// @notice locks funds of investors for a period of time
+    /// @param investor funds owner
+    /// @param amount amount of funds locked
+    /// @param neumarks amount of neumarks that needs to be returned by investor to unlock funds
+    /// @dev callable only from controller (Commitment) contract
     function lock(address investor, uint256 amount, uint256 neumarks)
         public
         onlyState(LockState.AcceptingLocks)
@@ -208,13 +212,6 @@ contract LockedAccount is
             _totalInvestors += 1;
             a.unlockDate = currentTime() + LOCK_PERIOD;
         }
-
-        // AUDIT[CHF-108] Unnecessary storage update in LockedAccount.lock().
-        //   The following line is not needed because `a` is already the
-        //   reference to the storage location.
-        //   Please observer gas cost changes. I noticed that the cost of
-        //   Commitment.commit() increased after removing the following line.
-        _accounts[investor] = a;
         LogFundsLocked(investor, amount, neumarks);
     }
 
