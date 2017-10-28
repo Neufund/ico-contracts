@@ -1,6 +1,5 @@
 import { expect } from "chai";
 import { CommitmentState } from "./helpers/commitmentState";
-import EvmError from "./helpers/EVMThrow";
 import increaseTime from "./helpers/increaseTime";
 import { latestTimestamp } from "./helpers/latestTime";
 
@@ -30,14 +29,6 @@ contract("TimedStateMachine", () => {
 
   it("should have desired state ordering", async () => {
     await timedStateMachine.testStateOrdering();
-  });
-
-  it("should reject when created too short before startDate", async () => {
-    const now = await latestTimestamp();
-    const startDate = now + BEFORE_DURATION - START_DATE_GAP - 1;
-    await expect(TestTimedStateMachine.new(startDate)).to.be.rejectedWith(
-      EvmError
-    );
   });
 
   describe("timed transitions", () => {
