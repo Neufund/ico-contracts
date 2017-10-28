@@ -510,28 +510,15 @@ contract LockedAccount is
 
             // take the penalty if before unlockDate
             if (currentTime() < accountInMem.unlockDate) {
-                // AUDIT[CHF-115] Unlocking may be blocked by admin.
-                //   The unlocking before the unlock date may be blocked
-                //   by the contract admin (and it blocked by default)
-                //   because the admin may not set the "penalty disbursal
-                //   address".
                 require(_penaltyDisbursalAddress != address(0));
                 uint256 penalty = fraction(accountInMem.balance, PENALTY_FRACTION);
 
                 // distribute penalty
                 if (isContract(_penaltyDisbursalAddress)) {
-
-                    // transfer to contract
-                    // AUDIT[CHF-118] Unlocking may be blocked by admin (2).
-                    //   The admin can create a contract that always returns
-                    //   false in receiveApproval() callback. This way
-                    //   unlocking before unlock date may be blocked by
-                    //   admin.
                     require(
                         ASSET_TOKEN.approveAndCall(_penaltyDisbursalAddress,penalty, "")
                     );
                 } else {
-
                     // transfer to simple address
                     assert(ASSET_TOKEN.transfer(_penaltyDisbursalAddress, penalty));
                 }
