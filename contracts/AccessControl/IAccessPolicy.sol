@@ -1,7 +1,5 @@
 pragma solidity 0.4.15;
 
-import './IAccessControlled.sol';
-
 
 /// @title provides subject to role checking logic
 contract IAccessPolicy {
@@ -20,7 +18,7 @@ contract IAccessPolicy {
     function allowed(
         address subject,
         bytes32 role,
-        IAccessControlled object,
+        address object,
         bytes4 verb
     )
         public

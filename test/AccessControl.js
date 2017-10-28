@@ -622,6 +622,19 @@ contract(
         );
       });
 
+      it("should enumerate default ACCESS_CONTROL permissions", async () => {
+        const globSubs = await accessPolicy.getUsers(
+          GLOBAL,
+          roles.accessController
+        );
+        expect(globSubs).to.have.same.members([accessController]);
+        const locSubs = await accessPolicy.getUsers(
+          accessPolicy.address,
+          roles.accessController
+        );
+        expect(locSubs).to.have.same.members([accessController]);
+      });
+
       it("should enumerate all subjects", async () => {
         const subjects = await accessPolicy.getUsers(GLOBAL, exampleRole);
         expect(subjects).to.have.same.members(accounts);
