@@ -1,6 +1,5 @@
 import { expect } from "chai";
 import moment from "moment";
-import error, { Status } from "./helpers/error";
 import { hasEvent, eventValue } from "./helpers/events";
 import {
   deployControlContracts,
@@ -566,7 +565,6 @@ contract(
 
       async function assertCorrectUnlock(tx, investorAddress, ticket, penalty) {
         const disbursalPool = await lockedAccount.penaltyDisbursalAddress();
-        expect(error(tx)).to.eq(Status.SUCCESS);
         expect(await lockedAccount.totalLockedAmount()).to.be.bignumber.equal(
           0
         );
@@ -781,8 +779,7 @@ contract(
             from: investor
           }
         );
-        tx = await lockedAccount.unlock({ from: investor });
-        expect(error(tx)).to.eq(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
+        await expect(lockedAccount.unlock({ from: investor })).to.be.rejectedWith(EvmError);
       });
 
       it("should reject unlock when neumark balance too low but allowance OK", async () => {
@@ -795,11 +792,10 @@ contract(
           from: investor
         });
         // allow full amount
-        let tx = await neumark.approve(lockedAccount.address, neumarks, {
+        await neumark.approve(lockedAccount.address, neumarks, {
           from: investor
         });
-        tx = await lockedAccount.unlock({ from: investor });
-        expect(error(tx)).to.eq(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
+        await expect(lockedAccount.unlock({ from: investor })).to.be.rejectedWith(EvmError);
       });
 
       it("should unlock after unlock date without penalty", async () => {

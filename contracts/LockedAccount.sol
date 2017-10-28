@@ -10,7 +10,6 @@ import './Neumark.sol';
 import './Standards/IERC677Token.sol';
 import './Standards/IERC677Callback.sol';
 import './Reclaimable.sol';
-import './ReturnsErrors.sol';
 import './TimeSource.sol';
 
 
@@ -18,11 +17,6 @@ contract LockedAccount is
     AccessControlled,
     AccessRoles,
     TimeSource,
-
-    // AUDIT[CHF-125] Drop ReturnsErrors from LockedAccount.
-    //   The Status enum has only 2 used values. Use true/false in unlockFor()
-    //   instead of confusing status codes.
-    ReturnsErrors,
     Math,
     IsContract,
     MigrationSource,
@@ -228,12 +222,8 @@ contract LockedAccount is
     function unlock()
         public
         onlyStates(LockState.AcceptingUnlocks, LockState.ReleaseAll)
-        returns (Status)
     {
-        // AUDIT[CHF-127] LockedAccount.unlock() should properly fail.
-        //   This function will return false on failure, what is hard to
-        //   recognize by external users from successful transactions.
-        return unlockFor(msg.sender);
+        unlockInvestor(msg.sender);
     }
 
     // this allows to unlock and allow neumarks to be burned in one transaction
@@ -254,8 +244,8 @@ contract LockedAccount is
         require(_token == address(NEUMARK));
 
         // this will check if allowance was made and if _amount is enough to
-        // unlock
-        require(unlockFor(from) == Status.SUCCESS);
+        //  unlock, reverts on any error condition
+        unlockInvestor(from);
 
         // we assume external call so return value will be lost to clients
         // that's why we throw above
@@ -502,9 +492,8 @@ contract LockedAccount is
     }
 
     // AUDIT[CHF-129] Make function unlockFor() private.
-    function unlockFor(address investor)
+    function unlockInvestor(address investor)
         internal
-        returns (Status)
     {
         Account storage a = _accounts[investor];
 
@@ -515,27 +504,9 @@ contract LockedAccount is
             //   This comment describes the code after the if ().
             // in ReleaseAll just give money back by transferring to investor
             if (_lockState == LockState.AcceptingUnlocks) {
-
-                // AUDIT[CHF-126] Unnecessary allowance checks.
-                //   The 2 following allowance checks are not required for
-                //   correctness. They only affect the final result of
-                //   unlock() function. If removed the code will be simpler
-                //   and more consistent.
-                // before burn happens, investor must make allowance to locked account
-                if (NEUMARK.allowance(investor, address(this)) < a.neumarksDue) {
-                    return logError(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
-                }
-                if (NEUMARK.balanceOf(investor) < a.neumarksDue) {
-                    return logError(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
-                }
-                // AUDIT[CHF-112] transferFrom() never returns false.
-                //   This check has not effect. Replace it with
-                //
-                //       assert(NEUMARK.transferFrom(...));
-                //
-                if (!NEUMARK.transferFrom(investor, address(this), a.neumarksDue)) {
-                    return logError(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
-                }
+                // transfer Neumarks to be burned to itself via allowance mechanism
+                //  not enough allowance results in revert which is acceptable state so 'require' is used
+                require(NEUMARK.transferFrom(investor, address(this), a.neumarksDue));
 
                 // burn neumarks corresponding to unspent funds
                 NEUMARK.burnNeumark(a.neumarksDue);
@@ -600,6 +571,5 @@ contract LockedAccount is
             //   See CodeStyle.md.
             removeInvestor(investor, a.balance);
         }
-        return Status.SUCCESS;
     }
 }
