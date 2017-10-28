@@ -29,6 +29,7 @@ contract TestLockedAccountMigrationTarget is
         IAccessPolicy _policy,
         IERC677Token _assetToken,
         Neumark _neumark,
+        address _penaltyDisbursalAddress,
         uint256 _lockPeriod,
         uint256 _penaltyFraction
     )
@@ -36,6 +37,7 @@ contract TestLockedAccountMigrationTarget is
             _policy,
             _assetToken,
             _neumark,
+            _penaltyDisbursalAddress,
             _lockPeriod,
             _penaltyFraction
         )
