@@ -403,7 +403,7 @@ contract LockedAccount is
         // migrates
         Account memory account = _accounts[msg.sender];
 
-        // return on non existing accounts silentl
+        // return on non existing accounts silently
         if (account.balance == 0) {
             return;
         }
