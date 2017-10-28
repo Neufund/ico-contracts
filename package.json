@@ -52,6 +52,7 @@
   },
   "devDependencies": {
     "eslint-plugin-mocha": "^4.11.0",
+    "ledgerco": "Neufund/ledger-node-js-api",
     "prettier": "^1.5.3",
     "solidity-coverage": "Neufund/solidity-coverage#neufund"
   }
