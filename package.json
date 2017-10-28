@@ -48,7 +48,8 @@
     "build": "rm -rf ./build && truffle compile --all",
     "deploy": "truffle migrate --reset --compile-all --network localhost",
     "deploy:fast": "truffle migrate --reset --network localhost",
-    "solctruffle": "./scripts/solctruffle.sh"
+    "solctruffle": "./scripts/solctruffle.sh",
+    "ledger": "node ./scripts/getAddressFromLedger.js"
   },
   "devDependencies": {
     "eslint-plugin-mocha": "^4.11.0",
