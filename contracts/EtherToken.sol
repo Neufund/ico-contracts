@@ -101,13 +101,13 @@ contract EtherToken is
     // Overrides Reclaimable
     //
 
+    /// @notice allows EtherToken to reclaim tokens wrongly sent to its address
+    /// @dev as EtherToken by design has balance of Ether (native Ethereum token)
+    ///     such reclamation is not allowed
     function reclaim(IBasicToken token)
         public
     {
-        // AUDIT[CHF-136] Improve comment in EtherToken.reclaim().
-        //   It should be something like:
-        //   "Forbid reclaiming ETH hold in this contract."
-        // This contract holds Ether
+        // forbid reclaiming ETH hold in this contract.
         require(token != RECLAIM_ETHER);
         Reclaimable.reclaim(token);
     }

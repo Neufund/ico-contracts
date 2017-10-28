@@ -119,9 +119,6 @@ contract TokenAllowance is
         public
         returns (bool success)
     {
-        // AUDIT[CHF-116] Unnecessary require() in Allowance.approveAndCall()
-        //   The following condition is aways true, because approve() never
-        //   returns false.
         require(approve(spender, amount));
 
         success = IERC677Callback(spender).receiveApproval(

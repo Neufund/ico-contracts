@@ -1,6 +1,5 @@
 import { expect } from "chai";
 import moment from "moment";
-import error, { Status } from "./helpers/error";
 import { hasEvent, eventValue } from "./helpers/events";
 import {
   deployControlContracts,
@@ -419,20 +418,22 @@ contract(
         expect(event.args.neumarkUlps).to.be.bignumber.equal(neumarkUlps);
       }
 
-      function expectUnlockEvent(tx, investorAddress, amount) {
+      function expectUnlockEvent(tx, investorAddress, amount, neumarksBurned) {
         const event = eventValue(tx, "LogFundsUnlocked");
         expect(event).to.exist;
         expect(event.args.investor).to.equal(investorAddress);
         expect(event.args.amount).to.be.bignumber.equal(amount);
+        expect(event.args.neumarks).to.be.bignumber.equal(neumarksBurned);
       }
 
       async function expectPenaltyEvent(tx, investorAddress, penalty) {
         const disbursalPool = await lockedAccount.penaltyDisbursalAddress();
         const event = eventValue(tx, "LogPenaltyDisbursed");
         expect(event).to.exist;
-        expect(event.args.investor).to.equal(investorAddress);
+        expect(event.args.disbursalPoolAddress).to.equal(disbursalPool);
         expect(event.args.amount).to.be.bignumber.equal(penalty);
-        expect(event.args.toPool).to.equal(disbursalPool);
+        expect(event.args.assetToken).to.equal(assetToken.address);
+        expect(event.args.investor).to.equal(investorAddress);
       }
 
       async function expectPenaltyBalance(penalty) {
@@ -550,7 +551,6 @@ contract(
 
       async function assertCorrectUnlock(tx, investorAddress, ticket, penalty) {
         const disbursalPool = await lockedAccount.penaltyDisbursalAddress();
-        expect(error(tx)).to.eq(Status.SUCCESS);
         expect(await lockedAccount.totalLockedAmount()).to.be.bignumber.equal(
           0
         );
@@ -622,7 +622,7 @@ contract(
         const penalty = await calculateUnlockPenalty(ticket);
         await assertCorrectUnlock(unlockTx, investor, ticket, penalty);
         await expectPenaltyEvent(unlockTx, investor, penalty);
-        expectUnlockEvent(unlockTx, investor, ticket.sub(penalty));
+        expectUnlockEvent(unlockTx, investor, ticket.sub(penalty), neumarks);
         await makeWithdraw(investor, ticket.sub(penalty));
       });
 
@@ -636,7 +636,7 @@ contract(
         const penalty1 = await calculateUnlockPenalty(ticket1);
         await expectPenaltyEvent(unlockTx, investor, penalty1);
         await expectPenaltyBalance(penalty1);
-        expectUnlockEvent(unlockTx, investor, ticket1.sub(penalty1));
+        expectUnlockEvent(unlockTx, investor, ticket1.sub(penalty1), neumarks1);
         expect(await neumark.balanceOf(investor2)).to.be.bignumber.eq(
           neumarks2
         );
@@ -652,7 +652,7 @@ contract(
         const penalty2 = await calculateUnlockPenalty(ticket2);
         await expectPenaltyEvent(unlockTx, investor2, penalty2);
         await expectPenaltyBalance(penalty1.add(penalty2));
-        expectUnlockEvent(unlockTx, investor2, ticket2.sub(penalty2));
+        expectUnlockEvent(unlockTx, investor2, ticket2.sub(penalty2), neumarks2);
       });
 
       it("should reject unlock with approval on contract disbursal that has receiveApproval not implemented", async () => {
@@ -682,7 +682,7 @@ contract(
         const penalty = await calculateUnlockPenalty(ticket);
         await assertCorrectUnlock(unlockTx, investor, ticket, penalty);
         await expectPenaltyEvent(unlockTx, investor, penalty);
-        expectUnlockEvent(unlockTx, investor, ticket.sub(penalty));
+        expectUnlockEvent(unlockTx, investor, ticket.sub(penalty), neumarks);
         await makeWithdraw(investor, ticket.sub(penalty));
       });
 
@@ -765,8 +765,7 @@ contract(
             from: investor
           }
         );
-        tx = await lockedAccount.unlock({ from: investor });
-        expect(error(tx)).to.eq(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
+        await expect(lockedAccount.unlock({ from: investor })).to.be.rejectedWith(EvmError);
       });
 
       it("should reject unlock when neumark balance too low but allowance OK", async () => {
@@ -779,11 +778,10 @@ contract(
           from: investor
         });
         // allow full amount
-        let tx = await neumark.approve(lockedAccount.address, neumarks, {
+        await neumark.approve(lockedAccount.address, neumarks, {
           from: investor
         });
-        tx = await lockedAccount.unlock({ from: investor });
-        expect(error(tx)).to.eq(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
+        await expect(lockedAccount.unlock({ from: investor })).to.be.rejectedWith(EvmError);
       });
 
       it("should unlock after unlock date without penalty", async () => {
@@ -795,7 +793,7 @@ contract(
         await setTimeTo(investorBalance[2]);
         const unlockTx = await unlockWithApprove(investor, neumarks);
         await assertCorrectUnlock(unlockTx, investor, ticket, 0);
-        expectUnlockEvent(unlockTx, investor, ticket);
+        expectUnlockEvent(unlockTx, investor, ticket, neumarks);
         await makeWithdraw(investor, ticket);
         await expectPenaltyBalance(0);
       });
@@ -812,13 +810,13 @@ contract(
         const investorBalance = await lockedAccount.balanceOf(investor);
         await setTimeTo(investorBalance[2]);
         let unlockTx = await unlockWithApprove(investor, neumarks1);
-        expectUnlockEvent(unlockTx, investor, ticket1);
+        expectUnlockEvent(unlockTx, investor, ticket1, neumarks1);
         await makeWithdraw(investor, ticket1);
 
         const investor2Balance = await lockedAccount.balanceOf(investor2);
         await setTimeTo(investor2Balance[2]);
         unlockTx = await unlockWithApprove(investor2, neumarks2);
-        expectUnlockEvent(unlockTx, investor2, ticket2);
+        expectUnlockEvent(unlockTx, investor2, ticket2, neumarks2);
         await makeWithdraw(investor2, ticket2);
         await expectPenaltyBalance(0);
       });
@@ -835,7 +833,7 @@ contract(
         const investorBalance = await lockedAccount.balanceOf(investor);
         await setTimeTo(investorBalance[2]);
         let unlockTx = await unlockWithApprove(investor, neumarks1);
-        expectUnlockEvent(unlockTx, investor, ticket1);
+        expectUnlockEvent(unlockTx, investor, ticket1, neumarks1);
         await makeWithdraw(investor, ticket1);
 
         const investor2Balance = await lockedAccount.balanceOf(investor2);
@@ -845,7 +843,7 @@ contract(
         const penalty2 = await calculateUnlockPenalty(ticket2);
         await expectPenaltyEvent(unlockTx, investor2, penalty2);
         await expectPenaltyBalance(penalty2);
-        expectUnlockEvent(unlockTx, investor2, ticket2.sub(penalty2));
+        expectUnlockEvent(unlockTx, investor2, ticket2.sub(penalty2), neumarks2);
         await makeWithdraw(investor2, ticket2.sub(penalty2));
       });
 
@@ -861,13 +859,13 @@ contract(
         await controller.fail();
         // forward to investor1 unlock date
         let unlockTx = await lockedAccount.unlock({ from: investor });
-        expectUnlockEvent(unlockTx, investor, ticket1);
+        expectUnlockEvent(unlockTx, investor, ticket1, 0);
         // keeps neumarks
         expect(await neumark.balanceOf(investor)).to.be.bignumber.eq(neumarks1);
         await makeWithdraw(investor, ticket1);
 
         unlockTx = await lockedAccount.unlock({ from: investor2 });
-        expectUnlockEvent(unlockTx, investor2, ticket2);
+        expectUnlockEvent(unlockTx, investor2, ticket2, 0);
         // keeps neumarks
         expect(await neumark.balanceOf(investor2)).to.be.bignumber.eq(
           neumarks2
