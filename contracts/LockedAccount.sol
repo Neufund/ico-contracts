@@ -379,13 +379,12 @@ contract LockedAccount is
 
             // let migration target to own asset balance that belongs to investor
             require(ASSET_TOKEN.approve(address(_migration), a.balance));
-            bool migrated = LockedAccountMigration(_migration).migrateInvestor(
+            LockedAccountMigration(_migration).migrateInvestor(
                 msg.sender,
                 a.balance,
                 a.neumarksDue,
                 a.unlockDate
             );
-            assert(migrated);
             LogInvestorMigrated(msg.sender, a.balance, a.neumarksDue, a.unlockDate);
         }
     }

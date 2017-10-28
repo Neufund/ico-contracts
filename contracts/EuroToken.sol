@@ -63,8 +63,8 @@ contract EuroToken is
         bool allowed
     );
 
-    /// @notice logged on successful migration
-    event LogOwnerMigrated(
+    /// @notice migration was successful
+    event LogEuroTokenOwnerMigrated(
         address indexed owner,
         uint256 amount
     );
@@ -201,13 +201,16 @@ contract EuroToken is
     {
         // burn deposit
         uint256 amount = _balances[msg.sender];
-        require(amount > 0);
-        _balances[msg.sender] = 0;
-        _totalSupply = sub(_totalSupply, amount);
+        if (amount > 0) {
+            _balances[msg.sender] = 0;
+            _totalSupply = sub(_totalSupply, amount);
+        }
+        // remove all transfer permissions
+        _allowedTransferTo[msg.sender] = false;
+        _allowedTransferFrom[msg.sender] = false;
         // migrate to
-        bool success = EuroTokenMigrationTarget(_migration).migrateOwner(msg.sender, amount);
-        require(success);
+        EuroTokenMigrationTarget(_migration).migrateEuroTokenOwner(msg.sender, amount);
         // set event
-        LogOwnerMigrated(msg.sender, amount);
+        LogEuroTokenOwnerMigrated(msg.sender, amount);
     }
 }

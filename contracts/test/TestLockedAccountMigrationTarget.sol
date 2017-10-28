@@ -21,8 +21,6 @@ contract TestLockedAccountMigrationTarget is
 
     LockedAccount private _migrationSource;
 
-    bool private _shouldMigrationFail;
-
     ////////////////////////
     // Constructor
     ////////////////////////
@@ -56,13 +54,6 @@ contract TestLockedAccountMigrationTarget is
         _migrationSource = source;
     }
 
-    function setShouldMigrationFail(bool shouldFail)
-        only(ROLE_LOCKED_ACCOUNT_ADMIN)
-        public
-    {
-        _shouldMigrationFail = shouldFail;
-    }
-
     //
     // Implements LockedAccountMigrationTarget
     //
@@ -75,10 +66,7 @@ contract TestLockedAccountMigrationTarget is
     )
         public
         onlyMigrationSource()
-        returns(bool)
     {
-        if (_shouldMigrationFail)
-            return false;
         // transfer assets
         require(ASSET_TOKEN.transferFrom(msg.sender, address(this), balance));
         // just move account
@@ -90,10 +78,7 @@ contract TestLockedAccountMigrationTarget is
         // minimal bookkeeping
         addBalance(balance, balance);
         _totalInvestors += 1;
-        // raise mandatory event
-        InvestorMigrated(investor, balance, neumarksDue, unlockDate, assetToken());
 
-        return true;
     }
 
     //
