@@ -33,7 +33,10 @@ contract MintableSnapshotToken is
     function mGenerateTokens(address owner, uint256 amount)
         internal
     {
+        // never create for address 0
         require(owner != address(0));
+        // block changes in clone that points to future/current snapshots of patent token
+        require(parentToken() == address(0) || parentSnapshotId() < parentToken().currentSnapshotId());
 
         uint256 curTotalSupply = totalSupply();
         uint256 newTotalSupply = curTotalSupply + amount;
@@ -55,6 +58,9 @@ contract MintableSnapshotToken is
     function mDestroyTokens(address owner, uint256 amount)
         internal
     {
+        // block changes in clone that points to future/current snapshots of patent token
+        require(parentToken() == address(0) || parentSnapshotId() < parentToken().currentSnapshotId());
+
         uint256 curTotalSupply = totalSupply();
         require(curTotalSupply >= amount);
 
