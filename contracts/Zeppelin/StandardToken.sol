@@ -38,7 +38,7 @@ contract StandardToken is
     * @dev Transfer tokens from one address to another
     * @param from address The address which you want to send tokens from
     * @param to address The address which you want to transfer to
-    * @param amount uint256 the amout of tokens to be transfered
+    * @param amount uint256 the amount of tokens to be transferred
     */
     function transferFrom(address from, address to, uint256 amount)
         public

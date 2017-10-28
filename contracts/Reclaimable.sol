@@ -5,8 +5,7 @@ import './AccessControl/AccessControlled.sol';
 import './AccessRoles.sol';
 
 
-/// @title allows contract to reclaim ether or any token sent to it
-/// @dev requires ROLE_RECLAIMER permission, tokens must implement IBasicToken which defines 'balanceOf' and 'transfer'
+// AUDIT[CHF-134] Consider removing reclaim() mechanism completely.
 contract Reclaimable is AccessControlled, AccessRoles {
 
     ////////////////////////
@@ -23,6 +22,9 @@ contract Reclaimable is AccessControlled, AccessRoles {
         public
         only(ROLE_RECLAIMER)
     {
+        // AUDIT[CHF-133] Simplify implementation of reclaim().
+        //   Remove `success` variable.
+        //   Move `balance` to where it is first assigned.
         uint256 balance;
         bool success;
         address receiver = msg.sender;

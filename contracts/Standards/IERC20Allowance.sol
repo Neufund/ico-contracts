@@ -42,6 +42,9 @@ contract IERC20Allowance {
     /// @param to The address of the recipient
     /// @param amount The amount of tokens to be transferred
     /// @return True if the transfer was successful
+    // AUDIT[CHF-102] Token.transferFrom() SHOULD always return true.
+    //   According to recent recommendations in ERC20 spec, transfer-like
+    //   function SHOULD revert() on failures and return true otherwise.
     function transferFrom(address from, address to, uint256 amount)
         public
         returns (bool success);

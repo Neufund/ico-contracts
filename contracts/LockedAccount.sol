@@ -18,6 +18,10 @@ contract LockedAccount is
     AccessControlled,
     AccessRoles,
     TimeSource,
+
+    // AUDIT[CHF-125] Drop ReturnsErrors from LockedAccount.
+    //   The Status enum has only 2 used values. Use true/false in unlockFor()
+    //   instead of confusing status codes.
     ReturnsErrors,
     Math,
     IsContract,
@@ -31,6 +35,9 @@ contract LockedAccount is
     ////////////////////////
 
     // lock state
+    // AUDIT[CHF-101] Consider using StateMachine.
+    //   This contract controls internal state similarly to StateMachine
+    //   contract. Consider using StateMachine abstract contract here.
     enum LockState {
         Uncontrolled,
         AcceptingLocks,
@@ -86,6 +93,7 @@ contract LockedAccount is
     // Events
     ////////////////////////
 
+    // AUDIT[CHF-113] Add comments documenting events' parameters.
     event LogFundsLocked(
         address indexed investor,
         uint256 amount,
@@ -170,20 +178,43 @@ contract LockedAccount is
         onlyController()
     {
         require(amount > 0);
-        // transfer allowance to self yourself
+        // transfer to self yourself
+        // AUDIT[CHF-103] transferFrom() SHOULD always return true.
+        //   Use assert() instead of require() as in other places.
         require(ASSET_TOKEN.transferFrom(msg.sender, address(this), amount));
         Account storage a = _accounts[investor];
         a.balance = addBalance(a.balance, amount);
+
+        // AUDIT[CHF-106] Unsafe math in LockedAccount.lock().
+        //   I think this assumes that amount of neumarks is never bigger
+        //   than amount of tokens, because this is the way Commitment works.
+        //   But this assumption is never confirmed here.
+        //   Use add() here as well.
         a.neumarksDue = add(a.neumarksDue, neumarkUlps);
+
+        // AUDIT[CHF-107] Unnecessary assert() in LockedAccount.lock().
+        //   Assert similar to the one in addBalance() with unknown reason.
+        // assert(isSafeMultiplier(a.neumarksDue));
         if (a.unlockDate == 0) {
             // this is new account - unlockDate always > 0
             _totalInvestors += 1;
+            // AUDIT[CHF-108] Possible incorrect lock period.
+            //   If the amount of tokens locked can be increased by an investor
+            //   multiple times, should not the lock period be bumped
+            //   in each lock() call?
             a.unlockDate = currentTime() + LOCK_PERIOD;
         }
+
+        // AUDIT[CHF-108] Unnecessary storage update in LockedAccount.lock().
+        //   The following line is not needed because `a` is already the
+        //   reference to the storage location.
+        //   Please observer gas cost changes. I noticed that the cost of
+        //   Commitment.commit() increased after removing the following line.
         _accounts[investor] = a;
         LogFundsLocked(investor, amount, neumarkUlps);
     }
 
+    // AUDIT[CHF-109] Update comment of LockedAccount.unlock().
     // unlocks msg.sender tokens by making them withdrawable in assetToken
     // expects number of neumarks that is due to be available to be burned on
     // msg.sender balance - see comments
@@ -194,6 +225,9 @@ contract LockedAccount is
         onlyStates(LockState.AcceptingUnlocks, LockState.ReleaseAll)
         returns (Status)
     {
+        // AUDIT[CHF-127] LockedAccount.unlock() should properly fail.
+        //   This function will return false on failure, what is hard to
+        //   recognize by external users from successful transactions.
         return unlockFor(msg.sender);
     }
 
@@ -296,6 +330,8 @@ contract LockedAccount is
         return PENALTY_FRACTION;
     }
 
+    // AUDIT[CHF-132] Rename LockedAccount.balanceOf().
+    //   This function returns more data than balance only.
     function balanceOf(address investor)
         public
         constant
@@ -378,6 +414,8 @@ contract LockedAccount is
             removeInvestor(msg.sender, a.balance);
 
             // let migration target to own asset balance that belongs to investor
+            // AUDIT[CHF-137] Use assert() to check Token.approve().
+            //   Token.approve SHOULD never return false.
             require(ASSET_TOKEN.approve(address(_migration), a.balance));
             LockedAccountMigration(_migration).migrateInvestor(
                 msg.sender,
@@ -385,17 +423,21 @@ contract LockedAccount is
                 a.neumarksDue,
                 a.unlockDate
             );
+            // AUDIT[CHF-138] Use require() to check migration status.
+            // assert(migrated);
             LogInvestorMigrated(msg.sender, a.balance, a.neumarksDue, a.unlockDate);
         }
     }
 
     //
-    // Overides Reclaimable
+    // Overrides Reclaimable
     //
 
     function reclaim(IBasicToken token)
         public
     {
+        // AUDIT[CHF-135] Improve comment in LockedAccount.reclaim().
+        //   It should be something like: "Forbid reclaiming locked tokens."
         // This contract holds the asset token
         require(token != ASSET_TOKEN);
         Reclaimable.reclaim(token);
@@ -410,10 +452,18 @@ contract LockedAccount is
         returns (uint256)
     {
         _totalLockedAmount = add(_totalLockedAmount, amount);
+
+        // AUDIT[CHF-104] Safe addition not needed in addBalance().
+        //   Because always balance <= _totalLockedAmount, the second use
+        //   of add() is not required.
         uint256 newBalance = add(balance, amount);
+
+        // AUDIT[CHF-105] Remove assert() from addBalance().
+        // assert(isSafeMultiplier(newBalance));
         return newBalance;
     }
 
+    // AUDIT[CHF-131] Make function subBalance() private.
     function subBalance(uint256 balance, uint256 amount)
         internal
         returns (uint256)
@@ -422,9 +472,13 @@ contract LockedAccount is
         return balance - amount;
     }
 
+    // AUDIT[CHF-130] Make function removeInvestor() private.
     function removeInvestor(address investor, uint256 balance)
         internal
     {
+        // AUDIT[CHF-121] Reuse subBalance() in removeInvestor().
+        //   Use subBalance() function instead of
+        //   `_totalLockedAmount -= balance` expression.
         _totalLockedAmount -= balance;
         _totalInvestors -= 1;
         delete _accounts[investor];
@@ -433,12 +487,16 @@ contract LockedAccount is
     function changeState(LockState newState)
         internal
     {
+        // AUDIT[CHF-128] Unnecessary condition in changeState().
+        //   Make the function private and remove the `newState != _lockState`
+        //   check.
         if (newState != _lockState) {
             LogLockStateTransition(_lockState, newState);
             _lockState = newState;
         }
     }
 
+    // AUDIT[CHF-129] Make function unlockFor() private.
     function unlockFor(address investor)
         internal
         returns (Status)
@@ -448,9 +506,16 @@ contract LockedAccount is
         // if there is anything to unlock
         if (a.balance > 0) {
 
-            // in ReleaseAll just give money back by transfering to investor
+            // AUDIT[CHF-110] Misplaced comment in LockedAccount.unlockFor().
+            //   This comment describes the code after the if ().
+            // in ReleaseAll just give money back by transferring to investor
             if (_lockState == LockState.AcceptingUnlocks) {
 
+                // AUDIT[CHF-126] Unnecessary allowance checks.
+                //   The 2 following allowance checks are not required for
+                //   correctness. They only affect the final result of
+                //   unlock() function. If removed the code will be simpler
+                //   and more consistent.
                 // before burn happens, investor must make allowance to locked account
                 if (NEUMARK.allowance(investor, address(this)) < a.neumarksDue) {
                     return logError(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
@@ -458,6 +523,11 @@ contract LockedAccount is
                 if (NEUMARK.balanceOf(investor) < a.neumarksDue) {
                     return logError(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
                 }
+                // AUDIT[CHF-112] transferFrom() never returns false.
+                //   This check has not effect. Replace it with
+                //
+                //       assert(NEUMARK.transferFrom(...));
+                //
                 if (!NEUMARK.transferFrom(investor, address(this), a.neumarksDue)) {
                     return logError(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
                 }
@@ -467,6 +537,11 @@ contract LockedAccount is
 
                 // take the penalty if before unlockDate
                 if (currentTime() < a.unlockDate) {
+                    // AUDIT[CHF-115] Unlocking may be blocked by admin.
+                    //   The unlocking before the unlock date may be blocked
+                    //   by the contract admin (and it blocked by default)
+                    //   because the admin may not set the "penalty disbursal
+                    //   address".
                     require(_penaltyDisbursalAddress != address(0));
                     uint256 penalty = decimalFraction(a.balance, PENALTY_FRACTION);
 
@@ -474,6 +549,11 @@ contract LockedAccount is
                     if (isContract(_penaltyDisbursalAddress)) {
 
                         // transfer to contract
+                        // AUDIT[CHF-118] Unlocking may be blocked by admin (2).
+                        //   The admin can create a contract that always returns
+                        //   false in receiveApproval() callback. This way
+                        //   unlocking before unlock date may be blocked by
+                        //   admin.
                         require(
                             ASSET_TOKEN.approveAndCall(
                                 _penaltyDisbursalAddress,
@@ -484,18 +564,35 @@ contract LockedAccount is
                     } else {
 
                         // transfer to address
+                        // AUDIT[CHF-119] transfer() SHOULD always return true.
+                        //   Use assert() instead of require().
                         require(ASSET_TOKEN.transfer(_penaltyDisbursalAddress, penalty));
                     }
+                    // AUDIT[CHF-124] Combine events in unlockFor().
+                    //   The information from this event can be added to
+                    //   LogFundsUnlocked event. Then this event can be
+                    //   removed.
                     LogPenaltyDisbursed(investor, penalty, _penaltyDisbursalAddress);
+
+                    // AUDIT[CHF-120] Do not use storage for local values.
+                    //   Use local variable to track investor's balance.
                     a.balance = subBalance(a.balance, penalty);
                 }
             }
 
             // transfer amount back to investor - now it can withdraw
+            // AUDIT[CHF-111] Replace require() with assert() in unlockFor().
+            //   Use assert() for Token.transfer() check.
             require(ASSET_TOKEN.transfer(investor, a.balance));
 
             // remove balance, investor and
+            // AUDIT[CHF-123] Missing information in LogFundsUnlocked.
+            //   For consistency with LogFundsLocked, you should add information
+            //   about amount of burnt Neumark tokens to LogFundsUnlocked event.
             LogFundsUnlocked(investor, a.balance);
+
+            // AUDIT[CHF-122] Update state before sending logs.
+            //   See CodeStyle.md.
             removeInvestor(investor, a.balance);
         }
         return Status.SUCCESS;
