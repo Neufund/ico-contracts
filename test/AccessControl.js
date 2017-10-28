@@ -428,7 +428,7 @@ contract(
 
     it("should deny when at the bottom of cascade if all allowed", async () => {
       // set full cascade to allowed
-      accessPolicy.set([
+      await accessPolicy.set([
         {
           subject: EVERYONE,
           object: GLOBAL,
@@ -521,7 +521,7 @@ contract(
 
     it("should allow when at the bottom of cascade if all denied", async () => {
       // set full cascade to allowed
-      accessPolicy.set([
+      await accessPolicy.set([
         {
           subject: EVERYONE,
           object: GLOBAL,
@@ -614,10 +614,10 @@ contract(
 
     describe("enumerating subjects", () => {
       beforeEach(async () => {
-        accessPolicy.set(
+        await accessPolicy.set(
           accounts.map(a => ({ subject: a, role: exampleRole }))
         );
-        accessPolicy.set(
+        await accessPolicy.set(
           accounts.map(a => ({ subject: a, role: roles.whitelistAdmin }))
         );
       });
