@@ -28,20 +28,25 @@ contract LockedAccount is
     // Type declarations
     ////////////////////////
 
-    // lock state
-    // AUDIT[CHF-101] Consider using StateMachine.
-    //   This contract controls internal state similarly to StateMachine
-    //   contract. Consider using StateMachine abstract contract here.
+    // state space of LockedAccount
     enum LockState {
+        // controller is not yet set
         Uncontrolled,
+        // new funds lockd are accepted from investors
         AcceptingLocks,
+        // funds may be unlocked by investors, final state
         AcceptingUnlocks,
+        // funds may be unlocked by investors, without any constraints, final state
         ReleaseAll
     }
 
+    // represents locked account of the investor
     struct Account {
+        // funds locked in the account
         uint256 balance;
+        // neumark amount that must be returned to unlock
         uint256 neumarksDue;
+        // date with which unlock may happen without penalty
         uint256 unlockDate;
     }
 
