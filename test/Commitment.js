@@ -79,6 +79,7 @@ contract(
         rbap.address,
         etherToken.address,
         neumark.address,
+        other,
         LOCK_DURATION,
         PENALTY_FRACTION
       );
@@ -86,6 +87,7 @@ contract(
         rbap.address,
         euroToken.address,
         neumark.address,
+        other,
         LOCK_DURATION,
         PENALTY_FRACTION
       );
