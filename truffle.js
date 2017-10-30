@@ -39,14 +39,24 @@ module.exports = {
       network_id: "42"
     },
     ropsten_live: {
-      host: "localhost", // local parity kovan node
+      host: "localhost", // local parity ropsten
+      port: 8544,
+      network_id: "3",
+      gas: 4300000, // close to current mainnet limit
+      gasPrice: 10000000000 // 10 gwei /shannon
+    },
+    nano: {
+      network_id: "*",
+      host: "localhost",
       port: 8545,
-      network_id: "3"
+      gas: 4600000
+      // provider: nanoWeb3Provider.nanoWeb3Provider(providerUrl, nanoPath) // Our costume instance
     },
     simulated_live: {
       network_id: "*",
       host: "localhost",
-      port: 8545
+      port: 8545,
+      gas: 4600000
     },
     nf_private: {
       host: "localhost",
