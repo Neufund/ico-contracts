@@ -49,6 +49,11 @@ example:
 yarn truffle-flattener ./contracts/Eurotoken.sol ./postFlatten
 
 ```
+Run
+```
+yarn flatten
+```
+in order to flatten all smart contracts included in the deployment processes
 ### Byzantium and pre-byzantium error handling for calls and transaction
 
 **Calling constant method that reverts**

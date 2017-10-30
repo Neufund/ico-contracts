@@ -53,6 +53,7 @@
     "solctruffle": "./scripts/solctruffle.sh",
     "prefillAgreements": " node ./scripts/prefillAgreements.js",
     "ledgeraddress": "node ./scripts/getAddressFromLedger.js"
+    "flatten": "./scripts/flatten.sh"
   },
   "devDependencies": {
     "eslint-plugin-mocha": "^4.11.0",
