@@ -514,7 +514,7 @@ contract Commitment is
         require(whitelisted || state() == State.Public);
 
         bool whitelistActiveForToken = tokenType == Token.Euro || state() == State.Whitelist;
-        if (whitelisted && whitelistActiveForToken) {
+        if (whitelisted && whitelistActiveForToken && ticket.amountEurUlps > 0 ) {
             uint256 ticketEurUlps = min(remainingEurUlps, ticket.amountEurUlps);
             ticketNmk = proportion(
                 ticket.rewardNmk,
