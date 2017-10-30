@@ -39,7 +39,16 @@ You should consider replacing javascript compiler with `solc`, this will increas
 ```
 yarn lint:fix
 ```
+### Flattening/Preprocessing
+You can flatten your smart contract and create one large `.sol` file using
+```
+yarn truffle-flattener <smart-contract-path> <target directory>
 
+example:
+
+yarn truffle-flattener ./contracts/Eurotoken.sol ./postFlatten
+
+```
 ### Byzantium and pre-byzantium error handling for calls and transaction
 
 **Calling constant method that reverts**

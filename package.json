@@ -36,6 +36,7 @@
     "solium": "Neufund/Solium#neufund",
     "swarm-js": "^0.1.35",
     "truffle": "Neufund/truffle#neufund",
+    "truffle-flattener": "https://github.com/Neufund/truffle-flattener.git",
     "web3": "0.20.1"
   },
   "scripts": {
