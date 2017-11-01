@@ -90,6 +90,12 @@ To run single test case from a test use following syntax
 it.only('test case', ...
 ```
 
+
+There are simulated commitments in Commitment.js which are very long. Execute those with special truffle network `inprocess_massive_test`
+```
+yarn truffle test test/Commitment.js test/setup.js --network inprocess_massive_test
+```
+
 *Remarks on current state of tests in truffle and testrpc*
 
 Applies to `truffle 3.4.9` with `testrpc 4.0.1`.
