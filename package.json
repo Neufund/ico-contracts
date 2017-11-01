@@ -52,7 +52,7 @@
     "deploy:fast": "truffle migrate --reset --network localhost",
     "solctruffle": "./scripts/solctruffle.sh",
     "prefillAgreements": " node ./scripts/prefillAgreements.js",
-    "ledgeraddress": "node ./scripts/getAddressFromLedger.js"
+    "ledgeraddress": "node ./scripts/getAddressFromLedger.js",
     "flatten": "./scripts/flatten.sh"
   },
   "devDependencies": {

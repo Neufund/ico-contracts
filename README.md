@@ -54,6 +54,27 @@ Run
 yarn flatten
 ```
 in order to flatten all smart contracts included in the deployment processes
+
+### Verifying Smart Contracts on Etherscan
+In order to verify a smart-contract on Etherscan you will have to provide a:
+- flattened version of the smart contract source code
+- bytecode string with deployed constructor Arguments.
+
+The verification processes can be done [here](https://etherscan.io/verifyContract)
+#### Walkthrough
+In order to give an in-depth walkthrough, this section will explain the processes of verifying the Neumark smart contract
+1. Run `yarn flatten` in order to flatten all smart contracts up for deployment and output to `./build/flatten`
+2. Run the [Smart-Contract-Watch](https://github.com/Neufund/smart-contract-watch) from `moe/coded-constructor` [branch](https://github.com/Neufund/smart-contract-watch/tree/moe/coded-constructor) and start from the contract creation block. If done correctly this will return the used constructor arguments needed. In the case of Neumark it was `00000000000000000000000088144fa49c6b97b845c4eb7a1f61c52f49303210`
+    `00000000000000000000000038e0e54c1c7c405cec81c6ad66aff65700be5951`
+    Currently, this processes works only if all variables were static.
+3. Open [etherscan](https://etherscan.io/verifyContract)
+4. Enter smart-contract address for the case of Neumark `0xd8f36d2de608987a8b6e19016a20645032ae6647`
+5. Enter smart contract name as written in the `.sol` file in this case `Neumark`
+6. Choose the correct compiler in our case `solc 0.4.15+commit` with Optimization enabled
+7. Copy the flattened source code from `./build/flatten/Neumark.sol` and paste in the source code section.
+8. Copy the constructor arguments and paste in the relative sections
+9. Verify and Publish
+
 ### Byzantium and pre-byzantium error handling for calls and transaction
 
 **Calling constant method that reverts**

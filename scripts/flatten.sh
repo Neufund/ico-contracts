@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# flatten all deployed contracts
+# Simple script that flattens all smart contracts up for deployment
 
 #Smart contract paths
 path[0]=../contracts/AccessControl/RoleBasedAccessPolicy.sol
