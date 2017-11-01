@@ -27,6 +27,7 @@
     "ethereumjs-testrpc": "^4.1.1",
     "git-rev-sync": "^1.9.1",
     "invariant": "^2.2.2",
+    "ipfs-api": "^15.0.1",
     "istanbul": "next",
     "lodash": "^4.17.4",
     "mocha": "^3.3.0",
