@@ -477,20 +477,21 @@ contract Commitment is
             rewardNmk: 0
         });
 
-        // Allocate Neumarks (will be issued to `this`).
-        // Because `_whitelist[investor].token == Token.None` does not not hold
-        // any more, this function is protected against reentrancy attack
-        // conducted from NEUMARK.issueForEuro().
-        uint256 rewardNmk = NEUMARK.issueForEuro(amountEurUlps);
+        if (amountEurUlps > 0) {
+            // Allocate Neumarks (will be issued to `this`).
+            // Because `_whitelist[investor].token == Token.None` does not not hold
+            // any more, this function is protected against reentrancy attack
+            // conducted from NEUMARK.issueForEuro().
+            uint256 rewardNmk = NEUMARK.issueForEuro(amountEurUlps);
+            // Record the number of Neumarks for investor.
+            _whitelist[investor].rewardNmk = rewardNmk;
 
-        // Record the number of Neumarks for investor.
-        _whitelist[investor].rewardNmk = rewardNmk;
-
-        // Add to totals
-        if (isEuro) {
-            _whitelistEuroNmk = add(_whitelistEuroNmk, rewardNmk);
-        } else {
-            _whitelistEtherNmk = add(_whitelistEtherNmk, rewardNmk);
+            // Add to totals
+            if (isEuro) {
+                _whitelistEuroNmk = add(_whitelistEuroNmk, rewardNmk);
+            } else {
+                _whitelistEtherNmk = add(_whitelistEtherNmk, rewardNmk);
+            }
         }
     }
 
