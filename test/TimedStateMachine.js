@@ -14,10 +14,11 @@ const TestTimedStateMachine = artifacts.require("TestTimedStateMachine");
 
 contract("TimedStateMachine", () => {
   let timedStateMachine;
+  let timebase;
 
   beforeEach(async () => {
-    const now = await latestTimestamp();
-    const startDate = now + BEFORE_DURATION;
+    timebase = await latestTimestamp();
+    const startDate = timebase + BEFORE_DURATION;
     timedStateMachine = await TestTimedStateMachine.new(startDate);
   });
 
@@ -29,6 +30,23 @@ contract("TimedStateMachine", () => {
 
   it("should have desired state ordering", async () => {
     await timedStateMachine.testStateOrdering();
+  });
+
+  it("should enter states at desired time", async () => {
+    expect(
+      await timedStateMachine.startOf(CommitmentState.Before)
+    ).to.be.bignumber.eq(0);
+    expect(
+      await timedStateMachine.startOf(CommitmentState.Whitelist)
+    ).to.be.bignumber.eq(timebase + BEFORE_DURATION);
+    expect(
+      await timedStateMachine.startOf(CommitmentState.Public)
+    ).to.be.bignumber.eq(timebase + BEFORE_DURATION + WHITELIST_DURATION);
+    expect(
+      await timedStateMachine.startOf(CommitmentState.Finished)
+    ).to.be.bignumber.eq(
+      timebase + BEFORE_DURATION + WHITELIST_DURATION + PUBLIC_DURATION
+    );
   });
 
   describe("timed transitions", () => {
