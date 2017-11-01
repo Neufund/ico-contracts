@@ -8,6 +8,7 @@ import roles from "./helpers/roles";
 import { prettyPrintGasCost } from "./helpers/gasUtils";
 import { LockState } from "./helpers/lockState";
 import { CommitmentState } from "./helpers/commitmentState";
+import { promisify } from "./helpers/evmCommands";
 
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const Neumark = artifacts.require("./Neumark.sol");
@@ -193,26 +194,46 @@ contract(
       ).to.be.bignumber.eq(PLATFORM_SHARE);
     });
 
+    function fillWhitelist(N) {
+      const whitelisted = Array(N)
+        .fill(0)
+        .map((_, i) => `0xFF${i}`);
+      const tokens = Array(N)
+        .fill(0)
+        .map((_, i) => (i % 2 ? Token.Ether : Token.Euro));
+      const amounts = Array(N)
+        .fill(0)
+        .map((_, i) =>
+          web3
+            .toBigNumber(i * i)
+            .mul(Q18)
+            .plus(MIN_TICKET_EUR)
+        );
+
+      return { whitelisted, tokens, amounts };
+    }
+
+    function fillWhitelistRandom(N, ticketDecimal) {
+      const whitelisted = Array(N)
+        .fill(0)
+        .map((_, i) => investors[i]);
+      const tokens = Array(N)
+        .fill(0)
+        .map(() => Token.Ether);
+      const amounts = Array(N)
+        .fill(0)
+        .map(() =>
+          web3
+            .toBigNumber(Math.random() * ticketDecimal)
+            .floor()
+            .mul(Q18)
+            .plus(MIN_TICKET_EUR)
+        );
+
+      return { whitelisted, tokens, amounts };
+    }
+
     describe("Whitelist", async () => {
-      function fillWhitelist(N) {
-        const whitelisted = Array(N)
-          .fill(0)
-          .map((_, i) => `0xFF${i}`);
-        const tokens = Array(N)
-          .fill(0)
-          .map((_, i) => (i % 2 ? Token.Ether : Token.Euro));
-        const amounts = Array(N)
-          .fill(0)
-          .map((_, i) =>
-            web3
-              .toBigNumber(i * i)
-              .mul(Q18)
-              .plus(MIN_TICKET_EUR)
-          );
-
-        return { whitelisted, tokens, amounts };
-      }
-
       it("should accept whitelist with zero investors", async () => {
         const tx = await commitment.addWhitelisted([], [], [], {
           from: whitelistAdmin
@@ -1669,6 +1690,178 @@ contract(
       });
     });
 
-    describe("Mixed commitments", async () => {});
+    describe("simulated commitments", () => {
+      it("random large ETH commitment", async () => {
+        if (investors.length < 90) {
+          // eslint-disable-next-line no-console
+          console.log("must run with testrpc --accounts 100, SKIPPING");
+          assert(true);
+          return;
+        }
+        expect(
+          await promisify(web3.eth.getBalance)(etherToken.address)
+        ).to.be.bignumber.eq(0);
+        // add 50 investors to whitelist with tickets from 1 - 10000 eth
+        const N = 50;
+        const maxTicket = 10000;
+        const hasReservedTickets = 2;
+        const { whitelisted, tokens, amounts } = fillWhitelistRandom(
+          N,
+          maxTicket
+        );
+        // every second ticket is 0 (not reserved spot)
+        const tickets = amounts.map((a, i) => (i % hasReservedTickets ? a : 0));
+        const totalWhitelistAmount = tickets.reduce(
+          (a, v) => a.add(v),
+          new web3.BigNumber(0)
+        );
+        await commitment.addWhitelisted(whitelisted, tokens, tickets, {
+          from: whitelistAdmin
+        });
+        // some stats
+        let investedWlAmount = new web3.BigNumber(0);
+        let reservedInvestedAmount = new web3.BigNumber(0);
+        let reserveUsedNmk = new web3.BigNumber(0);
+        const activeInvestors = {};
+        // invest 30 random tickets
+        await increaseTime(WHITELIST_START);
+        const WLN = 30;
+        for (let ii = 0; ii < WLN; ii += 1) {
+          const ticketDecimal =
+            Math.floor(Math.random() * maxTicket * 1000000) / 1000000;
+          const ticket = Q18.mul(ticketDecimal).floor();
+          const investor =
+            whitelisted[Math.floor(Math.random() * whitelisted.length)];
+          // console.log(`investing ${ticket} from ${investor}`);
+          const whitelistTicket = await commitment.whitelistTicket(investor);
+          await commitment.commit({ value: ticket, from: investor });
+          if (whitelistTicket[1] > 0) {
+            // compute amount on NMK and ETH that goes from reserved ticket vs what goes on top if more invested
+            const wlTicketEth = eurToEth(whitelistTicket[1]);
+            const reservedInvested = wlTicketEth.gte(ticket)
+              ? ticket
+              : wlTicketEth;
+            const fullNmkReserved = whitelistTicket[2].mul(PLATFORM_SHARE);
+            // if funds over ticket get full reserved NNK, otherwise do proportion
+            const reservedNmk = wlTicketEth.gte(ticket)
+              ? divRound(ticket.mul(fullNmkReserved), wlTicketEth)
+              : fullNmkReserved;
+            reserveUsedNmk = reserveUsedNmk.add(reservedNmk);
+            reservedInvestedAmount = reservedInvestedAmount.add(
+              reservedInvested
+            );
+            if (ticket.gt(reservedInvested)) {
+              // funds over ticket size added to capital over reserved capital
+              investedWlAmount = investedWlAmount.add(
+                ticket.sub(reservedInvested)
+              );
+            }
+          } else {
+            investedWlAmount = investedWlAmount.add(ticket);
+          }
+          activeInvestors[investor] = true;
+        }
+
+        async function check(
+          totalInvested,
+          investorsCount,
+          distributedNmk,
+          reservedNmk
+        ) {
+          expect(
+            await promisify(web3.eth.getBalance)(etherToken.address)
+          ).to.be.bignumber.eq(totalInvested);
+          expect(await etherLock.totalLockedAmount()).to.be.bignumber.eq(
+            totalInvested
+          );
+          expect(await etherLock.totalInvestors()).to.be.bignumber.eq(
+            Object.keys(activeInvestors).length
+          );
+
+          const platformNmk = await neumark.balanceOf(platform);
+          expect(
+            platformNmk.sub(platformShare(distributedNmk)).abs()
+          ).to.be.bignumber.lt(investorsCount + 1);
+          expect(
+            reservedNmk.sub(await neumark.totalSupply()).abs()
+          ).to.be.bignumber.lt(investorsCount + 1);
+        }
+        // reserved tickets are still there so calc NMK from totalWhitelistAmount on curce
+        const expectedWlNmk = await neumark.incremental["uint256,uint256"](
+          ethToEur(totalWhitelistAmount),
+          ethToEur(investedWlAmount)
+        );
+        // all NMK are those reserved + those issued for capital over reservation
+        const totalAfterWlNmk = await neumark.cumulative(
+          ethToEur(totalWhitelistAmount.add(investedWlAmount))
+        );
+        const icbmTotalWhitelistAmount = investedWlAmount.add(
+          reservedInvestedAmount
+        );
+        const icbmWlDistributedNmk = expectedWlNmk.add(reserveUsedNmk);
+        await check(
+          icbmTotalWhitelistAmount,
+          WLN,
+          icbmWlDistributedNmk,
+          totalAfterWlNmk
+        );
+        // invest publicly
+        await increaseTime(WHITELIST_DURATION);
+        // this will release unused reserved tickets
+        await commitment.handleTimedTransitions();
+        // now when unused reserved NMK were returned total NMK supply must eq all distributed NMK
+        expect(
+          icbmWlDistributedNmk.sub(await neumark.totalSupply()).abs()
+        ).to.be.bignumber.lte(WLN);
+        // this is where curve in Neumark contract is at, which does not not equal capital invested!
+        const rollbackedCurveEur = await neumark.totalEuroUlps();
+        // 30 random investors in public commitment
+        const PLN = 30;
+        let investmentPubAmount = new web3.BigNumber(0);
+        for (let ii = 0; ii < PLN; ii += 1) {
+          const ticketDecimal =
+            Math.floor(Math.random() * maxTicket * 1000000) / 1000000;
+          const ticket = Q18.mul(ticketDecimal).floor();
+          const investor =
+            whitelisted[Math.floor(Math.random() * whitelisted.length)];
+          // console.log(`investing ${ticket} from ${investor}`);
+          await commitment.commit({ value: ticket, from: investor });
+          investmentPubAmount = investmentPubAmount.add(ticket);
+          activeInvestors[investor] = true;
+        }
+        // finalize
+        await increaseTime(PUBLIC_DURATION);
+        // time passed but still in public mode
+        expect(await commitment.state()).to.be.bignumber.eq(
+          CommitmentState.Public
+        );
+        // someone must push it forward
+        await commitment.handleTimedTransitions();
+        // const effectiveEurWlCurve = await neumark.incrementalInverse()
+        const expectedPubNmk = await neumark.incremental["uint256,uint256"](
+          rollbackedCurveEur,
+          ethToEur(investmentPubAmount)
+        );
+        // reserved tickets rollbacked
+        const icbmTotalAmount = investmentPubAmount
+          .add(investedWlAmount)
+          .add(reservedInvestedAmount);
+        const icbmTotalIssuedNmk = expectedPubNmk
+          .add(expectedWlNmk)
+          .add(reserveUsedNmk);
+        await check(
+          icbmTotalAmount,
+          PLN + WLN,
+          icbmTotalIssuedNmk,
+          icbmTotalIssuedNmk
+        );
+        expect(await commitment.state()).to.be.bignumber.eq(
+          CommitmentState.Finished
+        );
+        // transfer platform neumark
+        const platformWlNmk = await neumark.balanceOf(platform);
+        await neumark.transfer(deployer, platformWlNmk, { from: platform });
+      });
+    });
   }
 );
