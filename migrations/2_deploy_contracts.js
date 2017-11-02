@@ -23,9 +23,13 @@ module.exports = function deployContracts(deployer, network, accounts) {
     // check deployment date
     if (CONFIG.START_DATE - new Date().getTime() / 1000 < 24 * 60 * 60) {
       console.log(`Commitment will start in less then 24h. `);
-      if (!await confirm("Are you sure you want to deploy? [y/n] ")) {
-        throw new Error("Aborting!");
-      }
+    }
+    console.log(`network is ${network}`);
+    if (network.endsWith("_live")) {
+      console.log("LIVE DEPLOYMENT");
+    }
+    if (!await confirm("Are you sure you want to deploy? [y/n] ")) {
+      throw new Error("Aborting!");
     }
 
     console.log("AccessPolicy deployment...");
