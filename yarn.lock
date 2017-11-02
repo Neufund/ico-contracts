@@ -5007,8 +5007,8 @@ truffle-blockchain-utils@^0.0.3:
     web3 "^0.20.1"
 
 truffle-config@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/truffle-config/-/truffle-config-1.0.2.tgz#442b54cf1d867e09b88201a7bd8429bcf4a22492"
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/truffle-config/-/truffle-config-1.0.3.tgz#6738cb9e22a5a198d906d2723c8673503f9f0cc0"
   dependencies:
     find-up "^2.1.0"
     lodash "^4.17.4"
@@ -5017,15 +5017,15 @@ truffle-config@^1.0.2:
     truffle-provider "^0.0.2"
 
 truffle-contract-schema@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/truffle-contract-schema/-/truffle-contract-schema-1.0.0.tgz#42978c02ee6fe60cb602c70155d1eb050c06cfbd"
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/truffle-contract-schema/-/truffle-contract-schema-1.0.1.tgz#08ceaefe71062a8ac9ab881a77a30fda3744176e"
   dependencies:
     ajv "^5.1.1"
     crypto-js "^3.1.9-1"
 
 truffle-contract@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/truffle-contract/-/truffle-contract-3.0.0.tgz#354813e69c575a202dca614354bc5e49754c2881"
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/truffle-contract/-/truffle-contract-3.0.1.tgz#7fd0395571b0c011afb809cbd6441d553e793201"
   dependencies:
     ethjs-abi "0.1.8"
     truffle-blockchain-utils "^0.0.3"
@@ -5040,9 +5040,9 @@ truffle-expect@0.0.3:
   version "0.0.3"
   resolved "https://registry.yarnpkg.com/truffle-expect/-/truffle-expect-0.0.3.tgz#9b75cef343bd596e7e5dbc878f5f1b2e318a944c"
 
-"truffle-flattener@https://github.com/Neufund/truffle-flattener.git":
+"truffle-flattener@https://github.com/Neufund/truffle-flattener":
   version "1.0.0"
-  resolved "https://github.com/Neufund/truffle-flattener.git#c313e9733073eda44383627e4bddedd50c6f5bcf"
+  resolved "https://github.com/Neufund/truffle-flattener#8279561efc58546d96d7d3851e64d6b615bc8384"
   dependencies:
     semver "^5.4.1"
     solidity-parser "^0.4.0"

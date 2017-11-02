@@ -15,12 +15,12 @@ const LockedAccount = artifacts.require("LockedAccount");
 const Commitment = artifacts.require("Commitment");
 // eslint-disable-next-line no-unused-vars
 module.exports = async function(callback) {
-  const neumark = await Neumark.deployed();
-  const commitment = await Commitment.deployed();
-  const etherLock = await LockedAccount.at(await commitment.etherLock());
-  const getWeb3Accounts = Promise.promisify(web3.eth.getAccounts);
-
   try {
+    const neumark = await Neumark.deployed();
+    const commitment = await Commitment.deployed();
+    const etherLock = await LockedAccount.at(await commitment.etherLock());
+    const getWeb3Accounts = Promise.promisify(web3.eth.getAccounts);
+
     const configrations = getConfig(
       web3,
       artifacts.options._values.network,
