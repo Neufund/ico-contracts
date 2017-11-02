@@ -966,6 +966,10 @@ bn.js@4.11.6:
   version "4.11.6"
   resolved "https://registry.yarnpkg.com/bn.js/-/bn.js-4.11.6.tgz#53344adb14617a13f6e8dd2ce28905d1c0ba3215"
 
+bn.js@^1.0.0:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/bn.js/-/bn.js-1.3.0.tgz#0db4cbf96f8f23b742f5bcb9d1aa7a9994a05e83"
+
 bn.js@^4.0.0, bn.js@^4.1.0, bn.js@^4.1.1, bn.js@^4.4.0:
   version "4.11.7"
   resolved "https://registry.yarnpkg.com/bn.js/-/bn.js-4.11.7.tgz#ddb048e50d9482790094c13eb3fcfc833ce7ab46"
@@ -3067,6 +3071,14 @@ is-glob@^2.0.0, is-glob@^2.0.1:
 is-hex-prefixed@1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/is-hex-prefixed/-/is-hex-prefixed-1.0.0.tgz#7d8d37e6ad77e5d127148913c573e082d777f554"
+
+is-ipfs@^0.3.2, is-ipfs@~0.3.0:
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/is-ipfs/-/is-ipfs-0.3.2.tgz#c4650b838e36fd0151de5896b2ff319fe8936182"
+  dependencies:
+    bs58 "^4.0.1"
+    cids "~0.5.1"
+    multihashes "~0.4.9"
 
 is-my-json-valid@^2.10.0:
   version "2.16.0"
@@ -5896,6 +5908,10 @@ web3@^0.20.1:
     utf8 "^2.1.1"
     xhr2 "*"
     xmlhttprequest "*"
+
+"webcrypto-shim@github:dignifiedquire/webcrypto-shim#master":
+  version "0.1.1"
+  resolved "https://codeload.github.com/dignifiedquire/webcrypto-shim/tar.gz/190bc9ec341375df6025b17ae12ddb2428ea49c8"
 
 webpack-sources@^1.0.1:
   version "1.0.1"
