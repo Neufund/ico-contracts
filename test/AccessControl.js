@@ -150,7 +150,31 @@ contract(
       ).to.be.rejectedWith(EvmError);
     });
 
+    async function expectRepeatPermissionDoesNothing(state) {
+      await accessPolicy.setUserRole(
+        owner2,
+        exampleRole,
+        accessControlled.address,
+        state
+      );
+      const tx = await accessPolicy.setUserRole(
+        owner2,
+        exampleRole,
+        accessControlled.address,
+        state
+      );
+      const event = tx.logs.filter(e => e.event === "LogAccessChanged");
+      expect(event).to.be.empty;
+    }
+
+    it("should no nothing if permission unchanged", async () => {
+      await expectRepeatPermissionDoesNothing(TriState.Allow);
+      await expectRepeatPermissionDoesNothing(TriState.Deny);
+      await expectRepeatPermissionDoesNothing(TriState.Unset);
+    });
+
     it("should disallow on unset cascade", async () => {
+      // for the most specific permission set, the less specific cascade levels should all disallow
       await accessPolicy.setUserRole(
         owner2,
         exampleRole,
@@ -188,6 +212,7 @@ contract(
     });
 
     it("should change policy on contract", async () => {
+      // simulates replacing access policy on contract
       await accessPolicy.setUserRole(
         owner1,
         exampleRole,

@@ -21,6 +21,15 @@ module.exports = {
         accounts: Array(10).fill({ balance: "12300000000000000000000000" })
       })
     },
+    inprocess_massive_test: {
+      network_id: "*",
+      gas: 0xffffffff,
+      provider: TestRPC.provider({
+        deterministic: true,
+        gasLimit: 0xffffffff,
+        accounts: Array(100).fill({ balance: "12300000000000000000000000" })
+      })
+    },
     coverage: {
       network_id: "*",
       gas: 0xfffffffffff,
