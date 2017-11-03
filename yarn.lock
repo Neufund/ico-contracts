@@ -2934,9 +2934,9 @@ ipaddr.js@1.5.2:
   version "1.5.2"
   resolved "https://registry.yarnpkg.com/ipaddr.js/-/ipaddr.js-1.5.2.tgz#d4b505bde9946987ccf0fc58d9010ff9607e3fa0"
 
-ipfs-api@^15.0.1:
+"ipfs-api@https://github.com/Neufund/js-ipfs-api":
   version "15.0.1"
-  resolved "https://registry.yarnpkg.com/ipfs-api/-/ipfs-api-15.0.1.tgz#360bba76808af369daf9cad4c608d98d03ae5135"
+  resolved "https://github.com/Neufund/js-ipfs-api#853b6142776dd03983c84d93e7b5c9dca341f8c8"
   dependencies:
     async "^2.5.0"
     bs58 "^4.0.1"
