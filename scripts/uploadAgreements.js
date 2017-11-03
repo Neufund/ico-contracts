@@ -34,7 +34,8 @@ const addFiletoIpfs = async (ipfs, file) => {
   }
   return false;
 };
-
+// TODO: handle diffrent ports for ipfs
+// TODO: clean code
 const main = async args => {
   const ipfsNodeAddress = args[0];
   const filePaths = [];
