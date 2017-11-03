@@ -54,7 +54,8 @@
     "solctruffle": "./scripts/solctruffle.sh",
     "prefillAgreements": "yarn truffle exec ./scripts/prefillAgreements.js",
     "ledgeraddress": "node ./scripts/getAddressFromLedger.js",
-    "flatten": "./scripts/flatten.sh"
+    "flatten": "./scripts/flatten.sh",
+    "uploadAgreements": "node ./scripts/uploadAgreements.js"
   },
   "devDependencies": {
     "eslint-plugin-mocha": "^4.11.0",
