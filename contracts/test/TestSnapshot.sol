@@ -15,6 +15,13 @@ contract TestSnapshot is
     Values[] private _val;
 
     ////////////////////////
+    // Constructor
+    ////////////////////////
+    function TestSnapshot(uint256 start)
+        DailyAndSnapshotable(start)
+    {}
+
+    ////////////////////////
     // Public functions
     ////////////////////////}
 
@@ -22,14 +29,6 @@ contract TestSnapshot is
         public
     {
         setValue(_val, x);
-    }
-
-    function curDays()
-        public
-        constant
-        returns (uint256)
-    {
-        return block.timestamp / 1 days;
     }
 
     function hasValue()

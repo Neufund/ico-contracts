@@ -23,7 +23,7 @@ contract("Snapshot", () => {
   };
 
   beforeEach(async () => {
-    snapshotTest = await TestSnapshot.new();
+    snapshotTest = await TestSnapshot.new(0);
   });
 
   it("should deploy", async () => {
@@ -89,7 +89,7 @@ contract("Snapshot", () => {
     const snapshotId1 = getSnapshotIdFromEvent(tx1);
 
     const tx2 = await snapshotTest.setValue(12345);
-    const snapshotId2 = await snapshotTest.lastSnapshotId.call();
+    const snapshotId2 = await snapshotTest.currentSnapshotId.call();
     prettyPrintGasCost("overwrite last snapshot", tx2);
 
     expect(await snapshotTest.getValue.call(12)).to.be.bignumber.eq(12345);
@@ -247,8 +247,8 @@ contract("Snapshot", () => {
     }
     const daysMsb = new web3.BigNumber(2).pow(128);
     // make sure all boundaries crossed
-    const expectedSnapshotId = day0.add(daysMsb.mul(simulatedDays - 1));
-    expect(await snapshotTest.lastSnapshotId()).to.be.bignumber.eq(
+    const expectedSnapshotId = day0.add(daysMsb.mul(simulatedDays));
+    expect(await snapshotTest.currentSnapshotId()).to.be.bignumber.eq(
       expectedSnapshotId
     );
   });
@@ -301,6 +301,37 @@ contract("Snapshot", () => {
     // should have 1 day difference
     expect(aftSnapshotId.sub(befSnapshotId)).to.be.bignumber.eq(
       new web3.BigNumber(2).pow(128)
+    );
+  });
+
+  it("should clone snapshot id", async () => {
+    const initialSnapshotId = await snapshotTest.currentSnapshotId.call();
+    const snapshotClone = await TestSnapshot.new(initialSnapshotId);
+    const cloneInitialSnapshotId = await snapshotClone.currentSnapshotId.call();
+    expect(cloneInitialSnapshotId).to.be.bignumber.eq(initialSnapshotId);
+
+    await snapshotTest.createSnapshot();
+    const initialSnapshotId2 = await snapshotTest.currentSnapshotId.call();
+    const snapshotClone2 = await TestSnapshot.new(initialSnapshotId2);
+    const cloneInitialSnapshotId2 = await snapshotClone2.currentSnapshotId.call();
+    expect(cloneInitialSnapshotId2).to.be.bignumber.eq(initialSnapshotId2);
+  });
+
+  it("should reject clone for earlier day", async () => {
+    const timestamp = Math.floor(new Date().getTime() / 1000);
+    // remove day below for test to fail
+    const prevDaySnapshotId = await snapshotTest.snapshotAt(timestamp - day);
+    await expect(TestSnapshot.new(prevDaySnapshotId)).to.be.rejectedWith(
+      EvmError
+    );
+  });
+
+  it("should reject clone for future day", async () => {
+    const timestamp = Math.floor(new Date().getTime() / 1000);
+    // remove day below for test to fail
+    const nextDaySnapshotId = await snapshotTest.snapshotAt(timestamp + day);
+    await expect(TestSnapshot.new(nextDaySnapshotId)).to.be.rejectedWith(
+      EvmError
     );
   });
 });

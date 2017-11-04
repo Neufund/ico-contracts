@@ -7,6 +7,7 @@ contract Math {
     // Internal functions
     ////////////////////////
 
+    // absolute difference: |v1 - v2|
     function absDiff(uint256 v1, uint256 v2)
         internal
         constant
@@ -15,23 +16,30 @@ contract Math {
         return v1 > v2 ? v1 - v2 : v2 - v1;
     }
 
+    // divide v by d, round up if remainder is 0.5 or more
     function divRound(uint256 v, uint256 d)
         internal
         constant
         returns(uint256)
     {
-        // round up if % is half or more
-        return (v + (d/2)) / d;
+        return add(v, d/2) / d;
     }
 
-    function fraction(uint256 amount, uint256 frac)
+    // computes decimal decimalFraction 'frac' of 'amount' with maximum precision (multiplication first)
+    // both amount and decimalFraction must have 18 decimals precision, frac 10**18 represents a whole (100% of) amount
+    // mind loss of precision as decimal fractions do not have finite binary expansion
+    // do not use instead of division
+    function decimalFraction(uint256 amount, uint256 frac)
         internal
         constant
         returns(uint256)
     {
-        return divRound(mul(amount, frac), 10**18);
+        // it's like 1 ether is 100% proportion
+        return proportion(amount, frac, 10**18);
     }
 
+    // computes part/total of amount with maximum precision (multiplication first)
+    // part and total must have the same units
     function proportion(uint256 amount, uint256 part, uint256 total)
         internal
         constant
@@ -40,13 +48,9 @@ contract Math {
         return divRound(mul(amount, part), total);
     }
 
-    function isSafeMultiplier(uint256 m)
-        internal
-        constant
-        returns(bool)
-    {
-        return m < 2**128;
-    }
+    //
+    // Open Zeppelin Math library below
+    //
 
     function mul(uint256 a, uint256 b)
         internal
@@ -55,17 +59,6 @@ contract Math {
     {
         uint256 c = a * b;
         assert(a == 0 || c / a == b);
-        return c;
-    }
-
-    function div(uint256 a, uint256 b)
-        internal
-        constant
-        returns (uint256)
-    {
-        // assert(b > 0); // Solidity automatically throws when dividing by 0
-        uint256 c = a / b;
-        // assert(a == b * c + a % b); // There is no case in which this doesn't hold
         return c;
     }
 

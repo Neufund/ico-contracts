@@ -27,7 +27,19 @@ contract DailyAndSnapshotable is
     // Constructor
     ////////////////////////
 
-    function DailyAndSnapshotable() {}
+    /// @param start snapshotId from which to start generating values
+    /// @dev start must be for the same day or 0, required for token cloning
+    function DailyAndSnapshotable(uint256 start)
+    {
+        // 0 is invalid value as we are past unix epoch
+        if (start > 0) {
+            uint256 dayBase = snapshotAt(block.timestamp);
+            require(start >= dayBase);
+            // dayBase + 2**128 will not overflow as it is based on block.timestamp
+            require(start < dayBase + 2**128);
+            _currentSnapshotId = start;
+        }
+    }
 
     ////////////////////////
     // Public functions
@@ -43,6 +55,10 @@ contract DailyAndSnapshotable is
         uint256 dayBase = 2**128 * (timestamp / 1 days);
         return dayBase;
     }
+
+    //
+    // Implements ISnapshotable
+    //
 
     function createSnapshot()
         public
@@ -63,12 +79,12 @@ contract DailyAndSnapshotable is
         return _currentSnapshotId;
     }
 
-    function lastSnapshotId()
+    function currentSnapshotId()
         public
         constant
         returns (uint256)
     {
-        return _currentSnapshotId;
+        return mCurrentSnapshotId();
     }
 
     ////////////////////////

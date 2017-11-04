@@ -1,18 +1,29 @@
 pragma solidity 0.4.15;
 
-import './MStateMachine.sol';
 
+/// @title state machine for Commitment contract
+/// @notice implements following state progression Before --> Whitelist --> Public --> Finished
+/// @dev state switching via 'transitionTo' function
+/// @dev inherited contract must implement mAfterTransition which will be called just after state transition happened
+contract StateMachine {
 
-//
-// Before --> Whitelist --> Public --> Finished
-//
-contract StateMachine is MStateMachine {
+    ////////////////////////
+    // Types
+    ////////////////////////
+
+    enum State {
+        Before,
+        Whitelist,
+        Public,
+        Finished
+    }
 
     ////////////////////////
     // Mutable state
     ////////////////////////
 
-    State internal _state;
+    // current state
+    State private _state = State.Before;
 
     ////////////////////////
     // Events
@@ -37,28 +48,17 @@ contract StateMachine is MStateMachine {
         _;
     }
 
-    modifier onlyStates3(State state0, State state1, State state2) {
-        require(_state == state0 || _state == state1 || _state == state2);
-        _;
-    }
-
     /// @dev Multiple states can be handled by adding more modifiers.
-    modifier notInState(State state) {
+    /* modifier notInState(State state) {
         require(_state != state);
         _;
-    }
-
-    modifier transitionsTo(State newState) {
-        _;
-        transitionTo(newState);
-    }
+    }*/
 
     ////////////////////////
     // Constructor
     ////////////////////////
 
-    function StateMachine() {
-        _state = State.Before;
+    function StateMachine() internal {
     }
 
     ////////////////////////
@@ -81,21 +81,16 @@ contract StateMachine is MStateMachine {
     //  or handlers are called.
     function transitionTo(State newState)
         internal
-        returns (State oldState)
     {
-        oldState = _state;
-        if (oldState == newState) {
-            return;
-        }
+        State oldState = _state;
         require(validTransition(oldState, newState));
-        mBeforeTransition(oldState, newState);
+
         _state = newState;
         LogStateTransition(oldState, newState);
 
-        // TODO: What if mOnAfterTransition wants to transition
-        // further?
+        // should not change state and it is required here.
         mAfterTransition(oldState, newState);
-        return oldState;
+        require(_state == newState);
     }
 
     function validTransition(State oldState, State newState)
@@ -110,17 +105,8 @@ contract StateMachine is MStateMachine {
         );
     }
 
-    //
-    // MStateMachine default implementations
-    //
-
-    function mBeforeTransition(State /* oldState */, State /* newState */)
-        internal
-    {
-    }
-
-    function mAfterTransition(State /* oldState */, State /* newState */)
-        internal
-    {
-    }
+    /// @notice gets called after every state transition.
+    /// @dev may not change state, transitionTo will revert on that condition
+    function mAfterTransition(State oldState, State newState)
+        internal;
 }

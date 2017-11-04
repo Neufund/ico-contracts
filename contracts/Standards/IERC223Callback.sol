@@ -7,7 +7,7 @@ contract IERC223Callback {
     // Public functions
     ////////////////////////
 
-    function tokenFallback(
+    function onTokenTransfer(
         address from,
         uint256 amount,
         bytes data

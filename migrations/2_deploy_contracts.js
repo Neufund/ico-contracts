@@ -1,5 +1,6 @@
 require("babel-register");
 const getConfig = require("./config").default;
+const confirm = require("node-ask").confirm;
 
 const RoleBasedAccessPolicy = artifacts.require("RoleBasedAccessPolicy");
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
@@ -19,6 +20,18 @@ module.exports = function deployContracts(deployer, network, accounts) {
   console.log("----------------------------------");
 
   deployer.then(async () => {
+    // check deployment date
+    if (CONFIG.START_DATE - new Date().getTime() / 1000 < 24 * 60 * 60) {
+      console.log(`Commitment will start in less then 24h. `);
+    }
+    console.log(`network is ${network}`);
+    if (network.endsWith("_live")) {
+      console.log("LIVE DEPLOYMENT");
+    }
+    // if (!await confirm("Are you sure you want to deploy? [y/n] ")) {
+    //   throw new Error("Aborting!");
+    // }
+
     console.log("AccessPolicy deployment...");
     await deployer.deploy(RoleBasedAccessPolicy);
     const accessPolicy = await RoleBasedAccessPolicy.deployed();
@@ -49,6 +62,7 @@ module.exports = function deployContracts(deployer, network, accounts) {
       accessPolicy.address,
       etherToken.address,
       neumark.address,
+      CONFIG.addresses.PLATFORM_OPERATOR_WALLET,
       CONFIG.LOCK_DURATION,
       CONFIG.PENALTY_FRACTION
     );
@@ -60,6 +74,7 @@ module.exports = function deployContracts(deployer, network, accounts) {
       accessPolicy.address,
       euroToken.address,
       neumark.address,
+      CONFIG.addresses.PLATFORM_OPERATOR_WALLET,
       CONFIG.LOCK_DURATION,
       CONFIG.PENALTY_FRACTION
     );

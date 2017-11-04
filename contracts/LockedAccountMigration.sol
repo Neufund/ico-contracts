@@ -10,19 +10,6 @@ contract LockedAccountMigration is
     MigrationTarget
 {
     ////////////////////////
-    // Events
-    ////////////////////////
-
-    /// @notice intended to be logged on successful migration
-    event InvestorMigrated(
-        address indexed investor,
-        uint256 balance,
-        uint256 neumarksDue,
-        uint256 unlockDate,
-        address assetToken
-    );
-
-    ////////////////////////
     // Public functions
     ////////////////////////
 
@@ -34,6 +21,5 @@ contract LockedAccountMigration is
         uint256 unlockDate
     )
         public
-        onlyMigrationSource()
-        returns(bool);
+        onlyMigrationSource();
 }

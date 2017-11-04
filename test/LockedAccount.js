@@ -1,6 +1,5 @@
 import { expect } from "chai";
 import moment from "moment";
-import error, { Status } from "./helpers/error";
 import { hasEvent, eventValue } from "./helpers/events";
 import {
   deployControlContracts,
@@ -30,7 +29,10 @@ const TestLockedAccountMigrationTarget = artifacts.require(
   "TestLockedAccountMigrationTarget"
 );
 
+const Q18 = new web3.BigNumber(10).pow(18);
 const gasPrice = new web3.BigNumber(0x01); // this low gas price is forced by code coverage
+const LOCK_PERIOD = 18 * monthInSeconds;
+const UNLOCK_PENALTY_FRACTION = Q18.mul(0.1).round(0, 0);
 
 contract(
   "LockedAccount",
@@ -82,7 +84,12 @@ contract(
 
       beforeEach(async () => {
         await deployEtherToken();
-        await deployLockedAccount(assetToken, 18, 0.1);
+        await deployLockedAccount(
+          assetToken,
+          operatorWallet,
+          LOCK_PERIOD,
+          UNLOCK_PENALTY_FRACTION
+        );
       });
 
       describe("core tests", () => {
@@ -91,10 +98,13 @@ contract(
 
       describe("migration tests", () => {
         beforeEach(async () => {
-          migrationTarget = await deployMigrationTarget(assetToken);
+          migrationTarget = await deployMigrationTarget(
+            assetToken,
+            operatorWallet
+          );
         });
 
-        locketAccountMigrationTestCases(makeDepositEth, makeWithdrawEth);
+        lockedAccountMigrationTestCases(makeDepositEth, makeWithdrawEth);
       });
     });
 
@@ -144,7 +154,12 @@ contract(
 
       beforeEach(async () => {
         await deployEuroToken();
-        await deployLockedAccount(assetToken, 18, 0.1);
+        await deployLockedAccount(
+          assetToken,
+          operatorWallet,
+          LOCK_PERIOD,
+          UNLOCK_PENALTY_FRACTION
+        );
         await applyTransferPermissions([
           { side: "from", address: lockedAccount.address },
           { side: "to", address: lockedAccount.address },
@@ -164,18 +179,21 @@ contract(
 
       describe("migration tests", () => {
         beforeEach(async () => {
-          migrationTarget = await deployMigrationTarget(assetToken);
+          migrationTarget = await deployMigrationTarget(
+            assetToken,
+            operatorWallet
+          );
           await applyTransferPermissions([
             { side: "from", address: migrationTarget.address },
             { side: "to", address: migrationTarget.address }
           ]);
         });
 
-        locketAccountMigrationTestCases(makeDepositEuro, makeWithdrawEuro);
+        lockedAccountMigrationTestCases(makeDepositEuro, makeWithdrawEuro);
       });
     });
 
-    function locketAccountMigrationTestCases(makeDeposit, makeWithdraw) {
+    function lockedAccountMigrationTestCases(makeDeposit, makeWithdraw) {
       function expectMigrationEnabledEvent(tx, target) {
         const event = eventValue(tx, "LogMigrationEnabled");
         expect(event).to.exist;
@@ -221,6 +239,9 @@ contract(
           from: admin
         });
         expectMigrationEnabledEvent(tx, migrationTarget.address);
+        expect(await lockedAccount.currentMigrationTarget()).to.be.eq(
+          migrationTarget.address
+        );
         // migrate investor
         tx = await lockedAccount.migrate({ from: investorAddress });
         expectInvestorMigratedEvent(
@@ -293,25 +314,6 @@ contract(
           migrationTarget.migrateInvestor(investor, ticket, 1, startTimestamp, {
             from: admin
           })
-        ).to.be.rejectedWith(EvmError);
-      });
-
-      it("target that returns false on migration should throw", async () => {
-        const ticket = etherToWei(1);
-        const neumarks = ticket.mul(6.5);
-        // lock investor
-        await makeDeposit(investor, controller.address, ticket);
-        await controller.investToken(neumarks, { from: investor });
-        await migrationTarget.setMigrationSource(lockedAccount.address, {
-          from: admin
-        });
-        await lockedAccount.enableMigration(migrationTarget.address, {
-          from: admin
-        });
-        // comment line below for this test to fail
-        await migrationTarget.setShouldMigrationFail(true, { from: admin });
-        await expect(
-          lockedAccount.migrate({ from: investor })
         ).to.be.rejectedWith(EvmError);
       });
 
@@ -427,28 +429,30 @@ contract(
         expect(event.args.neumarks).to.be.bignumber.equal(neumarks);
       }
 
-      function expectNeumarksBurnedEvent(tx, owner, euroUlp, neumarkUlp) {
+      function expectNeumarksBurnedEvent(tx, owner, euroUlps, neumarkUlps) {
         const event = eventValue(tx, "LogNeumarksBurned");
         expect(event).to.exist;
         expect(event.args.owner).to.equal(owner);
-        expect(event.args.euroUlp).to.be.bignumber.equal(euroUlp);
-        expect(event.args.neumarkUlp).to.be.bignumber.equal(neumarkUlp);
+        expect(event.args.euroUlps).to.be.bignumber.equal(euroUlps);
+        expect(event.args.neumarkUlps).to.be.bignumber.equal(neumarkUlps);
       }
 
-      function expectUnlockEvent(tx, investorAddress, amount) {
+      function expectUnlockEvent(tx, investorAddress, amount, neumarksBurned) {
         const event = eventValue(tx, "LogFundsUnlocked");
         expect(event).to.exist;
         expect(event.args.investor).to.equal(investorAddress);
         expect(event.args.amount).to.be.bignumber.equal(amount);
+        expect(event.args.neumarks).to.be.bignumber.equal(neumarksBurned);
       }
 
       async function expectPenaltyEvent(tx, investorAddress, penalty) {
         const disbursalPool = await lockedAccount.penaltyDisbursalAddress();
         const event = eventValue(tx, "LogPenaltyDisbursed");
         expect(event).to.exist;
-        expect(event.args.investor).to.equal(investorAddress);
+        expect(event.args.disbursalPoolAddress).to.equal(disbursalPool);
         expect(event.args.amount).to.be.bignumber.equal(penalty);
-        expect(event.args.toPool).to.equal(disbursalPool);
+        expect(event.args.assetToken).to.equal(assetToken.address);
+        expect(event.args.investor).to.equal(investorAddress);
       }
 
       async function expectPenaltyBalance(penalty) {
@@ -470,7 +474,7 @@ contract(
         let tx = await neumark.issueForEuro(ticket, {
           from: investorAddress
         });
-        const neumarks = eventValue(tx, "LogNeumarksIssued", "neumarkUlp");
+        const neumarks = eventValue(tx, "LogNeumarksIssued", "neumarkUlps");
         expect(await neumark.balanceOf(investorAddress)).to.be.bignumber.equal(
           neumarks.add(initialNeumarksBalance)
         );
@@ -566,7 +570,6 @@ contract(
 
       async function assertCorrectUnlock(tx, investorAddress, ticket, penalty) {
         const disbursalPool = await lockedAccount.penaltyDisbursalAddress();
-        expect(error(tx)).to.eq(Status.SUCCESS);
         expect(await lockedAccount.totalLockedAmount()).to.be.bignumber.equal(
           0
         );
@@ -609,6 +612,20 @@ contract(
         );
         expect(await lockedAccount.totalInvestors.call()).to.be.bignumber.eq(0);
         expect(await lockedAccount.assetToken.call()).to.eq(assetToken.address);
+        expect(await lockedAccount.neumark.call()).to.eq(neumark.address);
+        expect(await lockedAccount.lockPeriod.call()).to.be.bignumber.eq(
+          LOCK_PERIOD
+        );
+        expect(await lockedAccount.penaltyFraction.call()).to.be.bignumber.eq(
+          UNLOCK_PENALTY_FRACTION
+        );
+        expect(await lockedAccount.lockState.call()).to.be.bignumber.eq(
+          LockState.AcceptingLocks
+        );
+        expect(await lockedAccount.controller.call()).to.eq(controller.address);
+        expect(await lockedAccount.penaltyDisbursalAddress.call()).to.eq(
+          operatorWallet
+        );
       });
 
       it("should lock", async () => {
@@ -638,7 +655,7 @@ contract(
         const penalty = await calculateUnlockPenalty(ticket);
         await assertCorrectUnlock(unlockTx, investor, ticket, penalty);
         await expectPenaltyEvent(unlockTx, investor, penalty);
-        expectUnlockEvent(unlockTx, investor, ticket.sub(penalty));
+        expectUnlockEvent(unlockTx, investor, ticket.sub(penalty), neumarks);
         await makeWithdraw(investor, ticket.sub(penalty));
       });
 
@@ -652,7 +669,7 @@ contract(
         const penalty1 = await calculateUnlockPenalty(ticket1);
         await expectPenaltyEvent(unlockTx, investor, penalty1);
         await expectPenaltyBalance(penalty1);
-        expectUnlockEvent(unlockTx, investor, ticket1.sub(penalty1));
+        expectUnlockEvent(unlockTx, investor, ticket1.sub(penalty1), neumarks1);
         expect(await neumark.balanceOf(investor2)).to.be.bignumber.eq(
           neumarks2
         );
@@ -668,7 +685,12 @@ contract(
         const penalty2 = await calculateUnlockPenalty(ticket2);
         await expectPenaltyEvent(unlockTx, investor2, penalty2);
         await expectPenaltyBalance(penalty1.add(penalty2));
-        expectUnlockEvent(unlockTx, investor2, ticket2.sub(penalty2));
+        expectUnlockEvent(
+          unlockTx,
+          investor2,
+          ticket2.sub(penalty2),
+          neumarks2
+        );
       });
 
       it("should reject unlock with approval on contract disbursal that has receiveApproval not implemented", async () => {
@@ -698,7 +720,7 @@ contract(
         const penalty = await calculateUnlockPenalty(ticket);
         await assertCorrectUnlock(unlockTx, investor, ticket, penalty);
         await expectPenaltyEvent(unlockTx, investor, penalty);
-        expectUnlockEvent(unlockTx, investor, ticket.sub(penalty));
+        expectUnlockEvent(unlockTx, investor, ticket.sub(penalty), neumarks);
         await makeWithdraw(investor, ticket.sub(penalty));
       });
 
@@ -774,15 +796,12 @@ contract(
         const neumarks = await lock(investor, ticket);
         await enableUnlocks();
         // allow 1/3 amount
-        let tx = await neumark.approve(
-          lockedAccount.address,
-          neumarks.mul(0.3),
-          {
-            from: investor
-          }
-        );
-        tx = await lockedAccount.unlock({ from: investor });
-        expect(error(tx)).to.eq(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
+        await neumark.approve(lockedAccount.address, neumarks.mul(0.3), {
+          from: investor
+        });
+        await expect(
+          lockedAccount.unlock({ from: investor })
+        ).to.be.rejectedWith(EvmError);
       });
 
       it("should reject unlock when neumark balance too low but allowance OK", async () => {
@@ -795,11 +814,12 @@ contract(
           from: investor
         });
         // allow full amount
-        let tx = await neumark.approve(lockedAccount.address, neumarks, {
+        await neumark.approve(lockedAccount.address, neumarks, {
           from: investor
         });
-        tx = await lockedAccount.unlock({ from: investor });
-        expect(error(tx)).to.eq(Status.NOT_ENOUGH_NEUMARKS_TO_UNLOCK);
+        await expect(
+          lockedAccount.unlock({ from: investor })
+        ).to.be.rejectedWith(EvmError);
       });
 
       it("should unlock after unlock date without penalty", async () => {
@@ -811,7 +831,7 @@ contract(
         await setTimeTo(investorBalance[2]);
         const unlockTx = await unlockWithApprove(investor, neumarks);
         await assertCorrectUnlock(unlockTx, investor, ticket, 0);
-        expectUnlockEvent(unlockTx, investor, ticket);
+        expectUnlockEvent(unlockTx, investor, ticket, neumarks);
         await makeWithdraw(investor, ticket);
         await expectPenaltyBalance(0);
       });
@@ -828,13 +848,13 @@ contract(
         const investorBalance = await lockedAccount.balanceOf(investor);
         await setTimeTo(investorBalance[2]);
         let unlockTx = await unlockWithApprove(investor, neumarks1);
-        expectUnlockEvent(unlockTx, investor, ticket1);
+        expectUnlockEvent(unlockTx, investor, ticket1, neumarks1);
         await makeWithdraw(investor, ticket1);
 
         const investor2Balance = await lockedAccount.balanceOf(investor2);
         await setTimeTo(investor2Balance[2]);
         unlockTx = await unlockWithApprove(investor2, neumarks2);
-        expectUnlockEvent(unlockTx, investor2, ticket2);
+        expectUnlockEvent(unlockTx, investor2, ticket2, neumarks2);
         await makeWithdraw(investor2, ticket2);
         await expectPenaltyBalance(0);
       });
@@ -851,7 +871,7 @@ contract(
         const investorBalance = await lockedAccount.balanceOf(investor);
         await setTimeTo(investorBalance[2]);
         let unlockTx = await unlockWithApprove(investor, neumarks1);
-        expectUnlockEvent(unlockTx, investor, ticket1);
+        expectUnlockEvent(unlockTx, investor, ticket1, neumarks1);
         await makeWithdraw(investor, ticket1);
 
         const investor2Balance = await lockedAccount.balanceOf(investor2);
@@ -861,7 +881,12 @@ contract(
         const penalty2 = await calculateUnlockPenalty(ticket2);
         await expectPenaltyEvent(unlockTx, investor2, penalty2);
         await expectPenaltyBalance(penalty2);
-        expectUnlockEvent(unlockTx, investor2, ticket2.sub(penalty2));
+        expectUnlockEvent(
+          unlockTx,
+          investor2,
+          ticket2.sub(penalty2),
+          neumarks2
+        );
         await makeWithdraw(investor2, ticket2.sub(penalty2));
       });
 
@@ -877,13 +902,13 @@ contract(
         await controller.fail();
         // forward to investor1 unlock date
         let unlockTx = await lockedAccount.unlock({ from: investor });
-        expectUnlockEvent(unlockTx, investor, ticket1);
+        expectUnlockEvent(unlockTx, investor, ticket1, 0);
         // keeps neumarks
         expect(await neumark.balanceOf(investor)).to.be.bignumber.eq(neumarks1);
         await makeWithdraw(investor, ticket1);
 
         unlockTx = await lockedAccount.unlock({ from: investor2 });
-        expectUnlockEvent(unlockTx, investor2, ticket2);
+        expectUnlockEvent(unlockTx, investor2, ticket2, 0);
         // keeps neumarks
         expect(await neumark.balanceOf(investor2)).to.be.bignumber.eq(
           neumarks2
@@ -1008,15 +1033,19 @@ contract(
       });
     }
 
-    async function deployLockedAccount(token, unlockDateMonths, unlockPenalty) {
+    async function deployLockedAccount(
+      token,
+      feeDisbursalAddress,
+      lockPeriod,
+      unlockPenaltyFraction
+    ) {
       lockedAccount = await LockedAccount.new(
         accessPolicy.address,
         token.address,
         neumark.address,
-        unlockDateMonths * monthInSeconds,
-        etherToWei(1)
-          .mul(unlockPenalty)
-          .round()
+        feeDisbursalAddress,
+        lockPeriod,
+        unlockPenaltyFraction
       );
       await accessPolicy.setUserRole(
         admin,
@@ -1024,9 +1053,6 @@ contract(
         lockedAccount.address,
         TriState.Allow
       );
-      await lockedAccount.setPenaltyDisbursal(operatorWallet, {
-        from: admin
-      });
       noCallbackContract = await TestNullContract.new();
       testDisbursal = await TestFeeDistributionPool.new();
       controller = await TestLockedAccountController.new(lockedAccount.address);
@@ -1036,11 +1062,12 @@ contract(
       startTimestamp = await latestTimestamp();
     }
 
-    async function deployMigrationTarget(token) {
+    async function deployMigrationTarget(token, feeDisbursalAddress) {
       const target = await TestLockedAccountMigrationTarget.new(
         accessPolicy.address,
         token.address,
         neumark.address,
+        feeDisbursalAddress,
         18 * monthInSeconds,
         etherToWei(1)
           .mul(0.1)

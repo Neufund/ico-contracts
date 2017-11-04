@@ -1,5 +1,13 @@
 # ICO contracts
 
+## Neumark contract structure
+Please read [here](/contracts/SnapshotToken/README.md).
+
+## Neumark issuance algorithm.
+Please read on the issuance curve in our [whitepaper](https://neufund.org/whitepaper)
+
+
+
 ## Running locally
 ```
 yarn          # installs all dependencies
@@ -31,6 +39,41 @@ You should consider replacing javascript compiler with `solc`, this will increas
 ```
 yarn lint:fix
 ```
+### Flattening/Preprocessing
+You can flatten your smart contract and create one large `.sol` file using
+```
+yarn truffle-flattener <smart-contract-path> <target directory>
+
+example:
+
+yarn truffle-flattener ./contracts/Eurotoken.sol ./postFlatten
+
+```
+Run
+```
+yarn flatten
+```
+in order to flatten all smart contracts included in the deployment processes
+
+### Verifying Smart Contracts on Etherscan
+In order to verify a smart-contract on Etherscan you will have to provide a:
+- flattened version of the smart contract source code
+- bytecode string with deployed constructor Arguments.
+
+The verification processes can be done [here](https://etherscan.io/verifyContract)
+#### Walkthrough
+In order to give an in-depth walkthrough, this section will explain the processes of verifying the Neumark smart contract
+1. Run `yarn flatten` in order to flatten all smart contracts up for deployment and output to `./build/flatten`
+2. Run the [Smart-Contract-Watch](https://github.com/Neufund/smart-contract-watch) from `moe/coded-constructor` [branch](https://github.com/Neufund/smart-contract-watch/tree/moe/coded-constructor) and start from the contract creation block. If done correctly this will return the used constructor arguments needed. In the case of Neumark it was `00000000000000000000000088144fa49c6b97b845c4eb7a1f61c52f49303210`
+    `00000000000000000000000038e0e54c1c7c405cec81c6ad66aff65700be5951`
+    Currently, this processes works only if all variables were static.
+3. Open [etherscan](https://etherscan.io/verifyContract)
+4. Enter smart-contract address for the case of Neumark `0xd8f36d2de608987a8b6e19016a20645032ae6647`
+5. Enter smart contract name as written in the `.sol` file in this case `Neumark`
+6. Choose the correct compiler in our case `solc 0.4.15+commit` with Optimization enabled
+7. Copy the flattened source code from `./build/flatten/Neumark.sol` and paste in the source code section.
+8. Copy the constructor arguments and paste in the relative sections
+9. Verify and Publish
 
 ### Byzantium and pre-byzantium error handling for calls and transaction
 
@@ -80,6 +123,12 @@ yarn truffle test test/LockedAccount.js test/setup.js
 To run single test case from a test use following syntax
 ```
 it.only('test case', ...
+```
+
+
+There are simulated commitments in Commitment.js which are very long. Execute those with special truffle network `inprocess_massive_test`
+```
+yarn truffle test test/Commitment.js test/setup.js --network inprocess_massive_test
 ```
 
 *Remarks on current state of tests in truffle and testrpc*
@@ -155,7 +204,7 @@ Several accounts are required to deploy on `mainnet` due to many roles with spec
 |LOCKED ACCOUNT ADMIN|May attach controller, set fee disbursal pool and migration in Locked Account contract| PO Admin | LockedAccount |
 |WHITELIST ADMIN|May setup whitelist and abort Commitment contract with curve rollback| PO Admin | Commitment |
 |NEUMARK ISSUER|May issue (generate) Neumarks (only Commitment or ETOs contract may have this right)| N/A| Commitment |
-|TRANSFER ADMIN|May enable/disable transfers on Neumark| PO Admin | Neumark |
+|TRANSFER ADMIN|May enable/disable transfers on Neumark| (**Commitment** contract to enable trading after ICBM) | Neumark |
 |RECLAIMER|may reclaim tokens/ether from contracts| PO Admin | global role |
 |PLATFORM OPERATOR REPRESENTATIVE|Represents legally platform operator in case of forks and contracts with legal agreement attached| PO Management | global role |
 |EURT DEPOSIT MANAGER|Allows to deposit EUR-T and allow addresses to send and receive EUR-T | PO Admin | EuroToken |

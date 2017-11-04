@@ -1,24 +1,13 @@
 pragma solidity 0.4.15;
 
 
-contract MMint {
+/// @title token generation and destruction
+/// @dev internal interface providing token generation and destruction, see MintableSnapshotToken for implementation
+contract MTokenMint {
 
     ////////////////////////
     // Internal functions
     ////////////////////////
-
-    /// @dev This is the actual transfer function in the token contract, it can
-    ///  only be called by other functions in this contract.
-    /// @param from The address holding the tokens being transferred
-    /// @param to The address of the recipient
-    /// @param amount The amount of tokens to be transferred
-    /// @dev  reverts if transfer was not successful
-    function mTransfer(
-        address from,
-        address to,
-        uint256 amount
-    )
-        internal;
 
     /// @notice Generates `amount` tokens that are assigned to `owner`
     /// @param owner The address that will be assigned the new tokens

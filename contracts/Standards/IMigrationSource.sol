@@ -4,10 +4,10 @@ import './IMigrationTarget.sol';
 
 
 /// @notice implemented in the contract that stores state to be migrated
-/// @notice should contract is called migration source
+/// @notice contract is called migration source
 /// @dev migration target implements IMigrationTarget interface, when it is passed in 'enableMigration' function
 /// @dev 'migrate' function may be called to migrate part of state owned by msg.sender
-/// @dev in legal terms this corresponds to amending/changing agreement terms by co-signature of signatories
+/// @dev in legal terms this corresponds to amending/changing agreement terms by co-signature of parties
 contract IMigrationSource {
 
     ////////////////////////

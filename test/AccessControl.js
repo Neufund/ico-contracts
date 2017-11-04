@@ -150,7 +150,31 @@ contract(
       ).to.be.rejectedWith(EvmError);
     });
 
+    async function expectRepeatPermissionDoesNothing(state) {
+      await accessPolicy.setUserRole(
+        owner2,
+        exampleRole,
+        accessControlled.address,
+        state
+      );
+      const tx = await accessPolicy.setUserRole(
+        owner2,
+        exampleRole,
+        accessControlled.address,
+        state
+      );
+      const event = tx.logs.filter(e => e.event === "LogAccessChanged");
+      expect(event).to.be.empty;
+    }
+
+    it("should no nothing if permission unchanged", async () => {
+      await expectRepeatPermissionDoesNothing(TriState.Allow);
+      await expectRepeatPermissionDoesNothing(TriState.Deny);
+      await expectRepeatPermissionDoesNothing(TriState.Unset);
+    });
+
     it("should disallow on unset cascade", async () => {
+      // for the most specific permission set, the less specific cascade levels should all disallow
       await accessPolicy.setUserRole(
         owner2,
         exampleRole,
@@ -188,6 +212,7 @@ contract(
     });
 
     it("should change policy on contract", async () => {
+      // simulates replacing access policy on contract
       await accessPolicy.setUserRole(
         owner1,
         exampleRole,
@@ -428,7 +453,7 @@ contract(
 
     it("should deny when at the bottom of cascade if all allowed", async () => {
       // set full cascade to allowed
-      accessPolicy.set([
+      await accessPolicy.set([
         {
           subject: EVERYONE,
           object: GLOBAL,
@@ -521,7 +546,7 @@ contract(
 
     it("should allow when at the bottom of cascade if all denied", async () => {
       // set full cascade to allowed
-      accessPolicy.set([
+      await accessPolicy.set([
         {
           subject: EVERYONE,
           object: GLOBAL,
@@ -614,12 +639,25 @@ contract(
 
     describe("enumerating subjects", () => {
       beforeEach(async () => {
-        accessPolicy.set(
+        await accessPolicy.set(
           accounts.map(a => ({ subject: a, role: exampleRole }))
         );
-        accessPolicy.set(
+        await accessPolicy.set(
           accounts.map(a => ({ subject: a, role: roles.whitelistAdmin }))
         );
+      });
+
+      it("should enumerate default ACCESS_CONTROL permissions", async () => {
+        const globSubs = await accessPolicy.getUsers(
+          GLOBAL,
+          roles.accessController
+        );
+        expect(globSubs).to.have.same.members([accessController]);
+        const locSubs = await accessPolicy.getUsers(
+          accessPolicy.address,
+          roles.accessController
+        );
+        expect(locSubs).to.have.same.members([accessController]);
       });
 
       it("should enumerate all subjects", async () => {

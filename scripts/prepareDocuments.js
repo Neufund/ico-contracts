@@ -30,9 +30,9 @@ async function prepareNeumarkTokenHolderAgreement({
   };
 
   replaceTags(
-    join(__dirname, "./NEUMARK TOKEN HOLDER AGREEMENT.html"),
+    join(__dirname, "../legal/NEUMARK TOKEN HOLDER AGREEMENT.html"),
     tags,
-    join(__dirname, "./NEUMARK TOKEN HOLDER AGREEMENT.out.html")
+    join(__dirname, "../legal/NEUMARK TOKEN HOLDER AGREEMENT.out.html")
   );
 }
 
@@ -61,9 +61,9 @@ async function prepareReservationAgreement({
   };
 
   replaceTags(
-    join(__dirname, "./RESERVATION AGREEMENT.html"),
+    join(__dirname, "../legal/RESERVATION AGREEMENT.html"),
     tags,
-    join(__dirname, "./RESERVATION AGREEMENT.out.html")
+    join(__dirname, "../legal/RESERVATION AGREEMENT.out.html")
   );
 }
 
@@ -80,7 +80,6 @@ function replaceTags(inputPath, tags, outputPath) {
 
     outputDocument = replaced;
   });
-
   fs.writeFileSync(outputPath, outputDocument);
 }
 

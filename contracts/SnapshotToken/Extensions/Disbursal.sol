@@ -1,6 +1,6 @@
 pragma solidity 0.4.15;
 
-import '../../Standards/ISnapshotableToken.sol';
+import './ISnapshotableToken.sol';
 import '../../Standards/IBasicToken.sol';
 import '../../Standards/IERC20Token.sol';
 import '../../Standards/IERC677Callback.sol';
