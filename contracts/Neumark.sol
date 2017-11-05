@@ -122,13 +122,16 @@ contract Neumark is
     function burn(uint256 neumarkUlps)
         public
         only(ROLE_NEUMARK_BURNER)
-        returns (uint256)
     {
-        uint256 euroUlps = incrementalInverse(neumarkUlps);
-        _totalEurUlps -= euroUlps;
-        mDestroyTokens(msg.sender, neumarkUlps);
-        LogNeumarksBurned(msg.sender, euroUlps, neumarkUlps);
-        return euroUlps;
+        burnPrivate(neumarkUlps, 0, _totalEurUlps);
+    }
+
+    /// @notice executes as function above but allows to provide search range for low gas burning
+    function burn(uint256 neumarkUlps, uint256 minEurUlps, uint256 maxEurUlps)
+        public
+        only(ROLE_NEUMARK_BURNER)
+    {
+        burnPrivate(neumarkUlps, minEurUlps, maxEurUlps);
     }
 
     function enableTransfer(bool enabled)
