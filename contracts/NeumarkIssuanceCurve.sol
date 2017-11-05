@@ -121,50 +121,54 @@ contract NeumarkIssuanceCurve {
         return sum;
     }
 
-    /// @dev The result is rounded up.
-    function cumulativeInverse(uint256 neumarkUlps, uint256 min, uint256 max)
+    /// @notice find issuance curve inverse by binary search
+    /// @param neumarkUlps neumark amount to compute inverse for
+    /// @param minEurUlps minimum search range for the inverse, inclusive
+    /// @param maxEurUlps maxium search range for the inverse, inclusive
+    /// @dev in case of approximate search (no exact inverse) upper element of minimal search range is returned
+    /// @dev in case of many possible invesrses, the lowest one will be used (if range permits)
+    /// @dev corresponds to a linear search that returns first euroUlp value that has cumulative() equal or greater than neumarkUlps
+    function cumulativeInverse(uint256 neumarkUlps, uint256 minEurUlps, uint256 maxEurUlps)
         public
         constant
         returns (uint256 euroUlps)
     {
-        require(max >= min);
-        require(cumulative(min) <= neumarkUlps);
-        require(cumulative(max) >= neumarkUlps);
+        require(maxEurUlps >= minEurUlps);
+        require(cumulative(minEurUlps) <= neumarkUlps);
+        require(cumulative(maxEurUlps) >= neumarkUlps);
+        uint256 min = minEurUlps;
+        uint256 max = maxEurUlps;
 
         // Binary search
         while (max > min) {
-            uint256 mid = (max + min + 1) / 2;
+            uint256 mid = (max + min) / 2;
             uint256 val = cumulative(mid);
-            if (val == neumarkUlps) {
+            // exact solution should not be used, a late points of the curve when many euroUlps are needed to
+            // increase by one nmkUlp this will lead to  "indeterministic" inverse values that depend on the initial min and max
+            // and further binary division -> you can land at any of the euro value that is mapped to the same nmk value
+            // when removed, binary search will point to the lowest eur value possible which is good because it cannot be exploited even with 0 gas costs
+            /* if (val == neumarkUlps) {
                 return mid;
-            }
+            }*/
+            // approximate search must return upper element of the final range
+            // last step of approximate search is always (min, min+1) so new mid is (2*min+1)/2 => min
+            // so new min = mid + 1 = max which was upper range. and that ends the search
             if (val < neumarkUlps) {
-                min = mid;
+                min = mid + 1;
             } else {
-                max = mid - 1;
+                max = mid;
             }
         }
-        assert(max == min);
-
-        // Did we find an exact solution?
-        if (cumulative(max) == neumarkUlps) {
-            return max;
-        }
-
         // NOTE: It is possible that there is no inverse
         // for example curve(0) = 0 and curve(1) = 6, so
         // there is no value y such that curve(y) = 5.
-        // In this case we return a value such that curve(y) < x
-        // and curve(y + 1) > x.
-        assert(cumulative(max) < neumarkUlps);
-        assert(cumulative(max + 1) > neumarkUlps);
 
-        // When there is no inverse, we round up.
+        // When there is no inverse, we must return upper element of last search range.
         // This has the effect of reversing the curve less when
         // burning Neumarks. This ensures that Neumarks can always
         // be burned. It also ensure that the total supply of Neumarks
         // remains below the cap.
-        return max + 1;
+        return max;
     }
 
     function neumarkCap()
