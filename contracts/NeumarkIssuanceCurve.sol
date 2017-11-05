@@ -13,10 +13,23 @@ contract NeumarkIssuanceCurve {
     // initial neumark reward fraction (controls curve steepness)
     uint256 private constant INITIAL_REWARD_FRACTION = 6500000000000000000;
 
+    // stop issuing new Neumarks above this Euro value (as it goes quickly to zero)
+    uint256 private constant ISSUANCE_LIMIT_EUR_ULPS = 8300000000000000000000000000;
+
+    // approximate curve linearly above this Euro value
+    uint256 private constant LINEAR_APPROX_LIMIT_EUR_ULPS = 2100000000000000000000000000;
+    uint256 private constant NEUMARKS_AT_LINEAR_LIMIT_ULPS = 1499832501287264827896539871;
+
+    uint256 private constant TOT_LINEAR_NEUMARKS_ULPS = NEUMARK_CAP - NEUMARKS_AT_LINEAR_LIMIT_ULPS;
+    uint256 private constant TOT_LINEAR_EUR_ULPS = ISSUANCE_LIMIT_EUR_ULPS - LINEAR_APPROX_LIMIT_EUR_ULPS;
+
     ////////////////////////
     // Public functions
     ////////////////////////
 
+    /// @notice returns additional amount of neumarks issued for euroUlps at totalEuroUlps
+    /// @param totalEuroUlps actual curve position from which neumarks will be issued
+    /// @param euroUlps amount against which neumarks will be issued
     function incremental(uint256 totalEuroUlps, uint256 euroUlps)
         public
         constant
@@ -29,37 +42,59 @@ contract NeumarkIssuanceCurve {
         return to - from;
     }
 
-    /// @dev The result is rounded down.
-    function incrementalInverse(uint256 totalEuroUlps, uint256 neumarkUlps)
+    /// @notice returns amount of euro corresponding to burned neumarks
+    /// @param totalEuroUlps actual curve position from which neumarks will be burned
+    /// @param burnNeumarkUlps amount of neumarks to burn
+    function incrementalInverse(uint256 totalEuroUlps, uint256 burnNeumarkUlps)
         public
         constant
         returns (uint256 euroUlps)
     {
-        if (neumarkUlps == 0) {
-            return 0;
-        }
-        uint256 to = cumulative(totalEuroUlps);
-        require(to >= neumarkUlps);
-        uint256 fromNmk = to - neumarkUlps;
-        uint256 fromEur = cumulativeInverse(fromNmk, 0, totalEuroUlps);
-        assert(totalEuroUlps >= fromEur);
-        uint256 euros = totalEuroUlps - fromEur;
-        return euros;
+        uint256 totalNeumarkUlps = cumulative(totalEuroUlps);
+        require(totalNeumarkUlps >= burnNeumarkUlps);
+        uint256 fromNmk = totalNeumarkUlps - burnNeumarkUlps;
+        uint newTotalEuroUlps = cumulativeInverse(fromNmk, 0, totalEuroUlps);
+
+        // yes, this may overflow due to non monotonic inverse function
+        return totalEuroUlps - newTotalEuroUlps;
     }
 
+    /// @notice returns amount of euro corresponding to burned neumarks
+    /// @param totalEuroUlps actual curve position from which neumarks will be burned
+    /// @param burnNeumarkUlps amount of neumarks to burn
+    /// @param minEurUlps euro amount to start inverse search from, inclusive
+    /// @param maxEurUlps euro amount to end inverse search to, inclusive
+    function incrementalInverse(uint256 totalEuroUlps, uint256 burnNeumarkUlps, uint256 minEurUlps, uint256 maxEurUlps)
+        public
+        constant
+        returns (uint256 euroUlps)
+    {
+        uint256 totalNeumarkUlps = cumulative(totalEuroUlps);
+        require(totalNeumarkUlps >= burnNeumarkUlps);
+        uint256 fromNmk = totalNeumarkUlps - burnNeumarkUlps;
+        uint newTotalEuroUlps = cumulativeInverse(fromNmk, minEurUlps, maxEurUlps);
+
+        // yes, this may overflow due to non monotonic inverse function
+        return totalEuroUlps - newTotalEuroUlps;
+    }
+
+    /// @notice finds total amount of neumarks issued for given amount of Euro
+    /// @dev binomial expansion does not guarantee monotonicity on uint256 precision for large euroUlps
+    ///     function below is not monotonic
     function cumulative(uint256 euroUlps)
         public
         constant
         returns(uint256 neumarkUlps)
     {
-        uint256 cap = NEUMARK_CAP;
-        // NEUMARK_CAP / INITIAL_REWARD_FRACTION
-        uint256 d = 230769230769230769230769231;
-        uint256 nLim = 8300000000000000000000000000;
-
-        // Return the cap if n is above the limit.
-        if (euroUlps >= nLim) {
-            return cap;
+        // Return the cap if euroUlps is above the limit.
+        if (euroUlps >= ISSUANCE_LIMIT_EUR_ULPS) {
+            return NEUMARK_CAP;
+        }
+        // use linear approximation above limit below
+        // binomial expansion does not guarantee monotonicity on uint256 precision for large euroUlps
+        if (euroUlps >= LINEAR_APPROX_LIMIT_EUR_ULPS) {
+            // (euroUlps - LINEAR_APPROX_LIMIT_EUR_ULPS) is small so expression does not overflow
+            return NEUMARKS_AT_LINEAR_LIMIT_ULPS + (TOT_LINEAR_NEUMARKS_ULPS * (euroUlps - LINEAR_APPROX_LIMIT_EUR_ULPS)) / TOT_LINEAR_EUR_ULPS;
         }
 
         // Approximate cap-cap·(1-1/D)^n using the Binomial expansion
@@ -68,7 +103,8 @@ contract NeumarkIssuanceCurve {
         // which may be simplified to
         // Function[imax, -CAP*Sum[(EUR)^i/(Factorial[i]*(-d)^i), {i, 1, imax}]]
         // where d = cap/initial_reward
-        uint256 term = cap;
+        uint256 d = 230769230769230769230769231; // NEUMARK_CAP / INITIAL_REWARD_FRACTION
+        uint256 term = NEUMARK_CAP;
         uint256 sum = 0;
         uint256 denom = d;
         do assembly {
