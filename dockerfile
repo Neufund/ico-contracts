@@ -1,7 +1,7 @@
 FROM node:8.7.0-alpine
 
 RUN apk update && apk upgrade && \
-    apk add --no-cache bash python alpine-sdk
+    apk add --no-cache bash python alpine-sdk libusb-dev
 
 WORKDIR /app/
 
