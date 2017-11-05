@@ -27,6 +27,7 @@
     "ethereumjs-testrpc": "^4.1.1",
     "git-rev-sync": "^1.9.1",
     "invariant": "^2.2.2",
+    "ipfs-api": "https://github.com/Neufund/js-ipfs-api",
     "istanbul": "next",
     "ledger-wallet-provider": "https://github.com/Neufund/ledger-wallet-provider.git#moe/admintool",
     "lodash": "^4.17.4",
@@ -55,7 +56,8 @@
     "solctruffle": "./scripts/solctruffle.sh",
     "prefillAgreements": "yarn truffle exec ./scripts/prefillAgreements.js",
     "ledgeraddress": "node ./scripts/getAddressFromLedger.js",
-    "flatten": "./scripts/flatten.sh"
+    "flatten": "./scripts/flatten.sh",
+    "uploadAgreements": "node ./scripts/uploadAgreements.js"
   },
   "devDependencies": {
     "eslint-plugin-mocha": "^4.11.0",
