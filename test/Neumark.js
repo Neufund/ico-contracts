@@ -313,11 +313,11 @@ contract(
         await expectIncrementalInverseWalk(expectedCurvePointsAtIntegers);
       });
 
-      it("should burn all neumarks incrementally integer range", async () => {
-        const expectedCurvePointsAtIntegers = parseNmkDataset(
+      it("should burn all neumarks incrementally random range", async () => {
+        const expectedCurvePointsAtRandom = parseNmkDataset(
           `${__dirname}/data/expectedCurvePointsAtRandom.csv`
         );
-        await expectIncrementalInverseWalk(expectedCurvePointsAtIntegers);
+        await expectIncrementalInverseWalk(expectedCurvePointsAtRandom);
       });
 
       it("should issue and burn without inverse", async () => {
