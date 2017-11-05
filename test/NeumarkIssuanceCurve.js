@@ -395,8 +395,9 @@ contract("NeumarkIssuanceCurve", () => {
     );
   });
 
-  /* it("test", async() => {
-    const inverseEurUlps = (new BigNumber("8.00000000000000000000000000e+26")).sub(1000000); //await curveGas.cumulativeInverse(new BigNumber("1.38858963267849917935768414474503669e9"), 0, LIMIT_EUR_ULPS);
+  /*
+    it.only("test", async() => {
+    const inverseEurUlps = (new BigNumber("20.00000000000000000000000000e+26")).sub(1000000); //await curveGas.cumulativeInverse(new BigNumber("1.38858963267849917935768414474503669e9"), 0, LIMIT_EUR_ULPS);
     const atInverseNmk = await curveGas.cumulative(inverseEurUlps);
     const belowInverseNmk = await curveGas.cumulative(inverseEurUlps.sub(1));
     const aboveInverseNmk = await curveGas.cumulative(inverseEurUlps.add(1));
@@ -405,7 +406,7 @@ contract("NeumarkIssuanceCurve", () => {
     // must be monotonic
     // expect(aboveInverseNmk).to.be.bignumber.gte(atInverseNmk);
     // await curveGas.incremental(inverseEurUlps, 1);
-    const euroUlps = await curveGas.incrementalInverse(inverseEurUlps.add(3), 1);
+    const euroUlps = await curveGas.incrementalInverse["uint256,uint256"](inverseEurUlps.add(3), 1);
     console.log(euroUlps);
     let prevInverseNmk = atInverseNmk;
     for (let addNmk = 1; addNmk < 100001; addNmk += 1) {
@@ -415,7 +416,8 @@ contract("NeumarkIssuanceCurve", () => {
       if (aboveInverseNmk2.sub(prevInverseNmk).lte(-2)) {
         console.log(`above ${addNmk} nmk ${aboveInverseNmk2.sub(prevInverseNmk).toNumber()}`);
       }
-      prevInverseNmk = aboveInverseNmk2;
+      // prevInverseNmk = aboveInverseNmk2;
     }
-  }); */
+  });
+  */
 });
