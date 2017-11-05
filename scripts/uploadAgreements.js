@@ -4,7 +4,6 @@
 const ipfsAPI = require("ipfs-api");
 const fs = require("fs");
 const path = require("path");
-const Promise = require("bluebird");
 
 const isFilePinned = async (ipfs, hash) => {
   const matchedHashes = (await ipfs.pin.ls()).filter(response => {
@@ -13,13 +12,13 @@ const isFilePinned = async (ipfs, hash) => {
   });
   return matchedHashes.length > 0;
 };
-const addFiletoIpfs = async (ipfs, file) => {
+
+const addFiletoIpfs = async (ipfs, file, name) => {
   try {
     let fileHash = (await ipfs.files.add(file, { "only-hash": true }))[0].hash;
-    // await ipfs.pin.rm(fileHash);
 
     if (await isFilePinned(ipfs, await fileHash)) {
-      await console.log(`file ${fileHash} already on ipfs `);
+      await console.log(`file:${name} -- hash:${fileHash} already on ipfs `);
       return false;
     }
     console.log("Adding new file to IPFS and pinning");
@@ -34,39 +33,52 @@ const addFiletoIpfs = async (ipfs, file) => {
   }
   return false;
 };
-// TODO: handle diffrent ports for ipfs
-// TODO: clean code
-const main = async args => {
-  const ipfsNodeAddress = args[0];
-  const filePaths = [];
-  const defaultDirpath = path.join(__dirname, "..", "legal");
-  const readFileAsync = Promise.promisify(fs.readFile);
-  if (!args) throw new Error("Please give ipfs node");
-  if (args.length > 1) {
-    args
-      .slice(1)
-      .forEach(relativePath => filePaths.push(path.resolve(relativePath)));
-  } else {
-    filePaths.push(
-      path.join(defaultDirpath, "NEUMARK TOKEN HOLDER AGREEMENT.out.html")
-    );
-    filePaths.push(path.join(defaultDirpath, "RESERVATION AGREEMENT.out.html"));
-  }
 
-  const ipfs = await ipfsAPI(ipfsNodeAddress);
-  for (let i = 0; i < filePaths.length; i += 1) {
-    const file = await readFileAsync(filePaths[i]).catch(() => {
-      throw new Error(`Can't read file form this path ${filePaths[i]}`);
-    });
-    const addedFileHash = await addFiletoIpfs(
-      ipfs,
-      await file,
-      path.parse(filePaths[i]).base
-    );
-    if (addedFileHash) {
-      console.log(`name:${path.parse(filePaths[i]).base}`);
-      console.log(`hash:${await addedFileHash}`);
+const loadFiles = filePaths =>
+  filePaths.map(filePath => {
+    try {
+      return {
+        name: path.parse(filePath).base,
+        file: fs.readFileSync(filePath)
+      };
+    } catch (e) {
+      throw new Error(`Can't read file "${filePath}"`);
     }
+  });
+
+// TODO: handle diffrent ports for ipfs
+const main = async ([ipfsNodeAddress, ...paths]) => {
+  const defaultDirpath = path.join(__dirname, "..", "legal");
+  const filePaths = [];
+  const defaultfilePaths = [
+    "NEUMARK TOKEN HOLDER AGREEMENT.out.html",
+    "RESERVATION AGREEMENT.out.html"
+  ];
+  try {
+    if (!paths) throw new Error("Please give ipfs node");
+
+    const ipfs = await ipfsAPI(ipfsNodeAddress);
+
+    if (paths.length > 0) {
+      paths.forEach(relativePath => filePaths.push(path.resolve(relativePath)));
+    } else {
+      defaultfilePaths.forEach(filePath =>
+        filePaths.push(path.join(defaultDirpath, filePath))
+      );
+    }
+    loadFiles(filePaths).forEach(async loadedfile => {
+      const addedFileHash = await addFiletoIpfs(
+        ipfs,
+        loadedfile.file,
+        loadedfile.name
+      );
+      if (addedFileHash) {
+        console.log(`name:${loadedfile.name}`);
+        console.log(`hash:${await addedFileHash}`);
+      }
+    });
+  } catch (e) {
+    console.log(e);
   }
 };
 
