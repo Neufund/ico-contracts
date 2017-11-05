@@ -20,7 +20,7 @@ contract TimedStateMachine is StateMachine {
     ////////////////////////
 
     // duration of Whitelist state
-    int256 private constant WHITELIST_DURATION = 5 days;
+    int256 private constant WHITELIST_DURATION = 30 days;
 
     // duration of Public state
     int256 private constant PUBLIC_DURATION = 30 days;
