@@ -100,7 +100,7 @@ contract Neumark is
         returns (uint256)
     {
         require(_totalEurUlps + euroUlps >= _totalEurUlps);
-        uint256 neumarkUlps = incremental(euroUlps);
+        uint256 neumarkUlps = incremental(_totalEurUlps, euroUlps);
         _totalEurUlps += euroUlps;
         mGenerateTokens(msg.sender, neumarkUlps);
         LogNeumarksIssued(msg.sender, euroUlps, neumarkUlps);
@@ -168,15 +168,6 @@ contract Neumark is
         returns (uint256 neumarkUlps)
     {
         return incremental(_totalEurUlps, euroUlps);
-    }
-
-    /// @dev The result is rounded down.
-    function incrementalInverse(uint256 neumarkUlps)
-        public
-        constant
-        returns (uint256 euroUlps)
-    {
-        return incrementalInverse(_totalEurUlps, neumarkUlps);
     }
 
     ////////////////////////
