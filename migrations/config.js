@@ -11,10 +11,10 @@ export default function getConfig(web3, network, accounts) {
     LOCK_DURATION: 18 * 30 * 24 * 60 * 60,
     PENALTY_FRACTION: web3.toBigNumber("0.1").mul(Q18),
     // Commitment
-    START_DATE: moment("2017-10-30T09:00:00.000Z").valueOf() / 1000,
+    START_DATE: moment("2017-11-05T14:10:00.000Z").valueOf() / 1000,
     CAP_EUR: web3.toBigNumber("200000000").mul(Q18),
-    MIN_TICKET_EUR: web3.toBigNumber("298.3").mul(Q18),
-    ETH_EUR_FRACTION: web3.toBigNumber("298.3").mul(Q18),
+    MIN_TICKET_EUR: web3.toBigNumber("254.78").mul(Q18),
+    ETH_EUR_FRACTION: web3.toBigNumber("254.78").mul(Q18),
     // Agreements
     RESERVATION_AGREEMENT:
       "ipfs:QmerumBSpNXtHxgQq1NmpY5iJYavDnZc13os6oHY4EuDCX", // attached to Commitment

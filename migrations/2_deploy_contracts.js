@@ -1,6 +1,7 @@
 require("babel-register");
 const getConfig = require("./config").default;
 const confirm = require("node-ask").confirm;
+const moment = require("moment");
 
 const RoleBasedAccessPolicy = artifacts.require("RoleBasedAccessPolicy");
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
@@ -17,6 +18,8 @@ module.exports = function deployContracts(deployer, network, accounts) {
   console.log("----------------------------------");
   console.log("Deployment parameters:");
   console.log(CONFIG);
+  const startDate = moment.unix(CONFIG.START_DATE);
+  console.log(`START_DATE is ${startDate.format()} (local) ${startDate.utc().format()} (UTC)`);
   console.log("----------------------------------");
 
   deployer.then(async () => {
