@@ -205,4 +205,20 @@ contract Neumark is
     {
         return true;
     }
+
+    ////////////////////////
+    // Private functions
+    ////////////////////////
+
+    function burnPrivate(uint256 burnNeumarkUlps, uint256 minEurUlps, uint256 maxEurUlps)
+        private
+    {
+        uint256 prevEuroUlps = _totalEurUlps;
+        // burn first in the token to make sure balance/totalSupply is not crossed
+        mDestroyTokens(msg.sender, burnNeumarkUlps);
+        _totalEurUlps = cumulativeInverse(totalSupply(), minEurUlps, maxEurUlps);
+        // yes, this may overflow, this value should be basically disregarded as inverse is not monotonic
+        uint256 euroUlps = prevEuroUlps - _totalEurUlps;
+        LogNeumarksBurned(msg.sender, euroUlps, burnNeumarkUlps);
+    }
 }
