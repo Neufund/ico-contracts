@@ -41,6 +41,7 @@ contract Neumark is
     bool private _transferEnabled = false;
 
     // at which point on curve new Neumarks will be created, see NeumarkIssuanceCurve contract
+    // do not use to get total invested funds. see burn(). this is just a cache for expensive inverse function
     uint256 private _totalEurUlps;
 
     ////////////////////////
@@ -89,7 +90,7 @@ contract Neumark is
     // Public functions
     ////////////////////////
 
-    /// @notice issues new Neumarks to msg.sender with cost at current curve position
+    /// @notice issues new Neumarks to msg.sender with reward at current curve position
     ///     moves curve position by euroUlps
     ///     callable only by ROLE_NEUMARK_ISSUER
     function issueForEuro(uint256 euroUlps)
