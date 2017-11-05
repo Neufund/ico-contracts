@@ -1,6 +1,10 @@
 require("babel-register");
 require("babel-polyfill");
 const TestRPC = require("ethereumjs-testrpc");
+const nanoWeb3Provider = require("./nanoWeb3Provider");
+
+const providerUrl = "http://localhost:8545";
+const nanoPath = "44'/60'/0'/0`";
 
 module.exports = {
   networks: {
@@ -61,6 +65,13 @@ module.exports = {
       gas: 4600000
       // provider: nanoWeb3Provider.nanoWeb3Provider(providerUrl, nanoPath) // Our costume instance
     },
+    nano: {
+      network_id: "*",
+      host: "localhost",
+      port: 8545,
+      gas: 4600000,
+      provider: nanoWeb3Provider.nanoWeb3Provider(providerUrl, nanoPath) // Our costume instance
+    },
     simulated_live: {
       network_id: "*",
       host: "localhost",
@@ -70,7 +81,7 @@ module.exports = {
     nf_private: {
       host: "localhost",
       port: 8545,
-      network_id: "11",
+      network_id: "16",
       gas: 4600000,
       // gasPrice: 11904761856
       gasPrice: 21000000000
@@ -78,7 +89,7 @@ module.exports = {
     nf_private_test: {
       host: "localhost",
       port: 8545,
-      network_id: "11",
+      network_id: "16",
       gas: 4600000,
       // gasPrice: 11904761856
       gasPrice: 21000000000

@@ -28,6 +28,7 @@
     "git-rev-sync": "^1.9.1",
     "invariant": "^2.2.2",
     "istanbul": "next",
+    "ledger-wallet-provider": "https://github.com/Neufund/ledger-wallet-provider.git#moe/admintool",
     "lodash": "^4.17.4",
     "mocha": "^3.3.0",
     "moment": "^2.18.1",
@@ -37,7 +38,8 @@
     "swarm-js": "^0.1.35",
     "truffle": "Neufund/truffle#neufund",
     "truffle-flattener": "https://github.com/Neufund/truffle-flattener",
-    "web3": "0.20.1"
+    "web3": "0.20.1",
+    "web3-provider-engine": "^13.3.2"
   },
   "scripts": {
     "lint": "yarn lint:solium && yarn lint:eslint",
