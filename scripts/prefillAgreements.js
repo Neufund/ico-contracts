@@ -13,8 +13,8 @@ const {
 const Neumark = artifacts.require("Neumark");
 const LockedAccount = artifacts.require("LockedAccount");
 const Commitment = artifacts.require("Commitment");
-// eslint-disable-next-line no-unused-vars
-module.exports = async function(callback) {
+
+module.exports = async function prefillAgreements() {
   try {
     const neumark = await Neumark.deployed();
     const commitment = await Commitment.deployed();
