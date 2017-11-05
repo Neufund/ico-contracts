@@ -20,7 +20,7 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
   });
 
   it("should deploy", async () => {
-    prettyPrintGasCost("Deploy", ethereumForkArbiter);
+    await prettyPrintGasCost("Deploy", ethereumForkArbiter);
   });
 
   it("should announce forks", async () => {
@@ -33,7 +33,7 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
       from: arbiter
     });
 
-    prettyPrintGasCost("Announce", tx);
+    await prettyPrintGasCost("Announce", tx);
     expect(eventValue(tx, "LogForkAnnounced", "name")).to.equal(name);
     expect(eventValue(tx, "LogForkAnnounced", "url")).to.equal(url);
     expect(
@@ -64,7 +64,7 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
       from: arbiter
     });
 
-    prettyPrintGasCost("Announce", tx);
+    await prettyPrintGasCost("Announce", tx);
     expect(eventValue(tx, "LogForkAnnounced", "name")).to.equal(name);
     expect(eventValue(tx, "LogForkAnnounced", "url")).to.equal(url);
     expect(
@@ -98,7 +98,7 @@ contract("EthereumForkArbiter", ([deployer, arbiter, other]) => {
       from: arbiter
     });
 
-    prettyPrintGasCost("Sign", tx);
+    await prettyPrintGasCost("Sign", tx);
     expect(
       eventValue(tx, "LogForkSigned", "blockNumber")
     ).to.be.bignumber.equal(block.number);
