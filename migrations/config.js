@@ -17,9 +17,9 @@ export default function getConfig(web3, network, accounts) {
     ETH_EUR_FRACTION: web3.toBigNumber("254.78").mul(Q18),
     // Agreements
     RESERVATION_AGREEMENT:
-      "ipfs:QmerumBSpNXtHxgQq1NmpY5iJYavDnZc13os6oHY4EuDCX", // attached to Commitment
+      "ipfs:Qmf2SM2CBsHyfTv6QBXWVf3Drmvpt64hCnQvDHSU5xBT6f", // attached to Commitment
     NEUMARK_HOLDER_AGREEMENT:
-      "ipfs:QmUDZkGzCEAufyxFwNbm66XUFMrXUA5GvuU4a5BwQbTPNw", // attached to Neumark
+      "ipfs:QmWzaqr9Ko4ESVC5zuVSgR5rUdB29PDRCpDKVPvVQngu2k", // attached to Neumark
     addresses: {
       // Maps roles to addresses
       ACCESS_CONTROLLER: "0x8AD8B24594ef90c15B2bd05edE0c67509c036B29",
