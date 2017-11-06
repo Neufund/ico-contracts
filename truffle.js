@@ -3,11 +3,8 @@ require("babel-register");
 require("babel-polyfill");
 const TestRPC = require("ethereumjs-testrpc");
 
-const providerUrl = "http://localhost:8545";
-const nanoPath = "44'/60'/0'/0`";
-
-const nanoProvider = () =>
-  process.argv.filter(arg => arg.includes("nano")).length > 0
+const nanoProvider = (providerUrl, nanoPath, network) =>
+  process.argv.some(arg => arg === network)
     ? require("./nanoWeb3Provider").nanoWeb3Provider(providerUrl, nanoPath)
     : undefined;
 
@@ -65,10 +62,8 @@ module.exports = {
     },
     nano: {
       network_id: "*",
-      host: "localhost",
-      port: 8545,
       gas: 4600000,
-      provider: nanoProvider()
+      provider: nanoProvider("http://localhost:8545", "44'/60'/0'/0", "nano")
     },
     simulated_live: {
       network_id: "*",
