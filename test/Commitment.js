@@ -1694,7 +1694,9 @@ contract(
       it("random large ETH commitment", async () => {
         if (investors.length < 90) {
           // eslint-disable-next-line no-console
-          console.log("must run with testrpc --accounts 100, SKIPPING");
+          console.log(
+            "must run with testrpc --accounts 100 or inprocess_massive_test network, SKIPPING"
+          );
           assert(true);
           return;
         }

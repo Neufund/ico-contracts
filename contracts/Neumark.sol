@@ -41,6 +41,7 @@ contract Neumark is
     bool private _transferEnabled = false;
 
     // at which point on curve new Neumarks will be created, see NeumarkIssuanceCurve contract
+    // do not use to get total invested funds. see burn(). this is just a cache for expensive inverse function
     uint256 private _totalEurUlps;
 
     ////////////////////////
@@ -89,7 +90,7 @@ contract Neumark is
     // Public functions
     ////////////////////////
 
-    /// @notice issues new Neumarks to msg.sender with cost at current curve position
+    /// @notice issues new Neumarks to msg.sender with reward at current curve position
     ///     moves curve position by euroUlps
     ///     callable only by ROLE_NEUMARK_ISSUER
     function issueForEuro(uint256 euroUlps)
@@ -99,7 +100,7 @@ contract Neumark is
         returns (uint256)
     {
         require(_totalEurUlps + euroUlps >= _totalEurUlps);
-        uint256 neumarkUlps = incremental(euroUlps);
+        uint256 neumarkUlps = incremental(_totalEurUlps, euroUlps);
         _totalEurUlps += euroUlps;
         mGenerateTokens(msg.sender, neumarkUlps);
         LogNeumarksIssued(msg.sender, euroUlps, neumarkUlps);
@@ -121,13 +122,16 @@ contract Neumark is
     function burn(uint256 neumarkUlps)
         public
         only(ROLE_NEUMARK_BURNER)
-        returns (uint256)
     {
-        uint256 euroUlps = incrementalInverse(neumarkUlps);
-        _totalEurUlps -= euroUlps;
-        mDestroyTokens(msg.sender, neumarkUlps);
-        LogNeumarksBurned(msg.sender, euroUlps, neumarkUlps);
-        return euroUlps;
+        burnPrivate(neumarkUlps, 0, _totalEurUlps);
+    }
+
+    /// @notice executes as function above but allows to provide search range for low gas burning
+    function burn(uint256 neumarkUlps, uint256 minEurUlps, uint256 maxEurUlps)
+        public
+        only(ROLE_NEUMARK_BURNER)
+    {
+        burnPrivate(neumarkUlps, minEurUlps, maxEurUlps);
     }
 
     function enableTransfer(bool enabled)
@@ -169,15 +173,6 @@ contract Neumark is
         return incremental(_totalEurUlps, euroUlps);
     }
 
-    /// @dev The result is rounded down.
-    function incrementalInverse(uint256 neumarkUlps)
-        public
-        constant
-        returns (uint256 euroUlps)
-    {
-        return incrementalInverse(_totalEurUlps, neumarkUlps);
-    }
-
     ////////////////////////
     // Internal functions
     ////////////////////////
@@ -209,5 +204,21 @@ contract Neumark is
         returns (bool allow)
     {
         return true;
+    }
+
+    ////////////////////////
+    // Private functions
+    ////////////////////////
+
+    function burnPrivate(uint256 burnNeumarkUlps, uint256 minEurUlps, uint256 maxEurUlps)
+        private
+    {
+        uint256 prevEuroUlps = _totalEurUlps;
+        // burn first in the token to make sure balance/totalSupply is not crossed
+        mDestroyTokens(msg.sender, burnNeumarkUlps);
+        _totalEurUlps = cumulativeInverse(totalSupply(), minEurUlps, maxEurUlps);
+        // yes, this may overflow, this value should be basically disregarded as inverse is not monotonic
+        uint256 euroUlps = prevEuroUlps - _totalEurUlps;
+        LogNeumarksBurned(msg.sender, euroUlps, burnNeumarkUlps);
     }
 }

@@ -324,7 +324,7 @@ export function snapshotTokenTests(
       await expectCloneFreeze(snapshotId, 0);
     });
 
-    it("should reject to clone on future snapshot id", async () => {
+    it("should freeze clone on future snapshot id", async () => {
       const supply = new web3.BigNumber(8172891);
 
       await token.deposit(supply, { from: owner });
