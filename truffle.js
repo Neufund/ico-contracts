@@ -62,14 +62,8 @@ module.exports = {
       network_id: "*",
       host: "localhost",
       port: 8545,
-      gas: 4600000
-      // provider: nanoWeb3Provider.nanoWeb3Provider(providerUrl, nanoPath) // Our costume instance
-    },
-    nano: {
-      network_id: "*",
-      host: "localhost",
-      port: 8545,
-      gas: 4600000
+      gas: 4600000,
+      provider: nanoWeb3Provider.nanoWeb3Provider(providerUrl, nanoPath)
     },
     simulated_live: {
       network_id: "*",
