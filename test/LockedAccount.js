@@ -743,6 +743,18 @@ contract(
         await makeWithdraw(investor, ticket.sub(penalty));
       });
 
+      it("should silently exit on unlock of non-existing investor", async () => {
+        await enableUnlocks();
+        const unlockTx = await unlockWithCallback(
+          investor,
+          new web3.BigNumber(1)
+        );
+        const events = unlockTx.logs.filter(
+          e => e.event === "LogFundsUnlocked"
+        );
+        expect(events).to.be.empty;
+      });
+
       it("should reject unlock with approveAndCall with unknown token", async () => {
         const ticket = etherToWei(1);
         const neumarks = await lock(investor, ticket);
