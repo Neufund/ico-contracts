@@ -1,10 +1,15 @@
+/* eslint-disable global-require */
 require("babel-register");
 require("babel-polyfill");
 const TestRPC = require("ethereumjs-testrpc");
-const nanoWeb3Provider = require("./nanoWeb3Provider");
 
 const providerUrl = "http://localhost:8545";
 const nanoPath = "44'/60'/0'/0`";
+
+const nanoProvider = () =>
+  process.argv.filter(arg => arg.includes("nano")).length > 0
+    ? require("./nanoWeb3Provider").nanoWeb3Provider(providerUrl, nanoPath)
+    : undefined;
 
 module.exports = {
   networks: {
@@ -63,7 +68,7 @@ module.exports = {
       host: "localhost",
       port: 8545,
       gas: 4600000,
-      provider: nanoWeb3Provider.nanoWeb3Provider(providerUrl, nanoPath)
+      provider: nanoProvider()
     },
     simulated_live: {
       network_id: "*",

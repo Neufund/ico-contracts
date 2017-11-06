@@ -87,7 +87,7 @@ The script automatically fills both `NEUMARK TOKEN HOLDER AGREEMENT` and `RESERV
  - LockedAccount contract Address
  - PLATFORM_OPERATOR_REPRESENTATIVE
 
- ###Upload files to IPFS
+ ### Upload files to IPFS
  run
  ```
  yarn uploadAgreements <IPFS node address> [filePath1,filePath2 ...]

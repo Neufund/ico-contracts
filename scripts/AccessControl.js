@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+// eslint-disable-next-line no-unused-vars
 module.exports = function(callback) {
   const AccessControl = artifacts.require(
     "./AccessControl/RoleBasedAccessPolicy.sol"

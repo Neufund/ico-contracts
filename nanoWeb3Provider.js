@@ -15,9 +15,13 @@ export function nanoWeb3Provider(providerUrl, nanoPath) {
   engine.addProvider(new Web3Subprovider(web3HttpProvider));
 
   engine.on("block", () => {
-    if (process.argv.filter(arg => !arg.includes("nano"))) {
-      engine.stop();
-    }
+    // console.log("================================");
+    // console.log(
+    //   "BLOCK CHANGED:",
+    //   `#${block.number.toString("hex")}`,
+    //   `0x${block.hash.toString("hex")}`
+    // );
+    // console.log("================================");
   });
   engine.start();
 
