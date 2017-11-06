@@ -120,9 +120,9 @@ contract(
         expect(actualForkArbiter).to.equal(forkArbiter.address);
       });
 
-      it("should have name Neumark, symbol NMK and 18 decimals", async () => {
+      it("should have name Neumark, symbol NEU and 18 decimals", async () => {
         assert.equal(await neumark.name.call(), "Neumark");
-        assert.equal(await neumark.symbol.call(), "NMK");
+        assert.equal(await neumark.symbol.call(), "NEU");
         assert.equal(await neumark.decimals.call(), 18);
       });
 

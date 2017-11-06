@@ -29,7 +29,7 @@ contract Neumark is
 
     uint8  private constant TOKEN_DECIMALS = 18;
 
-    string private constant TOKEN_SYMBOL = "NMK";
+    string private constant TOKEN_SYMBOL = "NEU";
 
     string private constant VERSION = "NMK_1.0";
 

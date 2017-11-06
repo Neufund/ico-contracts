@@ -27,6 +27,7 @@
     "ethereumjs-testrpc": "^4.1.1",
     "git-rev-sync": "^1.9.1",
     "invariant": "^2.2.2",
+    "ipfs-api": "https://github.com/Neufund/js-ipfs-api",
     "istanbul": "next",
     "lodash": "^4.17.4",
     "mocha": "^3.3.0",
@@ -53,7 +54,8 @@
     "solctruffle": "./scripts/solctruffle.sh",
     "prefillAgreements": "yarn truffle exec ./scripts/prefillAgreements.js",
     "ledgeraddress": "node ./scripts/getAddressFromLedger.js",
-    "flatten": "./scripts/flatten.sh"
+    "flatten": "./scripts/flatten.sh",
+    "uploadAgreements": "node ./scripts/uploadAgreements.js"
   },
   "devDependencies": {
     "eslint-plugin-mocha": "^4.11.0",
