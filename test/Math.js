@@ -139,4 +139,14 @@ contract("Math", () => {
       .div(Q18);
     expect(diff.e).to.be.lte(-7);
   });
+
+  it("should min", async () => {
+    expect(await math._min(1, 2)).to.be.bignumber.eq(1);
+    expect(await math._min(2, 1)).to.be.bignumber.eq(1);
+  });
+
+  it("should max", async () => {
+    expect(await math._max(1, 2)).to.be.bignumber.eq(2);
+    expect(await math._max(2, 1)).to.be.bignumber.eq(2);
+  });
 });
