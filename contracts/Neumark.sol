@@ -85,9 +85,14 @@ contract Neumark is
         Reclaimable()
     {}
 
+
     ////////////////////////
     // Public functions
     ////////////////////////
+
+    function reset() public {
+        _totalEurUlps = 0;
+    }
 
     /// @notice issues new Neumarks to msg.sender with cost at current curve position
     ///     moves curve position by euroUlps

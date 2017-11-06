@@ -187,7 +187,6 @@ contract Commitment is
     )
         external
         withTimedTransitions()
-        onlyState(State.Before)
         only(ROLE_WHITELIST_ADMIN)
     {
         require(investors.length == tokens.length);
@@ -301,6 +300,10 @@ contract Commitment is
     ////////////////////////
     // Public functions
     ////////////////////////
+
+    function reset() public {
+        NEUMARK.reset();
+    }
 
     /// converts `amount` in wei into EUR with 18 decimals required by Curve
     /// Neufund public commitment uses fixed EUR rate during commitment to level playing field and
@@ -456,7 +459,6 @@ contract Commitment is
     {
         // Validate
         require(investor != 0x0);
-        require(_whitelist[investor].token == Token.None);
         bool isEuro = token == Token.Euro;
         bool isEther = token == Token.Ether;
         require(isEuro || isEther);
