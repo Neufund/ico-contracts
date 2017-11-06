@@ -58,8 +58,8 @@ contract BasicSnapshotToken is
         IClonedTokenParent parentToken,
         uint256 parentSnapshotId
     )
-        public
         Snapshot()
+        internal
     {
         PARENT_TOKEN = parentToken;
         if (parentToken == address(0)) {

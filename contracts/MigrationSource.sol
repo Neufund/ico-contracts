@@ -49,6 +49,7 @@ contract MigrationSource is
         bytes32 migrationAdminRole
     )
         AccessControlled(policy)
+        internal
     {
         MIGRATION_ADMIN = migrationAdminRole;
     }

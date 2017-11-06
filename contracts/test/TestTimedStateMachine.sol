@@ -11,8 +11,8 @@ contract TestTimedStateMachine is
     ////////////////////////
 
     function TestTimedStateMachine(int256 whitelistStart)
-        public
         TimedStateMachine(whitelistStart)
+        public
     {
     }
 

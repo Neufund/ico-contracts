@@ -19,6 +19,7 @@ contract TestSnapshot is
     ////////////////////////
     function TestSnapshot(uint256 start)
         DailyAndSnapshotable(start)
+        public
     {}
 
     ////////////////////////

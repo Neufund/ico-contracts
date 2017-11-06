@@ -53,7 +53,9 @@ contract Vote {
     function Vote(
         ISnapshotableToken token,
         bytes32[] choiceHashes
-    ) {
+    )
+        public
+    {
         TOKEN = token;
         SNAPSHOT = token.createSnapshot();
         CHOICE_HASHES = choiceHashes;

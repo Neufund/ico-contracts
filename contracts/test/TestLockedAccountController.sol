@@ -26,7 +26,7 @@ contract TestLockedAccountController {
     // Constructor
     ////////////////////////
 
-    function TestLockedAccountController(LockedAccount lockedAccount) {
+    function TestLockedAccountController(LockedAccount lockedAccount) public {
         LOCKED_ACCOUNT = lockedAccount;
     }
 

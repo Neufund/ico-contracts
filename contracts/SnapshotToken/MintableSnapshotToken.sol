@@ -22,10 +22,9 @@ contract MintableSnapshotToken is
         IClonedTokenParent parentToken,
         uint256 parentSnapshotId
     )
-        public
         BasicSnapshotToken(parentToken, parentSnapshotId)
-    {
-    }
+        internal
+    {}
 
     /// @notice Generates `amount` tokens that are assigned to `owner`
     /// @param owner The address that will be assigned the new tokens

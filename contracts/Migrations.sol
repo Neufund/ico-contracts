@@ -28,7 +28,7 @@ contract Migrations {
     // Constructor
     ////////////////////////
 
-    function Migrations() {
+    function Migrations() public {
         OWNER = msg.sender;
     }
 

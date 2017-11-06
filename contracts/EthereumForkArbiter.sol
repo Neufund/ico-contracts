@@ -35,6 +35,7 @@ contract EthereumForkArbiter is
     function EthereumForkArbiter(IAccessPolicy accessPolicy)
         AccessControlled(accessPolicy)
         Reclaimable()
+        public
     {
     }
 
