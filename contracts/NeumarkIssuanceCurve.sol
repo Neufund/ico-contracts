@@ -38,7 +38,9 @@ contract NeumarkIssuanceCurve {
         require(totalEuroUlps + euroUlps >= totalEuroUlps);
         uint256 from = cumulative(totalEuroUlps);
         uint256 to = cumulative(totalEuroUlps + euroUlps);
-        assert(to >= from); // Issuance curve needs to be monotonic
+        // as expansion is not monotonic for large totalEuroUlps, assert below may fail
+        // example: totalEuroUlps=1.999999999999999999999000000e+27 and euroUlps=50
+        assert(to >= from);
         return to - from;
     }
 
@@ -54,8 +56,8 @@ contract NeumarkIssuanceCurve {
         require(totalNeumarkUlps >= burnNeumarkUlps);
         uint256 fromNmk = totalNeumarkUlps - burnNeumarkUlps;
         uint newTotalEuroUlps = cumulativeInverse(fromNmk, 0, totalEuroUlps);
-
         // yes, this may overflow due to non monotonic inverse function
+        assert(totalEuroUlps >= newTotalEuroUlps);
         return totalEuroUlps - newTotalEuroUlps;
     }
 
@@ -73,8 +75,8 @@ contract NeumarkIssuanceCurve {
         require(totalNeumarkUlps >= burnNeumarkUlps);
         uint256 fromNmk = totalNeumarkUlps - burnNeumarkUlps;
         uint newTotalEuroUlps = cumulativeInverse(fromNmk, minEurUlps, maxEurUlps);
-
         // yes, this may overflow due to non monotonic inverse function
+        assert(totalEuroUlps >= newTotalEuroUlps);
         return totalEuroUlps - newTotalEuroUlps;
     }
 

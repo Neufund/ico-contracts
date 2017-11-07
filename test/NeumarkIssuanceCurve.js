@@ -135,7 +135,9 @@ contract("NeumarkIssuanceCurve", () => {
         // console.log(`should burn ${burnNmk.toNumber()} with expected Euro delta ${expectedEurDelta.toNumber()}, got ${actualEurDelta.toNumber()} diff ${expectedEurDelta.sub(actualEurDelta).toNumber()}`);
         expect(
           actualEurDelta.round(roundingPrecision, 4),
-          `Invalid inverse at NEU ${n} burning NEU ${burnNmk} at ${e.toNumber()}`
+          `Invalid inverse at NEU ${n} burning NEU ${
+            burnNmk
+          } at ${e.toNumber()}`
         ).to.be.bignumber.eq(expectedEurDelta.round(roundingPrecision, 4));
 
         totalNmk = totalNmk.sub(burnNmk);
@@ -229,7 +231,7 @@ contract("NeumarkIssuanceCurve", () => {
     ).to.be.rejectedWith(EvmError);
   });
 
-  it("should compute inverse cheaply when search ranges equal inverse", async () => {
+  it("should compute inverse with low gas cost when search ranges equal inverse", async () => {
     const expectedInverseEurUlps = EUR_DECIMALS.mul(5000000);
     const burnNmkUlps = NMK_DECIMALS.mul(
       new BigNumber("3.21504457765812047556165399769811884e7")
@@ -243,7 +245,7 @@ contract("NeumarkIssuanceCurve", () => {
     await prettyPrintGasCost("Inverse gas", gas.toNumber());
   });
 
-  it("should reject to compute inverse cheaply when search ranges not equal inverse", async () => {
+  it("should reject to compute inverse with low gas cost when search ranges not equal inverse", async () => {
     const expectedInverseEurUlps = EUR_DECIMALS.mul(5000000);
     const burnNmkUlps = NMK_DECIMALS.mul(
       new BigNumber("3.21504457765812047556165399769811884e7")
@@ -257,7 +259,7 @@ contract("NeumarkIssuanceCurve", () => {
     ).to.be.rejectedWith(EvmError);
   });
 
-  it("should compute incremental inverse cheaply when search ranges equal inverse", async () => {
+  it("should compute incremental inverse with low gas cost when search ranges equal inverse", async () => {
     // 4000000,2.57759629704150400556252848464617472e7
     // 5000000,3.21504457765812047556165399769811884e7
     const totalEuroUlps = EUR_DECIMALS.mul(5000000);
@@ -395,9 +397,33 @@ contract("NeumarkIssuanceCurve", () => {
     );
   });
 
-  /*
-    it.only("test", async() => {
-    const inverseEurUlps = (new BigNumber("20.00000000000000000000000000e+26")).sub(1000000); //await curveGas.cumulativeInverse(new BigNumber("1.38858963267849917935768414474503669e9"), 0, LIMIT_EUR_ULPS);
+  it("should revert on non monotonic incremental", async () => {
+    const inverseEurUlps = new BigNumber("1.999999999999999999999000000e+27");
+    const delta = 50; // this we get from commented test below - expansion fluctuates at this increase producing actual NEU decrease
+    // const atInverseNmk = await curveGas.cumulative(inverseEurUlps);
+    // const aboveInverseNmk = await curveGas.cumulative(inverseEurUlps.add(delta));
+    // console.log(aboveInverseNmk.sub(atInverseNmk).toString());
+    await expect(
+      curveGas.incremental["uint256,uint256"](inverseEurUlps, delta)
+    ).to.be.rejectedWith(EvmError);
+  });
+
+  it("should revert on overflow on non monotonic incremental inverse", async () => {
+    const inverseEurUlps = new BigNumber("1.999999999999999999999000000e+27");
+    const newEurUlps = new BigNumber("1.999999999999999999999000050e+27");
+    const deltaNmk = 3;
+    await expect(
+      curveGas.incrementalInverse(
+        inverseEurUlps,
+        deltaNmk,
+        newEurUlps,
+        newEurUlps
+      )
+    ).to.be.rejectedWith(EvmError);
+  });
+
+  /* it("test", async() => {
+    const inverseEurUlps = new BigNumber("1.999999999999999999999000000e+27"); //await curveGas.cumulativeInverse(new BigNumber("1.38858963267849917935768414474503669e9"), 0, LIMIT_EUR_ULPS);
     const atInverseNmk = await curveGas.cumulative(inverseEurUlps);
     const belowInverseNmk = await curveGas.cumulative(inverseEurUlps.sub(1));
     const aboveInverseNmk = await curveGas.cumulative(inverseEurUlps.add(1));
@@ -414,10 +440,9 @@ contract("NeumarkIssuanceCurve", () => {
       // const diffNmk = nUlps.sub(belowInverseNmk);
 
       if (aboveInverseNmk2.sub(prevInverseNmk).lte(-2)) {
-        console.log(`above ${addNmk} nmk ${aboveInverseNmk2.sub(prevInverseNmk).toNumber()}`);
+        console.log(`above ${addNmk} nmk ${aboveInverseNmk2.sub(prevInverseNmk).toNumber()} @${inverseEurUlps.add(addNmk).toString()} `);
       }
       // prevInverseNmk = aboveInverseNmk2;
     }
-  });
-  */
+  }); */
 });

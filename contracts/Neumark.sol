@@ -218,7 +218,8 @@ contract Neumark is
         // burn first in the token to make sure balance/totalSupply is not crossed
         mDestroyTokens(msg.sender, burnNeumarkUlps);
         _totalEurUlps = cumulativeInverse(totalSupply(), minEurUlps, maxEurUlps);
-        // yes, this may overflow, this value should be basically disregarded as inverse is not monotonic
+        // actually may overflow on non-monotonic inverse
+        assert(prevEuroUlps >= _totalEurUlps);
         uint256 euroUlps = prevEuroUlps - _totalEurUlps;
         LogNeumarksBurned(msg.sender, euroUlps, burnNeumarkUlps);
     }

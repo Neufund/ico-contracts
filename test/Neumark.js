@@ -279,7 +279,9 @@ contract(
             // console.log(`should burn ${burnNmk.toNumber()} with expected Euro delta ${expectedEurDelta.toNumber()}, got ${actualEurDelta.toNumber()} diff ${expectedEurDelta.sub(actualEurDelta).toNumber()}`);
             expect(
               actualEurDelta.round(roundingPrecision, 4),
-              `Invalid inverse at NEU ${n} burning NEU ${burnNmk} at ${e.toNumber()}`
+              `Invalid inverse at NEU ${n} burning NEU ${
+                burnNmk
+              } at ${e.toNumber()}`
             ).to.be.bignumber.eq(expectedEurDelta.round(roundingPrecision, 4));
 
             const newTotalEuroUlps = await neumark.totalEuroUlps.call();
@@ -396,6 +398,32 @@ contract(
           actualInverseEurDeltaUlps.sub(expectedInverseEurDeltaUlps).abs()
         ).to.be.bignumber.lt(2);
         await prettyPrintGasCost("Burned gas", burnTx);
+      });
+
+      it("should reject to issue Neumark on non-monotonic expansion", async () => {
+        const inverseEurUlps = new BigNumber(
+          "1.999999999999999999999000000e+27"
+        );
+        await neumark.issueForEuro(inverseEurUlps, { from: issuer1 });
+        const delta = 50;
+        await expect(
+          neumark.issueForEuro(delta, { from: issuer1 })
+        ).to.be.rejectedWith(EvmError);
+      });
+
+      it("should reject to burn Neumark on non-monotonic inverse", async () => {
+        const inverseEurUlps = new BigNumber(
+          "1.999999999999999999999000000e+27"
+        );
+        await neumark.issueForEuro(inverseEurUlps, { from: issuer1 });
+        const newEurUlps = new BigNumber("1.999999999999999999999000050e+27");
+        const deltaNmk = 3;
+        // here we point to non-monotonic point
+        await expect(
+          neumark.burn(deltaNmk, newEurUlps, newEurUlps, { from: issuer1 })
+        ).to.be.rejectedWith(EvmError);
+        // for wide binary search, it is much less probable to hit such point, below will pass
+        await neumark.burn.uint256(deltaNmk, { from: issuer1 });
       });
 
       it("should reject to issue Neumark for not allowed address", async () => {
