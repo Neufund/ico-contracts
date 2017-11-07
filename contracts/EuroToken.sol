@@ -93,6 +93,7 @@ contract EuroToken is
         TokenMetadata(NAME, DECIMALS, SYMBOL, "")
         MigrationSource(accessPolicy, ROLE_EURT_DEPOSIT_MANAGER)
         Reclaimable()
+        public
     {
     }
 

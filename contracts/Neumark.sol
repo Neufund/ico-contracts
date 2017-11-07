@@ -84,6 +84,7 @@ contract Neumark is
         DailyAndSnapshotable(0)
         NeumarkIssuanceCurve()
         Reclaimable()
+        public
     {}
 
     ////////////////////////

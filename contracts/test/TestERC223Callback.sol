@@ -17,7 +17,7 @@ contract TestERC223Callback is IERC223Callback {
     ////////////////////////
     // Constructor
     ////////////////////////
-    function TestERC223Callback() {
+    function TestERC223Callback() public {
         // some "random" hash
         _dataKeccak = sha3(address(this));
     }

@@ -11,6 +11,7 @@ contract TestToken is StandardToken {
 
     function TestToken(uint256 initialBalance)
         StandardToken()
+        public
     {
         _balances[msg.sender] = initialBalance;
     }

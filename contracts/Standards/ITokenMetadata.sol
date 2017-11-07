@@ -8,14 +8,17 @@ contract ITokenMetadata {
     ////////////////////////
 
     function symbol()
+        public
         constant
         returns (string);
 
     function name()
+        public
         constant
         returns (string);
 
     function decimals()
+        public
         constant
         returns (uint8);
 }

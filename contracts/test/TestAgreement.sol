@@ -15,6 +15,7 @@ contract TestAgreement is
     function TestAgreement(IAccessPolicy accessPolicy, IEthereumForkArbiter forkArbiter)
         AccessControlled(accessPolicy)
         Agreement(accessPolicy, forkArbiter)
+        public
     {
     }
 

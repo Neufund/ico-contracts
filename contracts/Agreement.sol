@@ -90,6 +90,7 @@ contract Agreement is
 
     function Agreement(IAccessPolicy accessPolicy, IEthereumForkArbiter forkArbiter)
         AccessControlled(accessPolicy)
+        internal
     {
         require(forkArbiter != IEthereumForkArbiter(0x0));
         ETHEREUM_FORK_ARBITER = forkArbiter;

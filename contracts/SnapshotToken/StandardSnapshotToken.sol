@@ -65,8 +65,8 @@ contract StandardSnapshotToken is
     )
         MintableSnapshotToken(parentToken, parentSnapshotId)
         TokenAllowance()
-    {
-    }
+        internal
+    {}
 
     ////////////////////////
     // Public functions

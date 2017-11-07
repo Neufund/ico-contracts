@@ -15,6 +15,7 @@ contract TestNeumark is Neumark
         IEthereumForkArbiter forkArbiter
     )
         Neumark(accessPolicy, forkArbiter)
+        public
     {
     }
 

@@ -41,4 +41,20 @@ contract TestMath is Math {
     {
         return proportion(amount, part, total);
     }
+
+    function _min(uint256 a, uint256 b)
+        public
+        constant
+        returns (uint256)
+    {
+        return min(a, b);
+    }
+
+    function _max(uint256 a, uint256 b)
+        public
+        constant
+        returns (uint256)
+    {
+        return max(a, b);
+    }
 }

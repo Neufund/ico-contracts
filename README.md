@@ -34,6 +34,12 @@ You should consider replacing javascript compiler with `solc`, this will increas
 --- var result = solc.compileStandard(JSON.stringify(solcStandardInput));
 +++ var result = require('child_process').execSync('solc --standard-json', {input: JSON.stringify(solcStandardInput)});
 ```
+or just issue `yarn solctruffle`
+
+you can count current LOC with sloc
+```
+find contracts -path contracts/test -prune -a -path contracts/Snapshot/Extras -prune  -a -path contracts/SnapshotToken/Extensions -prune  -o -name *.sol | xargs sloc -a sol=js
+```
 
 ### Auto fixing linting problems
 ```

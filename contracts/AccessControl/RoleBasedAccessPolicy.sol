@@ -87,6 +87,7 @@ contract RoleBasedAccessPolicy is
 
     function RoleBasedAccessPolicy()
         AccessControlled(this) // We are our own policy. This is immutable.
+        public
     {
         // Issue the local and global AccessContoler role to creator
         _access[msg.sender][ROLE_ACCESS_CONTROLLER][this] = TriState.Allow;

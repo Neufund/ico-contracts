@@ -29,8 +29,7 @@ contract DailyAndSnapshotable is
 
     /// @param start snapshotId from which to start generating values
     /// @dev start must be for the same day or 0, required for token cloning
-    function DailyAndSnapshotable(uint256 start)
-    {
+    function DailyAndSnapshotable(uint256 start) internal {
         // 0 is invalid value as we are past unix epoch
         if (start > 0) {
             uint256 dayBase = snapshotAt(block.timestamp);

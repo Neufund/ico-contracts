@@ -96,6 +96,7 @@ contract StandardToken is
         uint256 amount,
         bytes extraData
     )
+        public
         returns (bool)
     {
         require(approve(spender, amount));

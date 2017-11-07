@@ -56,6 +56,7 @@ contract TestAccessControl is AccessControlled, TestAccessControlExampleRoles {
 
     function TestAccessControl(IAccessPolicy policy)
         AccessControlled(policy)
+        public
     {
     }
 
