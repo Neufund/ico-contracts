@@ -16,6 +16,7 @@ import {
 } from "./helpers/tokenTestCases";
 import { snapshotTokenTests } from "./helpers/snapshotTokenTestCases";
 import { parseNmkDataset } from "./helpers/dataset";
+// import increaseTime  from "./helpers/increaseTime";
 
 const EthereumForkArbiter = artifacts.require("EthereumForkArbiter");
 const Neumark = artifacts.require("TestNeumark");
@@ -635,6 +636,7 @@ contract(
 
       const advanceSnapshotId = async snapshotable => {
         await snapshotable.createSnapshot({ from: deployer });
+        // await increaseTime(24*60*60 + 1);
         return snapshotable.currentSnapshotId.call();
       };
 
