@@ -63,7 +63,7 @@ module.exports = {
     nano: {
       network_id: "*",
       gas: 4600000,
-      provider: nanoProvider("http://localhost:8545", "44'/60'/0'/0", "nano")
+      provider: nanoProvider("http://localhost:8543", "44'/60'/105'/0", "nano")
     },
     simulated_live: {
       network_id: "*",
@@ -95,12 +95,12 @@ module.exports = {
       // gasPrice: 11904761856
       gasPrice: 21000000000
     },
-    live: {
+    mainnet_live: {
       network_id: 1, // Ethereum public network
-      host: "192.168.100.30",
-      port: 8545,
-      gas: 4300000, // close to current mainnet limit
-      gasPrice: 21000000000 // 21 gwei /shannon
+      host: "localhost",
+      port: 8543,
+      gas: 6300000, // close to current mainnet limit
+      gasPrice: 2000000000 // 21 gwei /shannon
       // optional config values
       // host - defaults to "localhost"
       // port - defaults to 8545
