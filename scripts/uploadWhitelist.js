@@ -56,8 +56,23 @@ const isDuplicate = array => {
     throw new Error("You have a duplications");
   }
 };
-const getList = () => {
-  const filepath = path.resolve("./scripts/whitelist2.csv");
+const filterWlfromSmartContract = async (filteredWhiteList, commitment) => {
+  const verifiedWhiteList = (await Promise.all(
+    filteredWhiteList.map(async investor => {
+      const wlTokensByAddress = (await commitment.whitelistTicket(
+        investor.wlAddresses
+      ))[0].isZero();
+      return wlTokensByAddress ? investor : undefined;
+    })
+  )).filter(investor => !!investor);
+  if (verifiedWhiteList.length === 0)
+    throw new Error(
+      "All address indicated in whitelist are already added into SmartContract"
+    );
+  return verifiedWhiteList;
+};
+const getList = async () => {
+  const filepath = path.resolve("./scripts/whitelist.csv");
   console.log("Loading CSV file and parsing");
   const parsedCsv = d3.csvParse(fs.readFileSync(filepath, "UTF-8"));
   console.log("Filtering CSV");
@@ -80,16 +95,55 @@ const getList = () => {
     .filter(investor => !!investor);
   console.log("Checking for duplications");
   isDuplicate(filteredWhiteList);
-  console.log("Formating");
-  return Object.keys(filteredWhiteList[0]).map(v => ({
-    [v]: filteredWhiteList.map(c => c[v])
-  }));
+  return filteredWhiteList;
 };
+const formatPayload = payload =>
+  Object.keys(payload[0]).map(v => ({
+    [v]: payload.map(c => c[v])
+  }));
 module.exports = async function prefillAgreements() {
   try {
     const commitment = await Commitment.deployed();
-    const formattedWhiteList = getList();
+    const formattedWhiteList = await getList();
+    const payloadSize = 10;
+    let verifiedWhiteList;
+    verifiedWhiteList = await filterWlfromSmartContract(
+      formattedWhiteList,
+      commitment
+    );
+    do {
+      const whitelistPayloud = verifiedWhiteList.slice(0, payloadSize);
+      verifiedWhiteList = verifiedWhiteList.slice(
+        payloadSize,
+        verifiedWhiteList.length
+      );
+
+      // console.log(whitelistPayloud);
+      const formattedPayload = formatPayload(whitelistPayloud);
+      const test2 = await commitment.addWhitelisted(
+        formattedPayload[0].wlAddresses,
+        formattedPayload[1].wlTokens,
+        formattedPayload[2].wlTickets
+      );
+      if ((await test2.receipt.status) === 0)
+        throw new Error("Transaction didn't go through check connection");
+      else {
+        console.log(test2.receipt);
+        console.log("Transaction passed These addresses were added");
+        console.log(formattedPayload[0].wlAddresses);
+      }
+    } while (verifiedWhiteList.length > 0);
   } catch (e) {
     console.log(e);
   }
 };
+
+// const test2 = await commitment.addWhitelisted(
+//   formattedWhiteList[0].wlAddresses,
+//   formattedWhiteList[1].wlTokens,
+//   formattedWhiteList[2].wlTickets
+// );
+// (await commitment.whitelistTicket(
+//   "0x430513b91748d977Aa38e4db691764a97Fe28236"
+// )).forEach(element => console.log(web3.fromWei(element.toString())));
+// console.log(await web3.FromWei(test));
