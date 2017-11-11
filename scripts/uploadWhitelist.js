@@ -31,7 +31,7 @@ const isCurrency = (currency, address) => {
 };
 const getAmount = (amount, address) => {
   const investAmount = Number.parseFloat(amount.replace(/^\D+/g, ""));
-  // Most of the case this is for an empty string ""
+  // Most of the case this is for an empty string
   if (Number.isNaN(investAmount))
     throw new Error(`Investor ${address} has their amount left out`);
   return investAmount === 0 ? new web3.BigNumber(0) : Q18.mul(investAmount);
@@ -57,24 +57,56 @@ const isDuplicate = array => {
   }
 };
 const filterWlfromSmartContract = async (filteredWhiteList, commitment) => {
+  let lastUploadedfile = false;
   const verifiedWhiteList = (await Promise.all(
     filteredWhiteList.map(async investor => {
-      const wlTokensByAddress = (await commitment.whitelistTicket(
+      const whiteListTicketbyAddress = await commitment.whitelistTicket(
         investor.wlAddresses
-      ))[0].isZero();
-      return wlTokensByAddress ? investor : undefined;
+      );
+      const tokenType = whiteListTicketbyAddress[0].isZero();
+      const ticketSize = parseFloat(
+        web3.fromWei(whiteListTicketbyAddress[1]).toString()
+      );
+      const ticketSizefromList = parseFloat(
+        await commitment.convertToEur(
+          web3.fromWei(investor.wlTickets).toString()
+        )
+      );
+      if (
+        Math.floor(ticketSize) !== ticketSizefromList &&
+        Math.ceil(ticketSize) !== ticketSizefromList &&
+        tokenType === false
+      ) {
+        console.log(Math.floor(ticketSize));
+        console.log(Math.ceil(ticketSize));
+        throw new Error(
+          `Ticket size in Smart contract is not correct ${ticketSize} ${
+            ticketSizefromList
+          } token ${tokenType} for ${investor.wlAddresses}`
+        );
+      }
+      return tokenType ? investor : undefined;
     })
-  )).filter(investor => !!investor);
+  )).filter(investor => {
+    console.log(investor);
+    if (investor !== undefined) {
+      lastUploadedfile = true;
+    }
+    if (investor === undefined) {
+      if (lastUploadedfile === true)
+        throw new Error("Something went really wrong with the smart contracts");
+    }
+    return !!investor;
+  });
   if (verifiedWhiteList.length === 0)
     throw new Error(
       "All address indicated in whitelist are already added into SmartContract"
     );
   return verifiedWhiteList;
 };
-const getList = async () => {
-  const filepath = path.resolve("./scripts/whitelist.csv");
+const getList = async filePath => {
   console.log("Loading CSV file and parsing");
-  const parsedCsv = d3.csvParse(fs.readFileSync(filepath, "UTF-8"));
+  const parsedCsv = d3.csvParse(fs.readFileSync(filePath, "UTF-8"));
   console.log("Filtering CSV");
   const filteredWhiteList = parsedCsv
     .map(investor => {
@@ -102,11 +134,19 @@ const formatPayload = payload =>
     [v]: payload.map(c => c[v])
   }));
 module.exports = async function prefillAgreements() {
+  const [
+    csvFile,
+    CommitmentAddress,
+    payloadSize,
+    ...other
+  ] = process.argv.slice(6);
+  if (other.length) throw new Error("To many variables");
   try {
-    const commitment = await Commitment.deployed();
-    const formattedWhiteList = await getList();
-    const payloadSize = 10;
+    const commitment = await Commitment.at(CommitmentAddress);
+    console.log(path.resolve(csvFile));
+    const formattedWhiteList = await getList(path.resolve(csvFile));
     let verifiedWhiteList;
+    console.log("Comparing list with Smart Contract Whitelist and filtering");
     verifiedWhiteList = await filterWlfromSmartContract(
       formattedWhiteList,
       commitment
@@ -118,32 +158,28 @@ module.exports = async function prefillAgreements() {
         verifiedWhiteList.length
       );
 
-      // console.log(whitelistPayloud);
+      console.log("Setting whitelist Payloud");
       const formattedPayload = formatPayload(whitelistPayloud);
-      const test2 = await commitment.addWhitelisted(
+      console.log("Sending Payload to SmartContract");
+      const transactionReceipt = (await commitment.addWhitelisted(
         formattedPayload[0].wlAddresses,
         formattedPayload[1].wlTokens,
         formattedPayload[2].wlTickets
-      );
-      if ((await test2.receipt.status) === 0)
+      )).receipt;
+      // const transactionReceipt = (await commitment.addWhitelisted(
+      //   ["0x23d5a869a6653bf922dcc4e44d9da3eae220b88f"],
+      //   [1],
+      //   [Q18.mul(666)]
+      // )).receipt;
+      if ((await transactionReceipt.status) === 0)
         throw new Error("Transaction didn't go through check connection");
       else {
-        console.log(test2.receipt);
         console.log("Transaction passed These addresses were added");
         console.log(formattedPayload[0].wlAddresses);
+        console.log(`GAS USED:${transactionReceipt.gasUsed}`);
       }
     } while (verifiedWhiteList.length > 0);
   } catch (e) {
     console.log(e);
   }
 };
-
-// const test2 = await commitment.addWhitelisted(
-//   formattedWhiteList[0].wlAddresses,
-//   formattedWhiteList[1].wlTokens,
-//   formattedWhiteList[2].wlTickets
-// );
-// (await commitment.whitelistTicket(
-//   "0x430513b91748d977Aa38e4db691764a97Fe28236"
-// )).forEach(element => console.log(web3.fromWei(element.toString())));
-// console.log(await web3.FromWei(test));
