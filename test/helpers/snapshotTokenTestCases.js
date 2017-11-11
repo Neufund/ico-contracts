@@ -281,9 +281,12 @@ export function snapshotTokenTests(
       );
     }
 
-    async function expectCloneFreeze(snapshotId, futureDelta) {
+    async function expectCloneFreeze(snapshotId, snapshotDelta, advances) {
       // create clone at current snapshotId
-      const clonedToken = await createClone(token, snapshotId.add(futureDelta));
+      const clonedToken = await createClone(
+        token,
+        snapshotId.add(snapshotDelta)
+      );
       await token.transfer(owner2, 98128, { from: owner });
       expect(
         await clonedToken.balanceOfAt(owner2, snapshotId)
@@ -304,7 +307,7 @@ export function snapshotTokenTests(
       await expect(attemptToDesyncClone(clonedToken)).to.be.rejectedWith(
         EvmError
       );
-      let advancedBy = futureDelta + 1;
+      let advancedBy = advances;
       while (advancedBy > 0) {
         await advanceSnapshotId(token);
         advancedBy -= 1;
@@ -321,17 +324,19 @@ export function snapshotTokenTests(
       await token.deposit(supply, { from: owner });
       await token.transfer(owner2, 18281, { from: owner });
       const snapshotId = await advanceSnapshotId(token);
-      await expectCloneFreeze(snapshotId, 0);
+      await expectCloneFreeze(snapshotId, new web3.BigNumber(0), 1);
     });
 
-    it("should reject to clone on future snapshot id", async () => {
+    it("should freeze clone on future snapshot id", async () => {
       const supply = new web3.BigNumber(8172891);
 
       await token.deposit(supply, { from: owner });
       await token.transfer(owner2, 18281, { from: owner });
-      const snapshotId = await advanceSnapshotId(token);
 
-      await expectCloneFreeze(snapshotId, 1);
+      const prevSnapshotId = await token.currentSnapshotId();
+      const snapshotId = await advanceSnapshotId(token);
+      const snapshotDelta = snapshotId.sub(prevSnapshotId);
+      await expectCloneFreeze(snapshotId, snapshotDelta, 2);
     });
 
     it("should decouple cloned token", async () => {

@@ -1,6 +1,12 @@
+/* eslint-disable global-require */
 require("babel-register");
 require("babel-polyfill");
 const TestRPC = require("ethereumjs-testrpc");
+
+const nanoProvider = (providerUrl, nanoPath, network) =>
+  process.argv.some(arg => arg === network)
+    ? require("./nanoWeb3Provider").nanoWeb3Provider(providerUrl, nanoPath)
+    : undefined;
 
 module.exports = {
   networks: {
@@ -56,10 +62,8 @@ module.exports = {
     },
     nano: {
       network_id: "*",
-      host: "localhost",
-      port: 8545,
-      gas: 4600000
-      // provider: nanoWeb3Provider.nanoWeb3Provider(providerUrl, nanoPath) // Our costume instance
+      gas: 4600000,
+      provider: nanoProvider("http://localhost:8543", "44'/60'/105'/0", "nano")
     },
     simulated_live: {
       network_id: "*",
@@ -70,7 +74,7 @@ module.exports = {
     nf_private: {
       host: "localhost",
       port: 8545,
-      network_id: "11",
+      network_id: "16",
       gas: 4600000,
       // gasPrice: 11904761856
       gasPrice: 21000000000
@@ -78,7 +82,7 @@ module.exports = {
     nf_private_test: {
       host: "localhost",
       port: 8545,
-      network_id: "11",
+      network_id: "16",
       gas: 4600000,
       // gasPrice: 11904761856
       gasPrice: 21000000000
@@ -91,12 +95,12 @@ module.exports = {
       // gasPrice: 11904761856
       gasPrice: 21000000000
     },
-    live: {
+    mainnet_live: {
       network_id: 1, // Ethereum public network
-      host: "192.168.100.30",
-      port: 8545,
-      gas: 4300000, // close to current mainnet limit
-      gasPrice: 21000000000 // 21 gwei /shannon
+      host: "localhost",
+      port: 8543,
+      gas: 6300000, // close to current mainnet limit
+      gasPrice: 2000000000 // 21 gwei /shannon
       // optional config values
       // host - defaults to "localhost"
       // port - defaults to 8545

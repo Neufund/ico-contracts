@@ -30,6 +30,7 @@ contract TestSnapshotToken is
         )
         // continue snapshot series of the parent, also will prevent using incompatible scheme
         DailyAndSnapshotable(parentToken == address(0) ? 0 : parentToken.currentSnapshotId())
+        public
     {
         _enableTransfers = true;
         _enableApprovals = true;

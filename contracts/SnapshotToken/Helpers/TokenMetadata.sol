@@ -37,7 +37,9 @@ contract TokenMetadata is ITokenMetadata {
         uint8 decimalUnits,
         string tokenSymbol,
         string version
-    ) {
+    )
+        public
+    {
         NAME = tokenName;                                 // Set the name
         SYMBOL = tokenSymbol;                             // Set the symbol
         DECIMALS = decimalUnits;                          // Set the decimals

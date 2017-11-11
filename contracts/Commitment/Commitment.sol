@@ -149,6 +149,7 @@ contract Commitment is
         AccessControlled(accessPolicy)
         Agreement(accessPolicy, forkArbiter)
         TimedStateMachine(startDate)
+        public
     {
         require(platformWallet != 0x0);
         require(address(neumark) != 0x0);

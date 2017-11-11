@@ -41,6 +41,7 @@ contract TestLockedAccountMigrationTarget is
             _lockPeriod,
             _penaltyFraction
         )
+        public
     {
         ASSET_TOKEN = _assetToken;
     }

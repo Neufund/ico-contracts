@@ -27,7 +27,7 @@ contract("Snapshot", () => {
   });
 
   it("should deploy", async () => {
-    prettyPrintGasCost("createSnapshot", snapshotTest);
+    await prettyPrintGasCost("createSnapshot", snapshotTest);
   });
 
   it("should be initially unset", async () => {
@@ -72,13 +72,13 @@ contract("Snapshot", () => {
 
   it("should create a snapshot", async () => {
     const r = await snapshotTest.createSnapshot();
-    prettyPrintGasCost("createSnapshot", r);
+    await prettyPrintGasCost("createSnapshot", r);
   });
 
   it("should set a new value", async () => {
     const r = await snapshotTest.setValue(1234);
 
-    prettyPrintGasCost("Setting new value should of ", r);
+    await prettyPrintGasCost("Setting new value should of ", r);
 
     assert.equal(1234, await snapshotTest.getValue.call(12));
     assert.isTrue(await snapshotTest.hasValue.call());
@@ -90,7 +90,7 @@ contract("Snapshot", () => {
 
     const tx2 = await snapshotTest.setValue(12345);
     const snapshotId2 = await snapshotTest.currentSnapshotId.call();
-    prettyPrintGasCost("overwrite last snapshot", tx2);
+    await prettyPrintGasCost("overwrite last snapshot", tx2);
 
     expect(await snapshotTest.getValue.call(12)).to.be.bignumber.eq(12345);
     assert.isTrue(await snapshotTest.hasValue.call());

@@ -49,6 +49,7 @@ contract EtherToken is
         StandardToken()
         TokenMetadata(NAME, DECIMALS, SYMBOL, "")
         Reclaimable()
+        public
     {
     }
 

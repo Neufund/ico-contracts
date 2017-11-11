@@ -9,8 +9,8 @@ contract ForceEther {
 
     function ForceEther()
         payable
-    {
-    }
+        public
+    {}
 
     ////////////////////////
     // Public functions

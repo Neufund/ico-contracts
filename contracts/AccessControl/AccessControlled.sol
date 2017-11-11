@@ -32,7 +32,7 @@ contract AccessControlled is IAccessControlled, StandardRoles {
     // Constructor
     ////////////////////////
 
-    function AccessControlled(IAccessPolicy policy) {
+    function AccessControlled(IAccessPolicy policy) internal {
         require(address(policy) != 0x0);
         _accessPolicy = policy;
     }

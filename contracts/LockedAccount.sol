@@ -182,6 +182,7 @@ contract LockedAccount is
         AccessControlled(policy)
         MigrationSource(policy, ROLE_LOCKED_ACCOUNT_ADMIN)
         Reclaimable()
+        public
     {
         ASSET_TOKEN = assetToken;
         NEUMARK = neumark;

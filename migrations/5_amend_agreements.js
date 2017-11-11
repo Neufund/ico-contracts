@@ -13,8 +13,9 @@ module.exports = function deployContracts(deployer, network, accounts) {
   if (network.endsWith("_live")) {
     console.log("---------------------------------------------");
     console.log(
-      `Must use ${CONFIG.addresses
-        .PLATFORM_OPERATOR_REPRESENTATIVE} account to deploy agreements on live network`
+      `Must use ${
+        CONFIG.addresses.PLATFORM_OPERATOR_REPRESENTATIVE
+      } account to deploy agreements on live network`
     );
     console.log("---------------------------------------------");
     return;
