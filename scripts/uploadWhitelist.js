@@ -17,11 +17,12 @@ const tokenEnum = {
 const Q18 = new web3.BigNumber(10).pow(18);
 
 const isAddress = address => {
-  if (!web3.isAddress(address))
+  const addressTrimmed = address.trim();
+  if (!web3.isAddress(addressTrimmed))
     throw new Error(
       `Investor with Address:${address} has wrong address format!!`
     );
-  return address;
+  return addressTrimmed;
 };
 const isCurrency = (currency, address) => {
   if (currency !== "EUR" && currency !== "ETH")
@@ -39,57 +40,78 @@ const getAmount = (amount, address) => {
 };
 
 const getAttributes = (address, currency, amount) => ({
-  wlAddresses: isAddress(address),
-  wlTokens: isCurrency(currency, address),
-  wlTickets: getAmount(amount, address)
+  wlAddresses: address,
+  wlTokens: currency,
+  wlTickets: amount
 });
-const isDuplicate = array => {
-  const duplicateArray = array.filter(
-    data =>
-      array.filter(investor => {
-        if (investor.wlAddresses === data.wlAddresses) return true;
-        return undefined;
-      }).length > 1
-  );
-  if (duplicateArray.length > 0) {
-    console.log("You your duplicate object");
-    console.log(duplicateArray);
-    throw new Error("You have a duplications");
+
+const removeDuplicates = array => {
+  let cleanedArray = [];
+  for(let investor of array) {
+    if (!cleanedArray.some(i => investor.wlAddresses.toLowerCase() === i.wlAddresses.toLowerCase())) {
+      cleanedArray.push(investor);
+    } else {
+      if (investor.wlTickets > 0) {
+        throw new Error(`Duplicate for investor with reserved ticket ${investor.wlAddresses}`);
+      }
+      console.log(investor);
+    }
   }
+
+  return cleanedArray;
 };
+
 const filterWlfromSmartContract = async (filteredWhiteList, commitment) => {
   let lastUploadedfile = false;
-  const verifiedWhiteList = (await Promise.all(
-    filteredWhiteList.map(async investor => {
-      const whiteListTicketbyAddress = await commitment.whitelistTicket(
-        investor.wlAddresses
-      );
-      const tokenType = whiteListTicketbyAddress[0].isZero();
-      const ticketSize = whiteListTicketbyAddress[1].toString();
+  const verifiedWhiteList = [];
+
+  let index = 0;
+  for(let investor of filteredWhiteList) {
+    const whiteListTicketbyAddress = await commitment.whitelistTicket(
+      investor.wlAddresses
+    );
+
+    const tokenType = whiteListTicketbyAddress[0].toNumber();
+
+    if (tokenType !== 0) {
+      const ticketSize = whiteListTicketbyAddress[1];
       const ticketSizefromList =
         investor.wlTokens === 1
-          ? (await commitment.convertToEur(investor.wlTickets)).toString()
-          : investor.wlTickets.toString();
-
-      if (ticketSize !== ticketSizefromList && tokenType === false) {
+          ? await commitment.convertToEur(investor.wlTickets)
+          : investor.wlTickets;
+      if (!ticketSize.eq(ticketSizefromList)) {
         throw new Error(
           `Ticket size in Smart contract is not correct ${ticketSize} ${
             ticketSizefromList
           } token ${tokenType} for ${investor.wlAddresses}`
         );
       }
-      return tokenType ? investor : undefined;
-    })
-  )).filter(investor => {
-    if (investor !== undefined) {
-      lastUploadedfile = true;
+      try {
+        const commitmentAddressBasedonIndex = await commitment.whitelistInvestor(
+          index
+        );
+        console.log(commitmentAddressBasedonIndex);
+        console.log(investor.wlAddresses);
+        console.log(index);
+        if (
+          commitmentAddressBasedonIndex.toLowerCase() !==
+          investor.wlAddresses.toLowerCase()
+        ) {
+          throw new Error("List is not ordered");
+        }
+      } catch(err) {
+        console.log(`cannot get investor for index ${index} ${investor.wlAddresses}`);
+        console.log(whiteListTicketbyAddress);
+        console.log(err);
+        throw err;
+      }
+
+    } else {
+      verifiedWhiteList.push(investor);
     }
-    if (investor === undefined) {
-      if (lastUploadedfile === true)
-        throw new Error("Something went really wrong with the smart contracts");
-    }
-    return !!investor;
-  });
+    index += 1;
+  }
+
   if (verifiedWhiteList.length === 0)
     throw new Error(
       "All address indicated in whitelist are already added into SmartContract"
@@ -102,75 +124,85 @@ const getList = async filePath => {
   console.log("Filtering CSV");
   const filteredWhiteList = parsedCsv
     .map(investor => {
-      if (investor["Ethereum Public Address"]) {
-        return getAttributes(investor["Ethereum Public Address"], "ETH", "0");
-      }
       if (investor["Public Address"]) {
+        const investorAddress = isAddress(investor["Public Address"]);
+        const investorCurrency = isCurrency(investor.Currency, investorAddress);
+        const amountEth = getAmount(investor["Amount in ETH"]);
+        const amountEur = getAmount(investor["Amount in EUR"]);
         return getAttributes(
-          investor["Public Address"],
-          investor.Currency,
-          investor.Currency === "ETH"
-            ? investor["Amount in ETH"]
-            : investor["Amount in EUR"]
+          investorAddress,
+          investorCurrency,
+          investorCurrency === tokenEnum.EUR
+            ?
+            amountEur : amountEth
         );
       }
-      return undefined;
+      console.log(investor);
+      throw new Error("Error in CSV file");
     })
     .filter(investor => !!investor);
   console.log("Checking for duplications");
-  isDuplicate(filteredWhiteList);
-  return filteredWhiteList;
+  return removeDuplicates(filteredWhiteList);
 };
+
 const formatPayload = payload =>
   Object.keys(payload[0]).map(v => ({
     [v]: payload.map(c => c[v])
   }));
+
 module.exports = async function uploadWhitelist() {
   const [
     csvFile,
-    CommitmentAddress,
     payloadSize,
     ...other
   ] = process.argv.slice(6);
+  //payloadSize = parseFloat(payloadSize);
   if (other.length) throw new Error("To many variables");
   try {
-    const commitment = await Commitment.at(CommitmentAddress);
+    const commitment = await Commitment.at(Commitment.address);
     console.log(path.resolve(csvFile));
+    console.log(Commitment.address);
     const formattedWhiteList = await getList(path.resolve(csvFile));
+    // console.log(formattedWhiteList);
     let verifiedWhiteList;
     console.log("Comparing list with Smart Contract Whitelist and filtering");
     verifiedWhiteList = await filterWlfromSmartContract(
       formattedWhiteList,
       commitment
     );
-    do {
-      const whitelistPayloud = verifiedWhiteList.slice(0, payloadSize);
-      verifiedWhiteList = verifiedWhiteList.slice(
-        payloadSize,
-        verifiedWhiteList.length
-      );
 
-      console.log("Setting whitelist Payloud");
-      const formattedPayload = formatPayload(whitelistPayloud);
+    let index = 0;
+    let size = parseFloat(payloadSize);
+    do {
+      const endIndex = index + size >= verifiedWhiteList.length ? verifiedWhiteList.length : index + size;
+      console.log(payloadSize);
+      console.log(index);
+      console.log(endIndex);
+      const whitelistPayload = verifiedWhiteList.slice(index, endIndex);
+
+      console.log("Setting whitelist Payload");
+      const formattedPayload = formatPayload(whitelistPayload);
       console.log("Sending Payload to SmartContract");
-      const transactionReceipt = (await commitment.addWhitelisted(
+      console.log(formattedPayload.wlAddresses);
+      const transactionReceipt = await commitment.addWhitelisted(
         formattedPayload[0].wlAddresses,
         formattedPayload[1].wlTokens,
         formattedPayload[2].wlTickets
-      )).receipt;
-      if ((await transactionReceipt.status) === 0)
+      );
+      if (transactionReceipt.status === 0)
         throw new Error("Transaction didn't go through check connection");
       else {
+        console.log(`receipt:${JSON.stringify(transactionReceipt, null, 1)}`);
         console.log("Transaction passed These addresses were added");
         console.log(formattedPayload[0].wlAddresses);
-        console.log(`receipt:${JSON.stringify(transactionReceipt, null, 1)}`);
       }
+      index += size;
       if (
         !await confirm("Do you want to continue uploading whitelist? [y/n] ")
       ) {
         throw new Error("Aborting!");
       }
-    } while (verifiedWhiteList.length > 0);
+    } while (verifiedWhiteList.length >= index);
   } catch (e) {
     console.log(e);
   }
