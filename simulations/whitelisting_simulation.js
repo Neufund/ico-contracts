@@ -55,8 +55,10 @@ async function whitelist(allAccounts) {
   });
 }
 
+const DEV_NANO_LEDGER_S_ADDRESS = "0x97d2e2Bf8EeDB82300B3D07Cb097b8f97Dc5f47C";
+
 async function main() {
-  await whitelist(accounts);
+  await whitelist([...accounts, DEV_NANO_LEDGER_S_ADDRESS]);
   console.log("Whitelisting successful!");
 }
 
