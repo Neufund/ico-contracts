@@ -64,21 +64,13 @@ const filterWlfromSmartContract = async (filteredWhiteList, commitment) => {
         investor.wlAddresses
       );
       const tokenType = whiteListTicketbyAddress[0].isZero();
-      const ticketSize = parseFloat(
-        web3.fromWei(whiteListTicketbyAddress[1]).toString()
-      );
-      const ticketSizefromList = parseFloat(
-        await commitment.convertToEur(
-          web3.fromWei(investor.wlTickets).toString()
-        )
-      );
-      if (
-        Math.floor(ticketSize) !== ticketSizefromList &&
-        Math.ceil(ticketSize) !== ticketSizefromList &&
-        tokenType === false
-      ) {
-        console.log(Math.floor(ticketSize));
-        console.log(Math.ceil(ticketSize));
+      const ticketSize = whiteListTicketbyAddress[1].toString();
+      const ticketSizefromList =
+        investor.wlTokens === 1
+          ? (await commitment.convertToEur(investor.wlTickets)).toString()
+          : investor.wlTickets.toString();
+
+      if (ticketSize !== ticketSizefromList && tokenType === false) {
         throw new Error(
           `Ticket size in Smart contract is not correct ${ticketSize} ${
             ticketSizefromList
@@ -88,7 +80,6 @@ const filterWlfromSmartContract = async (filteredWhiteList, commitment) => {
       return tokenType ? investor : undefined;
     })
   )).filter(investor => {
-    console.log(investor);
     if (investor !== undefined) {
       lastUploadedfile = true;
     }
@@ -133,7 +124,7 @@ const formatPayload = payload =>
   Object.keys(payload[0]).map(v => ({
     [v]: payload.map(c => c[v])
   }));
-module.exports = async function prefillAgreements() {
+module.exports = async function uploadWhitelist() {
   const [
     csvFile,
     CommitmentAddress,
