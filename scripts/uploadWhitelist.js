@@ -4,6 +4,7 @@
 require("babel-register");
 const d3 = require("d3-dsv");
 const fs = require("fs");
+const confirm = require("node-ask").confirm;
 const path = require("path");
 
 const Commitment = artifacts.require("Commitment");
@@ -157,17 +158,17 @@ module.exports = async function uploadWhitelist() {
         formattedPayload[1].wlTokens,
         formattedPayload[2].wlTickets
       )).receipt;
-      // const transactionReceipt = (await commitment.addWhitelisted(
-      //   ["0x23d5a869a6653bf922dcc4e44d9da3eae220b88f"],
-      //   [1],
-      //   [Q18.mul(666)]
-      // )).receipt;
       if ((await transactionReceipt.status) === 0)
         throw new Error("Transaction didn't go through check connection");
       else {
         console.log("Transaction passed These addresses were added");
         console.log(formattedPayload[0].wlAddresses);
-        console.log(`GAS USED:${transactionReceipt.gasUsed}`);
+        console.log(`receipt:${JSON.stringify(transactionReceipt, null, 1)}`);
+      }
+      if (
+        !await confirm("Do you want to continue uploading whitelist? [y/n] ")
+      ) {
+        throw new Error("Aborting!");
       }
     } while (verifiedWhiteList.length > 0);
   } catch (e) {
