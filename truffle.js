@@ -45,8 +45,10 @@ module.exports = {
     },
     ropsten: {
       host: "localhost", // local parity kovan node
-      port: 8545,
-      network_id: "3"
+      port: 8544,
+      network_id: "3",
+      gas: 4300000, // close to current mainnet limit
+      gasPrice: 30000000000 // 10 gwei /shannon
     },
     kovan: {
       host: "localhost", // local parity kovan node
