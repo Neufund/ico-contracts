@@ -13,7 +13,8 @@ module.exports = {
     localhost: {
       network_id: "*",
       host: "localhost",
-      port: 8545
+      port: 8545,
+      gas: 4600000,
     },
     inprocess: {
       network_id: "*",
@@ -65,7 +66,8 @@ module.exports = {
     nano: {
       network_id: "*",
       gas: 4600000,
-      provider: nanoProvider("http://localhost:8544", "44'/60'/105'/0", "nano")
+      provider: nanoProvider("http://localhost:8544", "44'/60'/105'/1", "nano"),
+      gasPrice: 10000000000 // 10 gwei /shannon
     },
     simulated_live: {
       network_id: "*",
