@@ -74,6 +74,14 @@ const filterWlfromSmartContract = async (filteredWhiteList, commitment) => {
     const tokenType = whiteListTicketbyAddress[0].toNumber();
 
     if (tokenType !== 0) {
+      if(tokenType !== investor.wlTokens) {
+        throw new Error(
+          `Token type in contract is not correct ${tokenType} ${
+            investor.wlTokens
+          } for ${investor.wlAddresses}`
+        );
+      }
+
       const ticketSize = whiteListTicketbyAddress[1];
       const ticketSizefromList =
         investor.wlTokens === 1
@@ -86,6 +94,7 @@ const filterWlfromSmartContract = async (filteredWhiteList, commitment) => {
           } token ${tokenType} for ${investor.wlAddresses}`
         );
       }
+
       try {
         const commitmentAddressBasedonIndex = await commitment.whitelistInvestor(
           index
@@ -129,6 +138,12 @@ const getList = async filePath => {
         const investorCurrency = isCurrency(investor.Currency, investorAddress);
         const amountEth = getAmount(investor["Amount in ETH"]);
         const amountEur = getAmount(investor["Amount in EUR"]);
+        if (investorCurrency === tokenEnum.EUR && (amountEur.lt(Q18.mul(290)) && !amountEur.eq(0))) {
+          throw new Error(`minumum ticket for ${investorAddress} in EUR not met`);
+        }
+        if (investorCurrency === tokenEnum.ETH && (amountEth.lt(Q18) && !amountEth.eq(0))) {
+          throw new Error(`minumum ticket for ${investorAddress} in ETH not met`);
+        }
         return getAttributes(
           investorAddress,
           investorCurrency,
@@ -183,7 +198,7 @@ module.exports = async function uploadWhitelist() {
       console.log("Setting whitelist Payload");
       const formattedPayload = formatPayload(whitelistPayload);
       console.log("Sending Payload to SmartContract");
-      console.log(formattedPayload.wlAddresses);
+      console.log(formattedPayload[0].wlAddresses);
       const transactionReceipt = await commitment.addWhitelisted(
         formattedPayload[0].wlAddresses,
         formattedPayload[1].wlTokens,
@@ -197,12 +212,12 @@ module.exports = async function uploadWhitelist() {
         console.log(formattedPayload[0].wlAddresses);
       }
       index += size;
-      if (
+      /*if (
         !await confirm("Do you want to continue uploading whitelist? [y/n] ")
       ) {
         throw new Error("Aborting!");
-      }
-    } while (verifiedWhiteList.length >= index);
+      }*/
+    } while (verifiedWhiteList.length > index);
   } catch (e) {
     console.log(e);
   }
