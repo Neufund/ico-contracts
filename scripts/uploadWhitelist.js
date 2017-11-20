@@ -4,7 +4,7 @@
 require("babel-register");
 const d3 = require("d3-dsv");
 const fs = require("fs");
-const confirm = require("node-ask").confirm;
+// const confirm = require("node-ask").confirm;
 const path = require("path");
 
 const Commitment = artifacts.require("Commitment");
@@ -46,13 +46,19 @@ const getAttributes = (address, currency, amount) => ({
 });
 
 const removeDuplicates = array => {
-  let cleanedArray = [];
-  for(let investor of array) {
-    if (!cleanedArray.some(i => investor.wlAddresses.toLowerCase() === i.wlAddresses.toLowerCase())) {
+  const cleanedArray = [];
+  for (const investor of array) {
+    if (
+      !cleanedArray.some(
+        i => investor.wlAddresses.toLowerCase() === i.wlAddresses.toLowerCase()
+      )
+    ) {
       cleanedArray.push(investor);
     } else {
       if (investor.wlTickets > 0) {
-        throw new Error(`Duplicate for investor with reserved ticket ${investor.wlAddresses}`);
+        throw new Error(
+          `Duplicate for investor with reserved ticket ${investor.wlAddresses}`
+        );
       }
       console.log(investor);
     }
@@ -62,11 +68,10 @@ const removeDuplicates = array => {
 };
 
 const filterWlfromSmartContract = async (filteredWhiteList, commitment) => {
-  let lastUploadedfile = false;
   const verifiedWhiteList = [];
 
   let index = 0;
-  for(let investor of filteredWhiteList) {
+  for (const investor of filteredWhiteList) {
     const whiteListTicketbyAddress = await commitment.whitelistTicket(
       investor.wlAddresses
     );
@@ -74,7 +79,7 @@ const filterWlfromSmartContract = async (filteredWhiteList, commitment) => {
     const tokenType = whiteListTicketbyAddress[0].toNumber();
 
     if (tokenType !== 0) {
-      if(tokenType !== investor.wlTokens) {
+      if (tokenType !== investor.wlTokens) {
         throw new Error(
           `Token type in contract is not correct ${tokenType} ${
             investor.wlTokens
@@ -108,13 +113,14 @@ const filterWlfromSmartContract = async (filteredWhiteList, commitment) => {
         ) {
           throw new Error("List is not ordered");
         }
-      } catch(err) {
-        console.log(`cannot get investor for index ${index} ${investor.wlAddresses}`);
+      } catch (err) {
+        console.log(
+          `cannot get investor for index ${index} ${investor.wlAddresses}`
+        );
         console.log(whiteListTicketbyAddress);
         console.log(err);
         throw err;
       }
-
     } else {
       verifiedWhiteList.push(investor);
     }
@@ -138,18 +144,26 @@ const getList = async filePath => {
         const investorCurrency = isCurrency(investor.Currency, investorAddress);
         const amountEth = getAmount(investor["Amount in ETH"]);
         const amountEur = getAmount(investor["Amount in EUR"]);
-        if (investorCurrency === tokenEnum.EUR && (amountEur.lt(Q18.mul(290)) && !amountEur.eq(0))) {
-          throw new Error(`minumum ticket for ${investorAddress} in EUR not met`);
+        if (
+          investorCurrency === tokenEnum.EUR &&
+          (amountEur.lt(Q18.mul(290)) && !amountEur.eq(0))
+        ) {
+          throw new Error(
+            `minumum ticket for ${investorAddress} in EUR not met`
+          );
         }
-        if (investorCurrency === tokenEnum.ETH && (amountEth.lt(Q18) && !amountEth.eq(0))) {
-          throw new Error(`minumum ticket for ${investorAddress} in ETH not met`);
+        if (
+          investorCurrency === tokenEnum.ETH &&
+          (amountEth.lt(Q18) && !amountEth.eq(0))
+        ) {
+          throw new Error(
+            `minumum ticket for ${investorAddress} in ETH not met`
+          );
         }
         return getAttributes(
           investorAddress,
           investorCurrency,
-          investorCurrency === tokenEnum.EUR
-            ?
-            amountEur : amountEth
+          investorCurrency === tokenEnum.EUR ? amountEur : amountEth
         );
       }
       console.log(investor);
@@ -166,12 +180,8 @@ const formatPayload = payload =>
   }));
 
 module.exports = async function uploadWhitelist() {
-  const [
-    csvFile,
-    payloadSize,
-    ...other
-  ] = process.argv.slice(6);
-  //payloadSize = parseFloat(payloadSize);
+  const [csvFile, payloadSize, ...other] = process.argv.slice(6);
+  // payloadSize = parseFloat(payloadSize);
   if (other.length) throw new Error("To many variables");
   try {
     const commitment = await Commitment.at(Commitment.address);
@@ -179,17 +189,19 @@ module.exports = async function uploadWhitelist() {
     console.log(Commitment.address);
     const formattedWhiteList = await getList(path.resolve(csvFile));
     // console.log(formattedWhiteList);
-    let verifiedWhiteList;
     console.log("Comparing list with Smart Contract Whitelist and filtering");
-    verifiedWhiteList = await filterWlfromSmartContract(
+    const verifiedWhiteList = await filterWlfromSmartContract(
       formattedWhiteList,
       commitment
     );
 
     let index = 0;
-    let size = parseFloat(payloadSize);
+    const size = parseFloat(payloadSize);
     do {
-      const endIndex = index + size >= verifiedWhiteList.length ? verifiedWhiteList.length : index + size;
+      const endIndex =
+        index + size >= verifiedWhiteList.length
+          ? verifiedWhiteList.length
+          : index + size;
       console.log(payloadSize);
       console.log(index);
       console.log(endIndex);
@@ -212,11 +224,11 @@ module.exports = async function uploadWhitelist() {
         console.log(formattedPayload[0].wlAddresses);
       }
       index += size;
-      /*if (
+      /* if (
         !await confirm("Do you want to continue uploading whitelist? [y/n] ")
       ) {
         throw new Error("Aborting!");
-      }*/
+      } */
     } while (verifiedWhiteList.length > index);
   } catch (e) {
     console.log(e);

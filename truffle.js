@@ -14,7 +14,7 @@ module.exports = {
       network_id: "*",
       host: "localhost",
       port: 8545,
-      gas: 4600000,
+      gas: 4600000
     },
     inprocess: {
       network_id: "*",
