@@ -30,7 +30,6 @@ module.exports = async function prefillAgreements() {
     await prepareReservationAgreement({
       neumarkContract: neumark,
       commitmentContract: commitment,
-      lockedAccountContract: etherLock,
       companyAddress: configrations.addresses.PLATFORM_OPERATOR_REPRESENTATIVE
     });
     console.log("Starting: Token Holder Agreement");
