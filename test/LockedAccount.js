@@ -370,7 +370,7 @@ contract(
         ).to.be.rejectedWith(EvmError);
       });
 
-      it("should migrate investor in AcceptUnlocks", async () => {
+      async function expectMigrationInState(state) {
         const ticket = etherToWei(3.18919182);
         const neumarks = etherToWei(1.189729111);
         await makeDeposit(investor, controller.address, ticket);
@@ -378,15 +378,23 @@ contract(
         await migrationTarget.setMigrationSource(lockedAccount.address, {
           from: admin
         });
-        await controller.succ();
-        expect(await lockedAccount.lockState.call()).to.be.bignumber.eq(
-          LockState.AcceptingUnlocks
-        );
+        if (state === LockState.AcceptingUnlocks) {
+          await controller.succ();
+        }
+        expect(await lockedAccount.lockState.call()).to.be.bignumber.eq(state);
         await lockedAccount.enableMigration(migrationTarget.address, {
           from: admin
         });
         const tx = await lockedAccount.migrate({ from: investor });
         expectInvestorMigratedEvent(tx, investor, ticket, neumarks);
+      }
+
+      it("should migrate investor in AcceptUnlocks", async () => {
+        await expectMigrationInState(LockState.AcceptingUnlocks);
+      });
+
+      it("should migrate investor in AcceptLocks", async () => {
+        await expectMigrationInState(LockState.AcceptingLocks);
       });
 
       it("should reject enabling migration from invalid account", async () => {
@@ -929,7 +937,6 @@ contract(
       });
 
       it("should reject unlock if disbursal pool is not set");
-      it("should return on unlock for investor with no balance");
 
       it("should reject to reclaim assetToken", async () => {
         const ticket1 = etherToWei(9.18781092183);
@@ -1029,7 +1036,45 @@ contract(
           "setPenaltyDisbursal"
         ];
         PublicFunctionsAdminOnly.forEach(name => {
-          it(`${name}`);
+          it(`${name}`, async () => {
+            let pendingTx;
+            migrationTarget = await deployMigrationTarget(
+              assetToken,
+              operatorWallet
+            );
+            switch (name) {
+              case "enableMigration":
+                await migrationTarget.setMigrationSource(
+                  lockedAccount.address,
+                  {
+                    from: admin
+                  }
+                );
+                pendingTx = lockedAccount.enableMigration(
+                  migrationTarget.address,
+                  {
+                    from: investor
+                  }
+                );
+                break;
+              case "setController":
+                pendingTx = lockedAccount.setController(admin, {
+                  from: investor
+                });
+                break;
+              case "setPenaltyDisbursal":
+                pendingTx = lockedAccount.setPenaltyDisbursal(
+                  testDisbursal.address,
+                  {
+                    from: investor
+                  }
+                );
+                break;
+              default:
+                throw new Error(`${name} is unknown method`);
+            }
+            await expect(pendingTx).to.be.rejectedWith(EvmError);
+          });
         });
       });
 
@@ -1040,7 +1085,34 @@ contract(
           "controllerSucceeded"
         ];
         PublicFunctionsControllerOnly.forEach(name => {
-          it(`${name}`);
+          it(`${name}`, async () => {
+            let pendingTx;
+            await deployLockedAccount(
+              assetToken,
+              operatorWallet,
+              LOCK_PERIOD,
+              UNLOCK_PENALTY_FRACTION,
+              { leaveUnlocked: true }
+            );
+            switch (name) {
+              case "lock":
+                pendingTx = lock(investor, Q18);
+                break;
+              case "controllerFailed":
+                await lockedAccount.setController(admin, { from: admin });
+                pendingTx = lockedAccount.controllerFailed({ from: investor });
+                break;
+              case "controllerSucceeded":
+                await lockedAccount.setController(admin, { from: admin });
+                pendingTx = lockedAccount.controllerSucceeded({
+                  from: investor
+                });
+                break;
+              default:
+                throw new Error(`${name} is unknown method`);
+            }
+            await expect(pendingTx).to.be.rejectedWith(EvmError);
+          });
         });
       });
     }
@@ -1049,7 +1121,8 @@ contract(
       token,
       feeDisbursalAddress,
       lockPeriod,
-      unlockPenaltyFraction
+      unlockPenaltyFraction,
+      { leaveUnlocked = false } = {}
     ) {
       lockedAccount = await LockedAccount.new(
         accessPolicy.address,
@@ -1068,9 +1141,11 @@ contract(
       noCallbackContract = await TestNullContract.new();
       testDisbursal = await TestFeeDistributionPool.new();
       controller = await TestLockedAccountController.new(lockedAccount.address);
-      await lockedAccount.setController(controller.address, {
-        from: admin
-      });
+      if (!leaveUnlocked) {
+        await lockedAccount.setController(controller.address, {
+          from: admin
+        });
+      }
       startTimestamp = await latestTimestamp();
     }
 
