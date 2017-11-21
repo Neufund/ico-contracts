@@ -112,7 +112,7 @@ const filterWlfromSmartContract = async (filteredWhiteList, commitment) => {
 
       const ticketSize = whiteListTicketbyAddress[1];
       const ticketSizefromList =
-        investor.wlTokens === 1
+        investor.wlTokens === tokenEnum.ETH
           ? await commitment.convertToEur(investor.wlTickets)
           : investor.wlTickets;
       if (!ticketSize.eq(ticketSizefromList)) {
@@ -156,6 +156,12 @@ const filterWlfromSmartContract = async (filteredWhiteList, commitment) => {
     );
   return verifiedWhiteList;
 };
+
+const isUnderMinEurCap = amountEur =>
+  !!(amountEur.lt(Q18.mul(290)) && !amountEur.eq(0));
+
+const isUnderMinEthCap = amountEth => !!(amountEth.lt(Q18) && !amountEth.eq(0));
+
 const getList = async filePath => {
   console.log("Loading CSV file and parsing");
   const parsedCsv = d3.csvParse(fs.readFileSync(filePath, "UTF-8"));
@@ -165,20 +171,14 @@ const getList = async filePath => {
       if (investor["Public Address"]) {
         const investorAddress = isAddress(investor["Public Address"]);
         const investorCurrency = isCurrency(investor.Currency, investorAddress);
-        const amountEth = getAmount(investor["Amount in ETH"]);
-        const amountEur = getAmount(investor["Amount in EUR"]);
-        if (
-          investorCurrency === tokenEnum.EUR &&
-          (amountEur.lt(Q18.mul(290)) && !amountEur.eq(0))
-        ) {
+        const amountEth = getAmount(investor["Amount in ETH"], investorAddress);
+        const amountEur = getAmount(investor["Amount in EUR"], investorAddress);
+        if (investorCurrency === tokenEnum.EUR && isUnderMinEurCap(amountEur)) {
           throw new Error(
             `minumum ticket for ${investorAddress} in EUR not met`
           );
         }
-        if (
-          investorCurrency === tokenEnum.ETH &&
-          (amountEth.lt(Q18) && !amountEth.eq(0))
-        ) {
+        if (investorCurrency === tokenEnum.ETH && isUnderMinEthCap(amountEth)) {
           throw new Error(
             `minumum ticket for ${investorAddress} in ETH not met`
           );
@@ -204,14 +204,12 @@ const formatPayload = payload =>
 
 module.exports = async function uploadWhitelist() {
   const [csvFile, payloadSize, ...other] = process.argv.slice(6);
-  // payloadSize = parseFloat(payloadSize);
-  if (other.length) throw new Error("To many variables");
+  if (other.length) throw new Error("To many arguments");
   try {
     const commitment = await Commitment.at(Commitment.address);
     console.log(path.resolve(csvFile));
     console.log(Commitment.address);
     const formattedWhiteList = await getList(path.resolve(csvFile));
-    // console.log(formattedWhiteList);
     console.log("Comparing list with Smart Contract Whitelist and filtering");
     const verifiedWhiteList = await filterWlfromSmartContract(
       formattedWhiteList,
@@ -240,7 +238,7 @@ module.exports = async function uploadWhitelist() {
         formattedPayload[2].wlTickets
       );
       if (transactionReceipt.status === 0)
-        throw new Error("Transaction didn't go through check connection");
+        throw new Error("Transaction failed");
       else {
         console.log(`receipt:${JSON.stringify(transactionReceipt, null, 1)}`);
         console.log("Transaction passed These addresses were added");
