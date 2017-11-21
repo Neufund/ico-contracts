@@ -14,6 +14,30 @@ const tokenEnum = {
   ETH: 1
 };
 
+const parseStrToNumStrict = source => {
+  if (source === null) {
+    return NaN;
+  }
+
+  if (source === undefined) {
+    return NaN;
+  }
+
+  let transform = source.replace(/\s/g, "");
+  transform = transform.replace(/,/g, ".");
+
+  // we allow only digits dots and minus
+  if (/[^.\-\d]/.test(transform)) {
+    return NaN;
+  }
+
+  // we allow only one dot
+  if ((transform.match(/\./g) || []).length > 1) {
+    return NaN;
+  }
+
+  return parseFloat(transform);
+};
 const Q18 = new web3.BigNumber(10).pow(18);
 
 const isAddress = address => {
@@ -32,8 +56,7 @@ const isCurrency = (currency, address) => {
   return tokenEnum[currency];
 };
 const getAmount = (amount, address) => {
-  const investAmount = Number.parseFloat(amount.replace(/^\D+/g, ""));
-  // Most of the case this is for an empty string
+  const investAmount = parseStrToNumStrict(amount.replace("€", ""));
   if (Number.isNaN(investAmount))
     throw new Error(`Investor ${address} has their amount left out`);
   return investAmount === 0 ? new web3.BigNumber(0) : Q18.mul(investAmount);
@@ -196,7 +219,7 @@ module.exports = async function uploadWhitelist() {
     );
 
     let index = 0;
-    const size = parseFloat(payloadSize);
+    const size = parseStrToNumStrict(payloadSize);
     do {
       const endIndex =
         index + size >= verifiedWhiteList.length
