@@ -90,7 +90,6 @@ In order to prefill legal Agreements with correct addresses of contracts and rol
 The script automatically fills both `NEUMARK TOKEN HOLDER AGREEMENT` and `RESERVATION AGREEMENT` with correct addresses for
  - Neumark contract address
  - Commitment contract Address
- - LockedAccount contract Address
  - PLATFORM_OPERATOR_REPRESENTATIVE
 
  ### Upload files to IPFS
