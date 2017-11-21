@@ -39,7 +39,6 @@ async function prepareNeumarkTokenHolderAgreement({
 async function prepareReservationAgreement({
   commitmentContract,
   neumarkContract,
-  lockedAccountContract,
   companyAddress
 }) {
   const tags = {
@@ -47,7 +46,6 @@ async function prepareReservationAgreement({
     "commit-id": gitRev.long(),
     website: DOCUMENT_CONSTANTS.website,
     "acquisition-sc-address": commitmentContract.address,
-    "lockin-sc-address": lockedAccountContract.address,
     "company-address": companyAddress,
     "neumark-sc-address": neumarkContract.address,
     "icbm-start-date": formatDate(
