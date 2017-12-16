@@ -1,12 +1,22 @@
 # ICO contracts
 
 ## Neumark contract structure
+
+### ICBM Contracts Diagram
+![ICBM](./doc/icbmcontracts.png)
+
+### Snapshot Token Extensions
 Please read [here](/contracts/SnapshotToken/README.md).
 
-## Neumark issuance algorithm.
-Please read on the issuance curve in our [whitepaper](https://neufund.org/whitepaper)
+### Neumark issuance algorithm.
+Please read on the issuance curve in our [whitepaper](https://neufund.org/whitepaper), you may also refer to curve models in [doc](/doc).
 
+### Smart Contract and Legal Contract Parity
+Mechanism is explained in source code [here](/contracts/Agreement.sol) and on diagram below.
 
+![LEGALPARITY](./doc/agreementparity.png)
+
+You may also check fork arbitrage mechanism [here](/contracts/EthereumForkArbiter.sol).
 
 ## Running locally
 ```

@@ -117,9 +117,9 @@ const filterWlfromSmartContract = async (filteredWhiteList, commitment) => {
           : investor.wlTickets;
       if (!ticketSize.eq(ticketSizefromList)) {
         throw new Error(
-          `Ticket size in Smart contract is not correct ${ticketSize} ${
-            ticketSizefromList
-          } token ${tokenType} for ${investor.wlAddresses}`
+          `Ticket size in Smart contract is not correct ${ticketSize} ${ticketSizefromList} token ${tokenType} for ${
+            investor.wlAddresses
+          }`
         );
       }
 

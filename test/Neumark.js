@@ -29,17 +29,15 @@ const NMK_DECIMALS = new BigNumber(10).toPower(18);
 
 contract(
   "Neumark",
-  (
-    [
-      deployer,
-      other,
-      platformRepresentative,
-      transferAdmin,
-      issuer1,
-      issuer2,
-      ...accounts
-    ]
-  ) => {
+  ([
+    deployer,
+    other,
+    platformRepresentative,
+    transferAdmin,
+    issuer1,
+    issuer2,
+    ...accounts
+  ]) => {
     let rbap;
     let forkArbiter;
     let neumark;
@@ -280,9 +278,7 @@ contract(
             // console.log(`should burn ${burnNmk.toNumber()} with expected Euro delta ${expectedEurDelta.toNumber()}, got ${actualEurDelta.toNumber()} diff ${expectedEurDelta.sub(actualEurDelta).toNumber()}`);
             expect(
               actualEurDelta.round(roundingPrecision, 4),
-              `Invalid inverse at NEU ${n} burning NEU ${
-                burnNmk
-              } at ${e.toNumber()}`
+              `Invalid inverse at NEU ${n} burning NEU ${burnNmk} at ${e.toNumber()}`
             ).to.be.bignumber.eq(expectedEurDelta.round(roundingPrecision, 4));
 
             const newTotalEuroUlps = await neumark.totalEuroUlps.call();

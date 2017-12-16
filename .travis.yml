@@ -28,7 +28,6 @@ addons:
       - socat
       - libusb-1.0-0-dev
       - libudev-dev
-cache: yarn
 install:
   - yarn
 script:
