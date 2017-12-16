@@ -17,9 +17,7 @@ export default function(chai) {
         } catch (e) {
           this.assert(
             false,
-            `expected web3 array to be size of ${
-              size
-            } but it looks like it's smaller` // i think it's impossible to get an array name in this point
+            `expected web3 array to be size of ${size} but it looks like it's smaller` // i think it's impossible to get an array name in this point
           );
         }
       }

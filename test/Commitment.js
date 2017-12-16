@@ -47,18 +47,16 @@ const MIN_TICKET_ETH = eurToEth(MIN_TICKET_EUR);
 
 contract(
   "Commitment",
-  (
-    [
-      deployer, // eslint-disable-line no-unused-vars
-      platform,
-      representative,
-      whitelistAdmin,
-      lockedAccountAdmin,
-      eurtDepositManager,
-      other,
-      ...investors
-    ]
-  ) => {
+  ([
+    deployer, // eslint-disable-line no-unused-vars
+    platform,
+    representative,
+    whitelistAdmin,
+    lockedAccountAdmin,
+    eurtDepositManager,
+    other,
+    ...investors
+  ]) => {
     let rbap;
     let forkArbiter;
     let neumark;
@@ -1738,9 +1736,9 @@ contract(
             whitelisted[Math.floor(Math.random() * whitelisted.length)];
           // eslint-disable-next-line no-console
           console.log(
-            `investing ${ticket.div(Q18).toNumber()} from ${
-              investor
-            } total: ${(await neumark.totalEuroUlps.call())
+            `investing ${ticket
+              .div(Q18)
+              .toNumber()} from ${investor} total: ${(await neumark.totalEuroUlps.call())
               .div(Q18)
               .toNumber()}`
           );
@@ -1839,9 +1837,9 @@ contract(
             investors[Math.floor(Math.random() * investors.length)];
           // eslint-disable-next-line no-console
           console.log(
-            `investing ${ticket.div(Q18).toNumber()} from ${
-              investor
-            } total: ${(await neumark.totalEuroUlps.call())
+            `investing ${ticket
+              .div(Q18)
+              .toNumber()} from ${investor} total: ${(await neumark.totalEuroUlps.call())
               .div(Q18)
               .toNumber()}`
           );
@@ -1939,9 +1937,9 @@ contract(
             whitelisted[Math.floor(Math.random() * whitelisted.length)];
           // eslint-disable-next-line no-console
           console.log(
-            `investing ${ticket.div(Q18).toNumber()} from ${
-              investor
-            } total: ${(await neumark.totalEuroUlps.call())
+            `investing ${ticket
+              .div(Q18)
+              .toNumber()} from ${investor} total: ${(await neumark.totalEuroUlps.call())
               .div(Q18)
               .toNumber()}`
           );
@@ -2044,9 +2042,9 @@ contract(
             nonWhitelisted[Math.floor(Math.random() * nonWhitelisted.length)];
           // eslint-disable-next-line no-console
           console.log(
-            `investing ${ticket.div(Q18).toNumber()} from ${
-              investor
-            } total: ${(await neumark.totalEuroUlps.call())
+            `investing ${ticket
+              .div(Q18)
+              .toNumber()} from ${investor} total: ${(await neumark.totalEuroUlps.call())
               .div(Q18)
               .toNumber()}`
           );

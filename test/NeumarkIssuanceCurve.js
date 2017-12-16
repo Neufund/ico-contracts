@@ -135,9 +135,7 @@ contract("NeumarkIssuanceCurve", () => {
         // console.log(`should burn ${burnNmk.toNumber()} with expected Euro delta ${expectedEurDelta.toNumber()}, got ${actualEurDelta.toNumber()} diff ${expectedEurDelta.sub(actualEurDelta).toNumber()}`);
         expect(
           actualEurDelta.round(roundingPrecision, 4),
-          `Invalid inverse at NEU ${n} burning NEU ${
-            burnNmk
-          } at ${e.toNumber()}`
+          `Invalid inverse at NEU ${n} burning NEU ${burnNmk} at ${e.toNumber()}`
         ).to.be.bignumber.eq(expectedEurDelta.round(roundingPrecision, 4));
 
         totalNmk = totalNmk.sub(burnNmk);
