@@ -15,6 +15,7 @@ module.exports = {
       host: "localhost",
       port: 8545,
       gas: 4600000
+      // from: "0x429123b08df32b0006fd1f3b0ef893a8993802f3"
     },
     inprocess: {
       network_id: "*",
@@ -108,6 +109,30 @@ module.exports = {
       gas: 4600000,
       // gasPrice: 11904761856
       gasPrice: 21000000000
+    },
+    forked_live_nano: {
+      network_id: "0xd75c5831a651",
+      gas: 4600000,
+      provider: nanoProvider(
+        "http://ethexp-node.neustg.net:8545",
+        "44'/60'/105'/0",
+        "forked_live_nano"
+      ),
+      gasPrice: 10000000000 // 10 gwei /shannon
+    },
+    forked_live: {
+      network_id: 1, // Ethereum public network
+      host: "ethexp-node.neustg.net",
+      port: 8545,
+      gas: 6700000, // close to current mainnet limit
+      gasPrice: 50000000000 // 21 gwei /shannon
+    },
+    localhost_live: {
+      network_id: "*",
+      host: "localhost",
+      port: 8545,
+      gas: 4600000
+      // from: "0x429123b08df32b0006fd1f3b0ef893a8993802f3"
     },
     live: {
       network_id: 1, // Ethereum public network
